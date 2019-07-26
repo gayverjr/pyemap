@@ -94,7 +94,6 @@ def parse(filename,quiet=False,pdb=False):
         structure = parser.get_structure("protein", filename)
         io = PDBIO()
         filename=filename[:-4]+".pdb"
-        print(filename)
         io.set_structure(structure)
         io.save(filename)
         parser = PDBParser()
