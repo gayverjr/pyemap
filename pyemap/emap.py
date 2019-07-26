@@ -5,6 +5,7 @@ from heapq import heappop, heappush
 from .custom_residues import is_pi_bonded,dist
 from .data import *
 import networkx as nx
+from .dijkstras import Branch, ShortestPath
 
 def buildSmiles(graph, atoms, cur, prev):
     """Two pass depth first search algorithm on chemical graph to generate smiles string.
@@ -109,14 +110,30 @@ class emap():
         self.residue_names = []
         for residue in custom_residues:
             self.add_residue(residue)
-    def save_agraph(self,agraph):
-        self.agraph = agraph
-    def save_paths(self):
-        pass
+    def save_initial_agraph(self,agraph):
+        self.init_agraph = agraph
+
+    def save_paths(self,shortest_paths):
+        self.shortest_paths=shortest_paths
+
+    def save_paths_agraph(self,agraph):
+        self.paths_agraph = agraph
+
     def view_residue(self,resname):
         #Just writes to file, would prefer if it displays to GUI
         mol = Chem.MolFromSmarts(self.smiles_dict.get(resname))
         Draw.MolToFile(mol, resname+".png", kekulize=False, size=(200, 200))
+
+    def view_init_agraph(self):
+        #Just writes to file, GUI would be better
+        fn= self.filename[:-4] + "_graph.png"
+        self.init_agraph.draw(fn,prog='neato')
+
+    def view_paths_agraph(self):
+        #Just writes to file, GUI would be better
+        fn= self.filename[:-4] + "_paths.png"
+        self.paths_agraph.draw(fn,prog='neato')
+
     def add_residue(self,residue,node_label=None):
         if not node_label:
             node_label=residue.resname

@@ -448,51 +448,6 @@ def get_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res_na
             raise Exception(e)
 
 
-def write_out_custom(custom_res, file_id):
-    """Writes custom residue name and atom IDs .
-
-    Custom residue names and their corresponding NGL selection string are written
-    out to a "customnum.txt" file in the appropriate tempFiles directory on
-    the server, to be used later by the front end.
-
-    Parameters
-    ----------
-    custom_res: array-like
-        list of custom Bio.PDB Residue objects.
-    file_id: string
-        hashed pdb/mmcif file name
-    Notes
-    -----
-    In customnum.txt, each custom residue name is listed, followed by its NGL
-    selection string.
-    Format:
-        Resname;selection-string
-        Selection string format:
-            resnum and :ChainID and (.AtomName1 or .AtomName2 or ...)
-    Example:
-        FAD510-1;510 and :A and(.N9A or .C8A or .N7A or
-        .C5A or .C6A or .N6A or .N1A or .C2A or .N3A or .C4A)
-
-    """
-    try:
-        f = open(file_id + "/customnum" + file_id + ".txt", "w")
-        for cust in custom_res:
-            select_string = (cust.resname.strip() + ";")
-            atm_list = list(cust.get_atoms())
-            first_atm = atm_list[0]
-            select_string += "(" + str(first_atm.original_id[3][1]) + " and :" + str(
-                first_atm.original_id[2]) + " and ." + first_atm.name + ")"
-            for i in range(1, len(atm_list)):
-                atm = atm_list[i]
-                select_string += " or "
-                select_string += "(" + str(atm.original_id[3][1]) + " and :" + str(
-                    atm.original_id[2]) + " and ." + atm.name + ")"
-            print(select_string, file=f)
-        f.close()
-    except Exception as e:
-        raise Exception(e)
-
-
 def get_residues(all_residues, AROM_LIST, chain_list, custom_residues):
     """Returns list of standard aromatic residues.
 
@@ -635,9 +590,6 @@ def draw_graph(G, surface_exposed_res, chain_list, filename):
     -----
     Disconnected vertices are not included in the final graph. For graphs with a single chain, the chain ID
     is omitted from the node label. The graph is drawn using PyGraphViz. The graph saved in the following formats:
-    .svg: for display on the webpage
-    .png: for download by the user
-    .gv: for use by the back end for later analysis
 
     """
     for goal in surface_exposed_res:
@@ -653,12 +605,6 @@ def draw_graph(G, surface_exposed_res, chain_list, filename):
         node.attr['label'] = node
     A.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
     A.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-    #graph_filename = filename + "/graph" + filename + ".svg"
-    #graph_filename_gv = filename + "/graph" + filename + ".gv"
-    downloadable = filename + ".png"
-    #A.draw(graph_filename, prog="neato")
-    #A.draw(graph_filename_gv, prog="neato")
-    A.draw(downloadable, prog="neato")
     node_labels = []
     for node in A.nodes():
         node_labels.append(node.attr['label'])
@@ -852,9 +798,7 @@ def process(emap,
         r_offset=0.0):
     """Main method of process_data module.
 
-    Executes all functions of this module. The end results are that the
-    graph is written out to file in .svg, .gv, and .png forms for later use by the front and back ends, and the
-    node labels and user custom residues are returned.
+    Executes all functions of this module. 
 
     Parameters
     ---------
@@ -934,7 +878,6 @@ def process(emap,
         else:
             node_labels, dmatrix, pathways_matrix = closestAtomDMatrix(aromatic_residues, coef_alpha, exp_beta,
                                                                       r_offset)
-        #write_out_custom(custom_residues + user_residues, filename)
         for idx,residue in enumerate(aromatic_residues):
             emap.add_residue(residue,node_label=node_labels[idx])
         G = create_graph(dmatrix, pathways_matrix, node_labels, distanceCutoff, percentEdges, numStDevEdges)
@@ -945,6 +888,6 @@ def process(emap,
             pdb_file = emap.filename
             surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chain_list)
         A = draw_graph(G, surface_exposed_res, chain_list, emap.filename)
-        emap.save_agraph(A)
+        emap.save_initial_agraph(A)
     except Exception as e:
         raise (Exception(e))

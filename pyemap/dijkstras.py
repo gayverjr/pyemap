@@ -7,9 +7,6 @@ Module used to find and visualize shortest paths. If the user specifies only a s
 used to calculate the shortest path from the source to every surface exposed residue.
 If the user specifies a target as well, Yen's algorithm is used to find the 5 shortest paths from source to target.
 Each of these pathways is assigned a unique ID for visualization, and a list of all of these pathways is returned.
-The results of the analysis are written out to two files. "useroutput.txt" is a results
-file displayed to the user on the webpage. "outputs.txt" is a list of paths in NGL Viewer's selection language, which
-can be later accessed by the front end for visualization of these pathways.
 
 Usage
 -----
@@ -246,8 +243,6 @@ def yens_shortest_paths(G, start, goal, filename):
     -------
     all_pt_ids: array-like
         List of pathway IDs corresponding to ShortestPath objects that have been written to file.
-    branches_table: array-like
-        List of branches and their pathway IDs corresponding to ShortestPath objects that can be displayed in a table (flask_table)
 
     See Also
     --------
@@ -309,35 +304,8 @@ def yens_shortest_paths(G, start, goal, filename):
                         G.node[path[j + 1]]['fillcolor'] += '7F'
                         G.node[path[j + 1]]['color'] = '#7080907F'
             shortestPaths[i].set_id("1" + letters[i])
-        # write out paths to file
-        useroutput = open(filename +".txt", "w")
-        fi = open(filename +".txt", "r")
-        strArr = fi.readlines()
-        customname = []
-        customnum = []
-        for i in range(len(strArr)):
-            tempArr = strArr[i].split(";")
-            customname.append(tempArr[0])
-            customnum.append(tempArr[1][:-1])
-        fi.close()
-        f = open(filename +".txt", "w+")
-        branches_table = []
-        for pt in shortestPaths:
-            f.write(str(pt.path_id) + ":")
-            f.write(str(pt.selection_str(customname, customnum)) + "\n")
-            branches_table.append(pt.get_path_as_list())
-            all_pt_ids.append(str(pt).split()[0] + ' ' + str(pt).split()[-1])
-            useroutput.write(str(pt) + "\n")
-        useroutput.close()
-        f.close()
-        fi.close()
-        return all_pt_ids, branches_table
+        return all_pt_ids, shortestPaths
     else:  # no paths found
-        useroutput = open(filename +".txt", "w")
-        str_out = "No paths found."
-        branches_table.append(str_out)
-        useroutput.write(str_out)
-        useroutput.close()
         return []
 
 
@@ -431,8 +399,6 @@ def dijkstras_shortest_paths(G, start, goals, filename):
     -------
     all_pt_ids: array-like
         List of pathway IDs corresponding to ShortestPath objects that have been written to file.
-    branches_table: array-like
-        List of branches and their pathway IDs corresponding to ShortestPath objects that can be displayed in a table (flask_table)
 
     See Also
     --------
@@ -495,46 +461,9 @@ def dijkstras_shortest_paths(G, start, goals, filename):
                 if len(G.node[path[i + 1]]['fillcolor']) != 9:
                     G.node[path[i + 1]]['fillcolor'] += '5F'
                     G.node[path[i + 1]]['color'] = '#7080905F'
-    '''
-    # write out to file
-    fi = open(filename +".txt", "r")
-    strArr = fi.readlines()
-    customname = []
-    customnum = []
-    for i in range(len(strArr)):
-        tempArr = strArr[i].split(";")
-        customname.append(tempArr[0])
-        customnum.append(tempArr[1][:-1])
-    fi.close()
-    # output for NGL viewer
-    f = open(filename +".txt", "w+")
-    for pt in shortestPaths:
-        f.write(str(pt.path_id) + ":")
-        f.write(str(pt.selection_str(customname, customnum)) + "\n")
-    f.close()
-    '''
-    # output for text file
-    useroutput = open(filename + ".txt","w")
-
-    branches_table = []
-    for br in branches:
-        branch_paths = str(br).strip().split('\n')
-        branches_table.append(br.get_branch_as_list())
-        for path in branch_paths:
-            if not "Branch" in path:
-                # for view pathways combobox keep only path ID and distance
-                all_pt_ids.append(path.split()[0] + ' ' + path.split()[-1])
-            else:
-                all_pt_ids.append(path)
-        useroutput.write(str(br))
-    branches_table = list(itertools.chain(*branches_table))
     if len(shortestPaths) == 0:
-        str_out = "No paths found."
-        branches_table.append(str_out)
-        useroutput.write(str_out)
         raise Exception("No paths to the surface found.")
-    useroutput.close()
-    return all_pt_ids, branches_table
+    return all_pt_ids,shortestPaths
 
 
 def processName(G, name):
@@ -601,24 +530,12 @@ def draw_graph(G, original_shape_start, source, filename):
             G[name_node1][name_node2]['color'] = '#7788994F'
     # draw graph
     A_new = to_agraph(G)
-    try:  # no need for try catch in released version
-        A_new.graph_attr.update(
-            ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-        A_new.layout(args="-n2")
-        #graph_filename = dir_path + \
-        #    filename + "/graph" + filename + ".svg"
-        downloadable = filename + ".png"
-        #A_new.draw(graph_filename, prog="neato")
-        A_new.draw(downloadable, prog="neato")
-    except Exception as e:
-        #graph_filename = dir_path + \
-        #    filename + "/graph" + filename + ".svg"
-        downloadable = filename + ".png"
-        #A_new.draw(graph_filename, prog="neato")
-        A_new.draw(downloadable, prog="neato")
+    A_new.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+    A_new.layout(args="-n2")
+    return A_new
 
 
-def shortest_paths(emap, source, target=None):
+def pathway_analysis(emap, source, target=None):
     """Main method of dijkstras module.
 
     Takes in input from views module, and then performs shortest path analysis
@@ -651,7 +568,7 @@ def shortest_paths(emap, source, target=None):
 
     """
     # read in graph from file
-    A = emap.agraph
+    A = emap.init_agraph
     G = from_agraph(A)
     filename=emap.filename
     for u, v, d in G.edges(data=True):
@@ -664,7 +581,7 @@ def shortest_paths(emap, source, target=None):
     if target:
         target = target.strip()
         target = processName(G, target)
-        all_pt_ids, branches_table = yens_shortest_paths(
+        all_pt_ids, shortest_paths = yens_shortest_paths(
             G, source, target, filename)
         # color target node blue
         G.node[target]['fillcolor'] = '#40e0d0FF'
@@ -674,8 +591,9 @@ def shortest_paths(emap, source, target=None):
         for n, d in G.nodes(data=True):
             if d['shape'] == "box":
                 goals.append(n)
-        all_pt_ids, branches_table = dijkstras_shortest_paths(
+        all_pt_ids, shortest_paths = dijkstras_shortest_paths(
             G, source, goals, filename)
-    draw_graph(G, original_shape_start, source, filename)
-    emap.save_paths()
-    return all_pt_ids, branches_table
+    A = draw_graph(G, original_shape_start, source, filename)
+    emap.save_paths(shortest_paths)
+    emap.save_paths_agraph(A)
+    return all_pt_ids

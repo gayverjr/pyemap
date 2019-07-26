@@ -6,7 +6,7 @@ Implementation of eMap analysis in the form of a python package.
 # Add imports here
 from .parse import *
 from .process_data import process
-from .dijkstras import shortest_paths
+from .dijkstras import pathway_analysis
 # Handle versioneer
 from ._version import get_versions
 versions = get_versions()
