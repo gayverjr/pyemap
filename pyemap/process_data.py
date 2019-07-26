@@ -673,7 +673,7 @@ def draw_graph(G, surface_exposed_res, chain_list, filename, single_chain):
     for node in A.nodes():
         node_labels.append(node.attr['label'])
     node_labels = sorted(node_labels)
-    return node_labels
+    return A
 
 
 def process_user_options(include_Trp, include_Tyr, include_Phe, include_His, chain_selected):
@@ -844,14 +844,15 @@ def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEd
     return G
 
 
-def process(emap,
+def process(emap, 
+        chains, 
+        custom_residues,
         distance_criteria=0,
         surface_exposed_bool=0,
         trp="True",
         tyr="True",
         phe="False",
         his="False",
-        custom_residues=[],
         custom_atm_string="-1",
         distanceCutoff=20,
         percentEdges=1.0,
@@ -918,13 +919,13 @@ def process(emap,
 
     """
     try:
-        AROM_LIST, chain_list = process_user_options(trp, tyr, phe, his, emap.chains)
+        AROM_LIST, chain_list = process_user_options(trp, tyr, phe, his, chains)
         model = emap.structure[0]
         all_residues = list(model.get_residues())
         single_chain = len(list(model.get_chains())) < 2
         all_atoms = list(model.get_atoms())
         aromatic_residues, used_atoms = get_residues(all_residues, AROM_LIST, chain_list, custom_residues)
-        user_residues, res_string = get_user_residues(custom_atm_string, all_atoms, emap.chains, used_atoms)
+        user_residues, res_string = get_user_residues(custom_atm_string, all_atoms, chains, used_atoms)
         user_res_list = []
         for i in range(0, len(user_residues)):
             user_res_list.append([])
@@ -953,7 +954,7 @@ def process(emap,
         else:
             pdb_file = emap.filename
             surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chain_list)
-        node_labels = draw_graph(G, surface_exposed_res, chain_list, emap.filename, single_chain)
-        return user_res_list, node_labels
+        A = draw_graph(G, surface_exposed_res, chain_list, emap.filename, single_chain)
+        emap.save_agraph(user_res_list,A)
     except Exception as e:
         raise (Exception(e))

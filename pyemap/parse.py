@@ -80,6 +80,8 @@ def parse(filename,quiet=False,pdb=False):
             non_standard_residue_list.append(arom_res)
     custom_residue_list,smiles_str_list = process_custom_residues(
         non_standard_residue_list,len(chain_list))
+    if not quiet:
+        print("Identified " + str(len(custom_residue_list)) + " nonprotein ET active moieties." )
     my_emap = emap(filename[:-4],structure,chain_list,custom_residue_list,smiles_str_list)
     return my_emap
 

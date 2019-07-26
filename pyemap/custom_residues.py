@@ -324,6 +324,7 @@ def process_custom_residues(non_standard_residue_list, num_chains):
     """
     res_names = []
     custom_res = []
+    total_smiles_str=[]
     for residue in non_standard_residue_list:
         atm_list = list(residue.get_atoms())
         conj_systems, smiles_str_list = find_conjugated_systems(
@@ -332,4 +333,5 @@ def process_custom_residues(non_standard_residue_list, num_chains):
             for system in conj_systems:
                 res_names.append(system.resname)
             custom_res += conj_systems
-    return custom_res,smiles_str_list
+            total_smiles_str+=smiles_str_list
+    return custom_res,total_smiles_str
