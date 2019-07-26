@@ -606,7 +606,7 @@ def get_user_residues(custom_atm_string, all_atoms, chain_selected, used_atoms):
             raise Exception(e)
 
 
-def draw_graph(G, surface_exposed_res, chain_list, filename, single_chain):
+def draw_graph(G, surface_exposed_res, chain_list, filename):
     """Draws and writes out the graph to file in downloadable form and for later use by the application, and
     returns the node labels.
 
@@ -620,8 +620,6 @@ def draw_graph(G, surface_exposed_res, chain_list, filename, single_chain):
         list of chains included in analysis
     filename: string
         File hash used for writing to file
-    single_chain: boolean
-        Boolean for single chain or not
 
     Returns
     -------
@@ -651,16 +649,8 @@ def draw_graph(G, surface_exposed_res, chain_list, filename, single_chain):
         if G[node] == {}:
             G.remove_node(node)
     A = to_agraph(G)
-    if single_chain:
-        for node in A.nodes():
-            if "(" in node:
-                chain_str = node[node.index("(") + 1:node.index(")")]
-                if chain_str in chain_list:
-                    node_str = node[:node.index("(")] + node[node.index(")") + 1:]
-                    node.attr['label'] = node_str
-    else:
-        for node in A.nodes():
-            node.attr['label'] = node
+    for node in A.nodes():
+        node.attr['label'] = node
     A.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
     A.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
     #graph_filename = filename + "/graph" + filename + ".svg"
@@ -673,6 +663,7 @@ def draw_graph(G, surface_exposed_res, chain_list, filename, single_chain):
     for node in A.nodes():
         node_labels.append(node.attr['label'])
     node_labels = sorted(node_labels)
+    print(node_labels)
     return A
 
 
@@ -922,7 +913,6 @@ def process(emap,
         AROM_LIST, chain_list = process_user_options(trp, tyr, phe, his, chains)
         model = emap.structure[0]
         all_residues = list(model.get_residues())
-        single_chain = len(list(model.get_chains())) < 2
         all_atoms = list(model.get_atoms())
         aromatic_residues, used_atoms = get_residues(all_residues, AROM_LIST, chain_list, custom_residues)
         user_residues, res_string = get_user_residues(custom_atm_string, all_atoms, chains, used_atoms)
@@ -954,7 +944,7 @@ def process(emap,
         else:
             pdb_file = emap.filename
             surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chain_list)
-        A = draw_graph(G, surface_exposed_res, chain_list, emap.filename, single_chain)
-        emap.save_agraph(user_res_list,A)
+        A = draw_graph(G, surface_exposed_res, chain_list, emap.filename)
+        emap.save_agraph(A)
     except Exception as e:
         raise (Exception(e))

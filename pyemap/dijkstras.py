@@ -50,16 +50,13 @@ class ShortestPath(object):
         Total distance from source to target
     id: string
         Unique identifier for pathway assigned based on branch and length.
-    single_chain: boolean
-        Boolean for single chain or not
 
     """
 
-    def __init__(self, path, length, single_chain):
+    def __init__(self, path, length):
         self.path = path
         self.length = length
         self.path_id = "none"
-        self.single_chain = single_chain
 
     def __eq__(self, other):
         return self.length == other.length
@@ -72,25 +69,11 @@ class ShortestPath(object):
 
     def __str__(self):
         # If only one chain is present, do not include chain id in output
-        if self.single_chain:
-            for i in range(len(self.path)):
-                node = self.path[i]
-                if "(" in node:
-                    node_str = node_str = node[:node.index(
-                        "(")] + node[node.index(")") + 1:]
-                    self.path[i] = node_str
         printline = self.path_id + ": " + \
             str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2)))
         return printline
 
     def get_path_as_list(self):
-        if self.single_chain:
-            for i in range(len(self.path)):
-                node = self.path[i]
-                if "(" in node:
-                    node_str = node_str = node[:node.index(
-                        "(")] + node[node.index(")") + 1:]
-                    self.path[i] = node_str
         original_list = [[self.path_id], self.path,
                          [str('{:.2f}'.format(round(self.length, 2)))]]
         merged = list(itertools.chain(*original_list))
@@ -184,8 +167,6 @@ class Branch(object):
         Target node which a branch corresponds to
     paths: array-like
         List of ShortestPath objects that make up a branch
-    single_chain: boolean
-        Boolean for single chain or not
 
     See Also
     --------
@@ -193,11 +174,10 @@ class Branch(object):
 
     """
 
-    def __init__(self, branch_id, target, single_chain):
+    def __init__(self, branch_id, target):
         self.branch_id = branch_id
         self.target = target
         self.paths = []
-        self.single_chain = single_chain
 
     def add_path(self, path):
         """Adds a path to the branch and sets the path_id.
@@ -226,10 +206,6 @@ class Branch(object):
 
     def __str__(self):
         printline = "Branch: " + str(self.target)
-        if self.single_chain:
-            if "(" in printline:
-                printline = printline[:printline.index(
-                    "(")] + printline[printline.index(")") + 1:]
         for pt in self.paths:
             printline += "\n" + str(pt)
         printline += "\n"
@@ -238,17 +214,13 @@ class Branch(object):
     def get_branch_as_list(self):
         branch_list = []
         printline = "Branch: " + str(self.target)
-        if self.single_chain:
-            if "(" in printline:
-                printline = printline[:printline.index(
-                    "(")] + printline[printline.index(")") + 1:]
         branch_list.append([printline])
         for pt in self.paths:
             branch_list.append(pt.get_path_as_list())
         return branch_list
 
 
-def yens_shortest_paths(G, start, goal, filename, single_chain):
+def yens_shortest_paths(G, start, goal, filename):
     """Returns top 5 shortest paths from source to target.
 
     Uses Yen's algorithm to calculate the 5 shortest paths from source to target, writes
@@ -269,8 +241,6 @@ def yens_shortest_paths(G, start, goal, filename, single_chain):
         Target node
     filename: str
         File hash for writing out to file
-    single_chain: boolean
-        Boolean for single chain or not
 
     Returns
     -------
@@ -303,7 +273,7 @@ def yens_shortest_paths(G, start, goal, filename, single_chain):
         sum = 0
         for i in range(0, len(path) - 1):  # sum up edge weights
             sum += (G[path[i]][path[i + 1]]['weight'])
-        path = ShortestPath(path, sum, single_chain)
+        path = ShortestPath(path, sum)
         shortestPaths.append(path)
     if shortestPaths:
         shortestPaths = sorted(shortestPaths)
@@ -433,7 +403,7 @@ def find_branch(pt, goals, branches):
     return cur_branch
 
 
-def dijkstras_shortest_paths(G, start, goals, filename, single_chain):
+def dijkstras_shortest_paths(G, start, goals, filename):
     """Returns shortest path from source to each surface exposed residue.
 
     Performs Dijkstra's algorithm from the source to each surface exposed residue, finding the
@@ -456,8 +426,6 @@ def dijkstras_shortest_paths(G, start, goals, filename, single_chain):
         List of surface exposed residues
     filename: str
         File hash for writing out to file
-    single_chain: boolean
-        Boolean for single chain or not
 
     Returns
     -------
@@ -485,7 +453,7 @@ def dijkstras_shortest_paths(G, start, goals, filename, single_chain):
             sum = 0
             for i in range(0, len(path) - 1):  # sum up edge weights
                 sum += (G[path[i]][path[i + 1]]['weight'])
-            shortestPaths.append(ShortestPath(path, sum, single_chain))
+            shortestPaths.append(ShortestPath(path, sum))
     shortestPaths = sorted(shortestPaths)
     branches = []
     # find the parent pathways
@@ -505,7 +473,7 @@ def dijkstras_shortest_paths(G, start, goals, filename, single_chain):
                 if len(G.node[path[i + 1]]['fillcolor']) != 9:
                     G.node[path[i + 1]]['fillcolor'] += 'FF'
                     G.node[path[i + 1]]['color'] = '#708090FF'
-            br = Branch(len(branches) + 1, pt.path[-1], single_chain)
+            br = Branch(len(branches) + 1, pt.path[-1])
             branches.append(br)
             br.add_path(pt)
     # find the sub pathways
@@ -569,7 +537,7 @@ def dijkstras_shortest_paths(G, start, goals, filename, single_chain):
     return all_pt_ids, branches_table
 
 
-def processName(G, name, single_chain):
+def processName(G, name):
     """Returns the node in G that the string name corresponds to.
 
     On the front end, the user selects a source/target residue. If there is only a single
@@ -588,8 +556,6 @@ def processName(G, name, single_chain):
         A weighted, undirected residue graph
     name: str
         A source/target node specified by the user
-    single_chain: boolean
-        Boolean for single chain or not
 
     Raises
     ------
@@ -599,11 +565,7 @@ def processName(G, name, single_chain):
     """
     name = name.strip()
     for node in G.nodes():
-        if single_chain:
-            node_name = node[:node.index("(")] + node[node.index(")") + 1:]
-        else:
-            node_name = node
-        if name == node_name:
+        if name == node:
             return node
     raise Exception("Invalid name")
 
@@ -656,7 +618,7 @@ def draw_graph(G, original_shape_start, source, filename):
         A_new.draw(downloadable, prog="neato")
 
 
-def shortest_paths(emap, source, target=None, single_chain=False):
+def shortest_paths(emap, source, target=None):
     """Main method of dijkstras module.
 
     Takes in input from views module, and then performs shortest path analysis
@@ -671,8 +633,6 @@ def shortest_paths(emap, source, target=None, single_chain=False):
         source node for analysis
     target: str
         target node for analysis. Can be [] if no target specified
-    single_chain: boolean
-        boolean for single chain or not
 
     Returns
     ------
@@ -698,14 +658,14 @@ def shortest_paths(emap, source, target=None, single_chain=False):
         d['weight'] = np.float64(d['weight'])
     # process source and target
     source = source.strip()
-    source = processName(G, source, single_chain)
+    source = processName(G, source)
     original_shape_start = G.node[source]['shape']
     G.node[source]['shape'] = 'oval'
     if target:
         target = target.strip()
-        target = processName(G, target, single_chain)
+        target = processName(G, target)
         all_pt_ids, branches_table = yens_shortest_paths(
-            G, source, target, filename, single_chain)
+            G, source, target, filename)
         # color target node blue
         G.node[target]['fillcolor'] = '#40e0d0FF'
         G.node[target]['penwidth'] = 6.0
@@ -715,6 +675,6 @@ def shortest_paths(emap, source, target=None, single_chain=False):
             if d['shape'] == "box":
                 goals.append(n)
         all_pt_ids, branches_table = dijkstras_shortest_paths(
-            G, source, goals, filename, single_chain)
+            G, source, goals, filename)
     draw_graph(G, original_shape_start, source, filename)
     return all_pt_ids, branches_table

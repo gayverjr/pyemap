@@ -77,100 +77,7 @@ def dist(x, y):
     return np.sqrt(np.sum((x - y)**2))
 
 
-def buildSmiles(graph, atoms, cur, prev):
-    """Two pass depth first search algorithm on chemical graph to generate smiles string.
-
-    Parameters
-    ----------
-    graph: NetworkX chemical graph
-    atoms: array-like
-        List of atoms in structure
-    cur: BioPython Atom object
-    prev: BioPython Atom object
-        Atoms being considered at this step of the iteration
-
-    References
-    ----------
-    Varnek, A. Tutorials in Chemoinformatics; John Wiley & Sons, Inc.: Hoboken, NJ, 2017.
-
-    """
-    visited.add(cur)
-    seq = ''
-    seq += atoms[cur].element.lower()
-    for d in closingClosures[cur]:
-        seq += d
-        heappush(digits, d[-1])
-    for a in openingClosures[cur]:
-        d = str(heappop(digits))
-        seq += d
-        closingClosures[a].append(d)
-    branches = []
-    neighbors = list(graph.neighbors(cur))
-    if prev in neighbors:
-        neighbors.remove(prev)
-    for neighbor in neighbors:
-        if neighbor not in visited:
-            branches.append(buildSmiles(graph, atoms, neighbor, cur))
-    for branch in branches[:-1]:
-        seq += "(" + branch + ")"
-    if len(branches) > 0:
-        seq += branches[-1]
-    return seq
-
-
-def getClosures(graph, cur, prev):
-    """Two pass depth first search algorithm on chemical graph to generate smiles string.
-
-    graph: NetworkX chemical graph
-    cur: BioPython Atom object
-    prev: BioPython Atom object
-        Atoms being considered at this step of the iteration
-
-    References
-    ----------
-    Varnek, A. Tutorials in Chemoinformatics; John Wiley & Sons, Inc.: Hoboken, NJ, 2017.
-
-    """
-    ancestor.add(cur)
-    visited.add(cur)
-    neighbors = list(graph.neighbors(cur))
-    if prev in neighbors:
-        neighbors.remove(prev)
-    for neighbor in neighbors:
-        if neighbor in ancestor:
-            openingClosures[neighbor].append(cur)
-        elif neighbor not in visited:
-            getClosures(graph, neighbor, cur)
-    ancestor.remove(cur)
-
-
-def getSimpleSmiles(graph, atoms):
-    """Two pass depth first search algorithm on chemical graph to generate smiles string.
-
-    Parameters
-    ----------
-    graph: NetworkX chemical graph
-    atoms: array-like
-        List of atoms in structure
-
-    References
-    ----------
-    Varnek, A. Tutorials in Chemoinformatics; John Wiley & Sons, Inc.: Hoboken, NJ, 2017.
-
-    """
-    root = list(graph.nodes())[0]
-    global visited, ancestor, openingClosures, closingClosures, digits
-    visited = set()
-    ancestor = set()
-    openingClosures = defaultdict(list)
-    getClosures(graph, root, None)
-    closingClosures = defaultdict(list)
-    digits = [str(x) for x in range(1, 10)]
-    visited = set()
-    return buildSmiles(graph, atoms, root, None)
-
-
-def find_conjugated_systems(atoms, res_names, num_chains):
+def find_conjugated_systems(atoms, res_names):
     """Finds conjugated systems within a BioPython residue object, and returns them as individual customized BioPython
     Residue objects.
 
@@ -182,8 +89,6 @@ def find_conjugated_systems(atoms, res_names, num_chains):
         List of already used names for custom residues
     : str
         file hash for writing out to file
-    num_chains: int
-        Number of chains included in the analysis
 
     Returns
     -------
@@ -204,7 +109,6 @@ def find_conjugated_systems(atoms, res_names, num_chains):
     is_pi_bonded(): function used to determine which bonds to include in graph
 
     """
-    smiles_str_list = []
     # first let's create the chemical graph structure
     arom_atoms = ['O', 'P', 'N', 'C','S']  # only these elements will be considered in our search
     cust_graph = nx.Graph()
@@ -226,23 +130,15 @@ def find_conjugated_systems(atoms, res_names, num_chains):
 
     # iterate over all of the subgraphs
     for graph in subgraphs:
-        if num_chains > 1:
-            res_name = str(atoms[0].parent.get_resname()) + str(
-                atoms[0].get_full_id()[3][1]) + "(" + str(
-                    atoms[0].get_full_id()[2]) + ")"
-        else:
-            res_name = str(atoms[0].parent.get_resname()) + str(
-                atoms[0].get_full_id()[3][1])
+        res_name = str(atoms[0].parent.get_resname()) + str(
+            atoms[0].get_full_id()[3][1]) + "(" + str(
+                atoms[0].get_full_id()[2]) + ")"
         if len(subgraphs) > 1:
             res_name += '-' + str(count)
             while res_name in res_names:
                 count += 1
                 res_name = res_name.split('-')[0] + '-' + str(count)
-        smiles_str = getSimpleSmiles(graph, atoms)
-        molecule = Chem.MolFromSmarts(smiles_str)
-        can_smiles_str = Chem.MolToSmarts(molecule, True)
         atm_list = []
-        smiles_str_list.append(can_smiles_str)
         for node in graph.nodes():
             atm_list.append(atoms[node])
         custom_res_list.append(create_custom_residue(atm_list, res_name))
@@ -265,7 +161,7 @@ def find_conjugated_systems(atoms, res_names, num_chains):
 
     if iron_sulfur:"""
 
-    return custom_res_list, smiles_str_list
+    return custom_res_list
 
 
 def create_custom_residue(atm_list, res_name):
@@ -302,8 +198,7 @@ def create_custom_residue(atm_list, res_name):
 
     return custom_res
 
-
-def process_custom_residues(non_standard_residue_list, num_chains):
+def process_custom_residues(non_standard_residue_list):
     """Main method of custom residues module.
 
     Executes all major functions of this module.
@@ -312,8 +207,6 @@ def process_custom_residues(non_standard_residue_list, num_chains):
     ---------
     non_standard_residue_list: array-like
         List of non-protein residues in the structure
-    num_chains: int
-        Number of chains included in the analysis
 
     Returns
     ------
@@ -324,14 +217,12 @@ def process_custom_residues(non_standard_residue_list, num_chains):
     """
     res_names = []
     custom_res = []
-    total_smiles_str=[]
     for residue in non_standard_residue_list:
         atm_list = list(residue.get_atoms())
-        conj_systems, smiles_str_list = find_conjugated_systems(
-            atm_list, res_names, num_chains )
+        conj_systems = find_conjugated_systems(
+            atm_list, res_names)
         if conj_systems:
             for system in conj_systems:
                 res_names.append(system.resname)
             custom_res += conj_systems
-            total_smiles_str+=smiles_str_list
-    return custom_res,total_smiles_str
+    return custom_res

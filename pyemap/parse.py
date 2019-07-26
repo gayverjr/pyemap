@@ -50,6 +50,8 @@ def fetch_and_parse(filename,dest=os.getcwd(),quiet=False,pdb=False):
         else:
             raise Exception("Couldn't find entry matching PDB ID:" + str(filename))
 
+
+
 def parse(filename,quiet=False,pdb=False):
     if pdb:
         parser = PDBParser()
@@ -78,10 +80,10 @@ def parse(filename,quiet=False,pdb=False):
             res.get_full_id()
             arom_res = res.copy()
             non_standard_residue_list.append(arom_res)
-    custom_residue_list,smiles_str_list = process_custom_residues(
-        non_standard_residue_list,len(chain_list))
+    custom_residue_list = process_custom_residues(
+        non_standard_residue_list)
     if not quiet:
         print("Identified " + str(len(custom_residue_list)) + " nonprotein ET active moieties." )
-    my_emap = emap(filename[:-4],structure,chain_list,custom_residue_list,smiles_str_list)
+    my_emap = emap(filename,structure,custom_residue_list,chain_list)
     return my_emap
 
