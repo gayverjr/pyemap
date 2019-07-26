@@ -677,4 +677,5 @@ def shortest_paths(emap, source, target=None):
         all_pt_ids, branches_table = dijkstras_shortest_paths(
             G, source, goals, filename)
     draw_graph(G, original_shape_start, source, filename)
+    emap.save_paths()
     return all_pt_ids, branches_table

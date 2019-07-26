@@ -663,7 +663,6 @@ def draw_graph(G, surface_exposed_res, chain_list, filename):
     for node in A.nodes():
         node_labels.append(node.attr['label'])
     node_labels = sorted(node_labels)
-    print(node_labels)
     return A
 
 
@@ -931,13 +930,14 @@ def process(emap,
         for res in user_residues:
             AROM_LIST.append(res.get_resname())
         if int(distance_criteria) == 0:
-            node_label, dmatrix, pathways_matrix = comDMatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
+            node_labels, dmatrix, pathways_matrix = comDMatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
         else:
-            node_label, dmatrix, pathways_matrix = closestAtomDMatrix(aromatic_residues, coef_alpha, exp_beta,
+            node_labels, dmatrix, pathways_matrix = closestAtomDMatrix(aromatic_residues, coef_alpha, exp_beta,
                                                                       r_offset)
         #write_out_custom(custom_residues + user_residues, filename)
-
-        G = create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEdges, numStDevEdges)
+        for idx,residue in enumerate(aromatic_residues):
+            emap.add_residue(residue,node_label=node_labels[idx])
+        G = create_graph(dmatrix, pathways_matrix, node_labels, distanceCutoff, percentEdges, numStDevEdges)
         # define surface exposed residues
         if int(surface_exposed_bool) == 0:
             surface_exposed_res = calculateResidueDepth(aromatic_residues, model)

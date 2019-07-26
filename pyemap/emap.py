@@ -103,8 +103,10 @@ class emap():
         self.filename = filename
         self.structure=structure
         self.smiles_dict={}
+        self.residue_dict={}
         self.chains = chain_list
         self.custom_residues = custom_residues
+        self.residue_names = []
         for residue in custom_residues:
             self.add_residue(residue)
     def save_agraph(self,agraph):
@@ -113,10 +115,11 @@ class emap():
         pass
     def view_residue(self,resname):
         #Just writes to file, would prefer if it displays to GUI
-        print(self.smiles_dict)
         mol = Chem.MolFromSmarts(self.smiles_dict.get(resname))
         Draw.MolToFile(mol, resname+".png", kekulize=False, size=(200, 200))
-    def add_residue(self,residue):
+    def add_residue(self,residue,node_label=None):
+        if not node_label:
+            node_label=residue.resname
         atoms=list(residue.get_atoms())
         #creating chemical graph structure
         arom_atoms = ['O', 'P', 'N', 'C','S']  # only these elements will be considered in our search
@@ -130,7 +133,9 @@ class emap():
             smiles_str = getSimpleSmiles(res_graph, atoms)
             molecule = Chem.MolFromSmarts(smiles_str)
             can_smiles_str = Chem.MolToSmarts(molecule, True)
-            self.smiles_dict[residue.resname] = can_smiles_str
+            self.smiles_dict[node_label] = can_smiles_str
+        self.residue_dict[node_label]=residue
+        self.residue_names.append(node_label)
         #else TODO
 
 
