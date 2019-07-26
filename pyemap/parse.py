@@ -58,44 +58,63 @@ def upload(filename):
     a .pdb copy must be written to file and parsed in order to use atom serial numbers later.
 
     """
-    try:
+
+
+def fetch_and_parse(filename,dest=os.getcwd(),quiet=False,pdb=False):
+    if not quiet:
+        print("Fetching file " + filename + " from RSCB Database...")
+    if not pdb:
+        cmd = (
+            'wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/'
+            + filename+".cif").format(dest)
+        os.system(cmd)
+    if os.path.exists(dest+"/"+filename+".cif"):
+        if not quiet:
+            print("Success!")
+        return parse(dest+"/"+filename+".cif",quiet,pdb)
+    else:
+        if not quiet and not pdb:
+            print("Couldn't find .cif, trying .pdb ...")
+        cmd = (
+        'wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/'
+        + filename+".pdb").format(dest)
+        if os.path.exists(dest+"/"+filename+".pdb"):
+            if not quiet:
+                print("Success!")
+            return parse(dest+"/"+filename+".pdb",quiet,pdb)
+        else:
+            raise Exception("Couldn't find entry matching PDB ID:" + str(filename))
+
+def parse(filename,quiet=False,pdb=False):
+    if pdb:
         parser = PDBParser()
-        pdb_file = filename + "/file" + filename + ".pdb"
-        structure = parser.get_structure("protein", pdb_file)
-    except Exception as e:
+        structure = parser.get_structure("protein", filename)
+    else:
         parser = FastMMCIFParser()
-        cif_file = filename + "/file" + filename + ".cif"
-        structure = parser.get_structure("protein", cif_file)
+        structure = parser.get_structure("protein", filename)
         io = PDBIO()
+        filename=filename[:-4]+".pdb"
+        print(filename)
         io.set_structure(structure)
-        io.save(filename + "/file" + filename + ".pdb")
+        io.save(filename)
         parser = PDBParser()
-        pdb_file = filename + "/file" + filename + ".pdb"
-        structure = parser.get_structure("protein", pdb_file)
+        structure = parser.get_structure("protein", filename)
     chain_list = []
     num_models = 0
     for model in structure.get_models():
         num_models += 1
     if num_models < 1:
         raise Exception(
-            "Error Code 1: Unable to parse PDB. Please try another file.")
+            "Unable to parse structure. Please try another file.")
     for chain in structure[0].get_chains():
         chain_list.append(chain.id)
     non_standard_residue_list = []
     for res in structure[0].get_residues():
-        if res.resname not in data.res_name_to_char:
+        if res.resname not in res_name_to_char:
             res.get_full_id()
             arom_res = res.copy()
             non_standard_residue_list.append(arom_res)
     custom_residue_list = process_custom_residues(
-        non_standard_residue_list, filename, len(chain_list),"")
+        non_standard_residue_list,len(chain_list))
     return structure, chain_list, custom_residue_list
-
-def fetch(filename):
-    print("Fetching file " + filename + " from rcsb database...")
-    cmd = (
-           'wget --no-check-certificate --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/'
-           + filename)
-    os.system(cmd)
-    print("Success!")
 

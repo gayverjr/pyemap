@@ -20,7 +20,7 @@ from rdkit.Chem import Draw
 from .data import *
 
 
-def visualize(mol, res_name, file_id, dir_path):
+def visualize(mol, res_name):
     """Draws chemical structure to file from smiles string.
 
     Parameters
@@ -29,10 +29,6 @@ def visualize(mol, res_name, file_id, dir_path):
         Smiles string corresponding to a custom residue
     res_name: str
         Custom residue name
-    file_id: str
-        file hash for writing to file
-    dir_path:
-        Directory path for writing out to file
 
     See Also
     -------
@@ -40,9 +36,7 @@ def visualize(mol, res_name, file_id, dir_path):
         Module used for drawing chemical structure from smiles string.
 
     """
-    Draw.MolToFile(
-        mol,
-        dir_path + file_id + "/" + file_id + str(res_name) + ".svg",
+    Draw.MolToFile(mol,str(res_name) + ".svg",
         kekulize=False,
         size=(100, 100))
 
@@ -76,9 +70,9 @@ def is_pi_bonded(cur_atom, next_atom):
     v1 = np.array((x1, y1, z1))
     v2 = np.array((x2, y2, z2))
     bond = str(cur_atom.element.upper()) + str(next_atom.element.upper())
-    cutoff = data.SB_means.get(bond)
+    cutoff = SB_means.get(bond)
     if cutoff:
-        cutoff -= 3 * data.SB_std_dev.get(bond)
+        cutoff -= 3 * SB_std_dev.get(bond)
         return dist(v1, v2) <= cutoff
     else:
         return False
@@ -196,7 +190,7 @@ def getSimpleSmiles(graph, atoms):
     return buildSmiles(graph, atoms, root, None)
 
 
-def find_conjugated_systems(atoms, res_names, file_id, num_chains, dir_path):
+def find_conjugated_systems(atoms, res_names, num_chains):
     """Finds conjugated systems within a BioPython residue object, and returns them as individual customized BioPython
     Residue objects.
 
@@ -206,12 +200,10 @@ def find_conjugated_systems(atoms, res_names, file_id, num_chains, dir_path):
         List of atoms in the residue
     res_names: arary-like
         List of already used names for custom residues
-    file_id: str
+    : str
         file hash for writing out to file
     num_chains: int
         Number of chains included in the analysis
-    dir_path: str
-        Directory path for writing out to file
 
     Returns
     -------
@@ -270,7 +262,7 @@ def find_conjugated_systems(atoms, res_names, file_id, num_chains, dir_path):
         smiles_str = getSimpleSmiles(graph, atoms)
         molecule = Chem.MolFromSmarts(smiles_str)
         can_smiles_str = Chem.MolToSmarts(molecule, True)
-        visualize(molecule, res_name, file_id, dir_path)
+        #visualize(molecule, res_name)
         atm_list = []
         smiles_str_list.append(can_smiles_str)
         for node in graph.nodes():
@@ -333,8 +325,7 @@ def create_custom_residue(atm_list, res_name):
     return custom_res
 
 
-def process_custom_residues(non_standard_residue_list, file_hash, num_chains,
-                            dir_path):
+def process_custom_residues(non_standard_residue_list, num_chains):
     """Main method of custom residues module.
 
     Executes all major functions of this module.
@@ -343,12 +334,8 @@ def process_custom_residues(non_standard_residue_list, file_hash, num_chains,
     ---------
     non_standard_residue_list: array-like
         List of non-protein residues in the structure
-    file_hash: str
-        file hash for writing to file
     num_chains: int
         Number of chains included in the analysis
-    dir_path: str
-        Directory path for writing out to file
 
     Returns
     ------
@@ -357,13 +344,12 @@ def process_custom_residues(non_standard_residue_list, file_hash, num_chains,
         standard protein residues
 
     """
-    file_id = file_hash
     res_names = []
     custom_res = []
     for residue in non_standard_residue_list:
         atm_list = list(residue.get_atoms())
         conj_systems, smiles_str_list = find_conjugated_systems(
-            atm_list, res_names, file_id, num_chains, dir_path)
+            atm_list, res_names, num_chains )
         if conj_systems:
             for system in conj_systems:
                 res_names.append(system.resname)
