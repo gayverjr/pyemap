@@ -23,42 +23,7 @@ from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from .custom_residues import *
 from .data import *
 import os
-
-
-def upload(filename):
-    """Parses file and returns structure, chain list, and custom residue list.
-
-    Uses the Bio.PDB module to parse the file and obtain a Structure object.
-    The chains present in the structure are identified, and then the custom_residues
-    module is used to identify any custom residues present in the structure. If
-    a .mmcif file is processed, a .pdb copy is also written to file and stored
-    in the appropriate tempFiles directory on the server.
-
-    Parameters
-    ----------
-    filename: string
-        file specified by user
-
-    Returns
-    -------
-    (structure,chain_list,custom_residue_list): tuple
-        A Bio.PDB structure object, a list of string chain IDs,
-        a list of Bio.PDB Residue objects identified as custom residues.
-
-    Raises
-    ______
-    Exception
-        Bad PDB/mmcif file.
-
-    Notes
-    ------
-    For .pdb/.mmcif files with multiple models, only the first model is processed by eMap.
-
-    Bio.PDB.FastMMCIFParser does not store atom serial numbers in the Residue objects, so
-    a .pdb copy must be written to file and parsed in order to use atom serial numbers later.
-
-    """
-
+from .emap import *
 
 def fetch_and_parse(filename,dest=os.getcwd(),quiet=False,pdb=False):
     if not quiet:
@@ -93,11 +58,11 @@ def parse(filename,quiet=False,pdb=False):
         parser = FastMMCIFParser()
         structure = parser.get_structure("protein", filename)
         io = PDBIO()
-        filename=filename[:-4]+".pdb"
+        fn=filename[:-4]+".pdb"
         io.set_structure(structure)
-        io.save(filename)
+        io.save(fn)
         parser = PDBParser()
-        structure = parser.get_structure("protein", filename)
+        structure = parser.get_structure("protein", fn)
     chain_list = []
     num_models = 0
     for model in structure.get_models():
@@ -113,7 +78,8 @@ def parse(filename,quiet=False,pdb=False):
             res.get_full_id()
             arom_res = res.copy()
             non_standard_residue_list.append(arom_res)
-    custom_residue_list = process_custom_residues(
+    custom_residue_list,smiles_str_list = process_custom_residues(
         non_standard_residue_list,len(chain_list))
-    return structure, chain_list, custom_residue_list
+    my_emap = emap(filename[:-4],structure,chain_list,custom_residue_list,smiles_str_list)
+    return my_emap
 

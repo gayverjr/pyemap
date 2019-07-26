@@ -15,30 +15,10 @@ from heapq import heappop, heappush
 import networkx as nx
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import Draw
-
 from .data import *
 
 
-def visualize(mol, res_name):
-    """Draws chemical structure to file from smiles string.
 
-    Parameters
-    ----------
-    smiles_str: str
-        Smiles string corresponding to a custom residue
-    res_name: str
-        Custom residue name
-
-    See Also
-    -------
-    Module RDKit
-        Module used for drawing chemical structure from smiles string.
-
-    """
-    Draw.MolToFile(mol,str(res_name) + ".svg",
-        kekulize=False,
-        size=(100, 100))
 
 
 def is_pi_bonded(cur_atom, next_atom):
@@ -226,8 +206,7 @@ def find_conjugated_systems(atoms, res_names, num_chains):
     """
     smiles_str_list = []
     # first let's create the chemical graph structure
-    arom_atoms = ['O', 'P', 'N', 'C',
-                  'S']  # only these elements will be considered in our search
+    arom_atoms = ['O', 'P', 'N', 'C','S']  # only these elements will be considered in our search
     cust_graph = nx.Graph()
     for i in range(len(atoms)):
         for k in range(i, len(atoms)):
@@ -262,7 +241,6 @@ def find_conjugated_systems(atoms, res_names, num_chains):
         smiles_str = getSimpleSmiles(graph, atoms)
         molecule = Chem.MolFromSmarts(smiles_str)
         can_smiles_str = Chem.MolToSmarts(molecule, True)
-        #visualize(molecule, res_name)
         atm_list = []
         smiles_str_list.append(can_smiles_str)
         for node in graph.nodes():
@@ -354,4 +332,4 @@ def process_custom_residues(non_standard_residue_list, num_chains):
             for system in conj_systems:
                 res_names.append(system.resname)
             custom_res += conj_systems
-    return custom_res
+    return custom_res,smiles_str_list

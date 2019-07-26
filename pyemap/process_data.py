@@ -844,9 +844,7 @@ def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEd
     return G
 
 
-def process(filename,
-        structure,
-        chains,
+def process(emap,
         distance_criteria=0,
         surface_exposed_bool=0,
         trp="True",
@@ -920,13 +918,13 @@ def process(filename,
 
     """
     try:
-        AROM_LIST, chain_list = process_user_options(trp, tyr, phe, his, chains)
-        model = structure[0]
+        AROM_LIST, chain_list = process_user_options(trp, tyr, phe, his, emap.chains)
+        model = emap.structure[0]
         all_residues = list(model.get_residues())
         single_chain = len(list(model.get_chains())) < 2
         all_atoms = list(model.get_atoms())
         aromatic_residues, used_atoms = get_residues(all_residues, AROM_LIST, chain_list, custom_residues)
-        user_residues, res_string = get_user_residues(custom_atm_string, all_atoms, chains, used_atoms)
+        user_residues, res_string = get_user_residues(custom_atm_string, all_atoms, emap.chains, used_atoms)
         user_res_list = []
         for i in range(0, len(user_residues)):
             user_res_list.append([])
@@ -953,9 +951,9 @@ def process(filename,
         if int(surface_exposed_bool) == 0:
             surface_exposed_res = calculateResidueDepth(aromatic_residues, model)
         else:
-            pdb_file = filename
+            pdb_file = emap.filename
             surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chain_list)
-        node_labels = draw_graph(G, surface_exposed_res, chain_list, filename, single_chain)
+        node_labels = draw_graph(G, surface_exposed_res, chain_list, emap.filename, single_chain)
         return user_res_list, node_labels
     except Exception as e:
         raise (Exception(e))
