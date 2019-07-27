@@ -11,7 +11,7 @@ See parent repository for system dependencies.
 
 Within conda virutal environment, install package with pip:
 
-    pip install -e pymeap
+    pip install -e pyemap
 
 ### Copyright
 
