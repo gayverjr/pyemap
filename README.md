@@ -13,6 +13,8 @@ Within conda virutal environment, install package with pip:
 
     pip install -e pyemap
 
+See example.py for a basic view of how it works.
+
 ### Copyright
 
 Copyright (c) 2019, James Gayvert
