@@ -3,26 +3,18 @@
 # Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
 """Finds shortest paths in graph given a source and optionally a target node.
 
-Module used to find and visualize shortest paths. If the user specifies only a source node, dijkstra's algorithm is
-used to calculate the shortest path from the source to every surface exposed residue.
-If the user specifies a target as well, Yen's algorithm is used to find the 5 shortest paths from source to target.
-Each of these pathways is assigned a unique ID for visualization, and a list of all of these pathways is returned.
-
-Usage
------
-Called by the views module to obtain shortest paths. Returns a list of pathway ids.
+Defines implementations of yen's and dijkstra's algorithms for calculating the shortest path(s) from 
+the source to target/surface exposed residues. Also defines ShortestPath and Branch objects for 
+organizing the pathways based on their distances and first surface exposed residue reached during
+the pathway.
 
 """
-
 import itertools
 import os
 import string
 import sys
-
 import networkx as nx
 import numpy as np
-import pygraphviz as pg
-from networkx.drawing.nx_agraph import from_agraph, to_agraph
 
 
 class ShortestPath(object):
@@ -71,8 +63,7 @@ class ShortestPath(object):
         return printline
 
     def get_path_as_list(self):
-        original_list = [[self.path_id], self.path,
-                         [str('{:.2f}'.format(round(self.length, 2)))]]
+        original_list = [[self.path_id], self.path, [str('{:.2f}'.format(round(self.length, 2)))]]
         merged = list(itertools.chain(*original_list))
         return merged
 
@@ -105,7 +96,6 @@ class ShortestPath(object):
             Entry 3: Which atom to place the residue label on in representation
 
         """
-
         colors = {"F": "orange", "Y": "blue", "W": "red", "H": "green"}
         # each type of residue has a corresponding color
         select_arr = []
@@ -116,12 +106,9 @@ class ShortestPath(object):
                 if name in residue:
                     select_arr.append(customnum[customname.index(name)])
                     select_arr.append("pink")
-                    atm_name_index = str.index(
-                        customnum[customname.index(name)], ".")
-                    end_idx = str.index(customnum[customname.index(name)],
-                                        ")", atm_name_index)
-                    select_arr.append(customnum[customname.index(name)][
-                        atm_name_index:end_idx])
+                    atm_name_index = str.index(customnum[customname.index(name)], ".")
+                    end_idx = str.index(customnum[customname.index(name)], ")", atm_name_index)
+                    select_arr.append(customnum[customname.index(name)][atm_name_index:end_idx])
                     cust = True
             if not cust:
                 # standard residues have only .CA specified
@@ -217,16 +204,74 @@ class Branch(object):
         return branch_list
 
 
-def yens_shortest_paths(G, start, goal, filename):
-    """Returns top 5 shortest paths from source to target.
+def is_parent_pathway(shortest_path, targets):
+    """Returns true if ShortestPath is a parent pathway, false if not.
 
-    Uses Yen's algorithm to calculate the 5 shortest paths from source to target, writes
-    out the ShortestPath objects to file, and returns the 5 pathway IDs. In the graph, nodes and
-    edges that are part of any pathways are made opaque, and the shortest path is highlighted.
+    A ShortestPath object is the parent of a branch if its terminal residue is the
+    only surface exposed residue in the path. For example, if targets=[A,B,C] and
+    the pathway is [H,I,C], then this pathway is a parent pathway. In contrast, if
+    the pathway is [H,B,A], then this pathway is not a parent pathway.
 
-    Note
-    ----
-    This function is only called when a target is specified by the user.
+    Parameters
+    ----------
+    shortest_path: ShortestPath
+        ShortestPath object
+    targets: array-like
+        List of surface exposed residues
+
+    Returns
+    -------
+    True if a parent pathway
+    False if not a parent pathway
+    """
+
+    count = 0
+    for res in shortest_path.path:
+        if res in targets:
+            count += 1
+    return count == 1
+
+
+def find_branch(pt, targets, branches):
+    """Determines which branch a pathway belongs to and returns that branch.
+
+    A ShortestPath belongs to a branch if the first surface exposed residue it reaches during the
+    pathway is the target of that particular branch.
+
+    Parameters
+    ----------
+    pt: ShortestPath
+        ShortestPath object
+    targets: array-like
+        List of surface exposed residues
+    branches: array-like
+        List of branches
+
+    Returns
+    -------
+    cur_branch: Branch
+        Branch object that pt belongs to
+
+    """
+    res = pt.path[0]
+    count = 0
+    while res not in targets:
+        count += 1
+        res = pt.path[count]
+    count = 0
+    cur_branch = branches[0]
+    while not res == cur_branch.target:
+        count += 1
+        cur_branch = branches[count]
+    return cur_branch
+
+
+def dijkstras_shortest_paths(G, start, targets):
+    """Returns shortest path from source to each surface exposed residue.
+
+    Performs Dijkstra's algorithm from the source to each surface exposed residue, finding the
+    shortest path. The ShortestPath objects are organized into branches based on the first surface
+    exposed residue reached during the course of the pathway. 
 
     Parameters
     ----------
@@ -234,15 +279,105 @@ def yens_shortest_paths(G, start, goal, filename):
         Undirected, weighted residue graph
     start: str
         Source node
-    goal: str
-        Target node
-    filename: str
-        File hash for writing out to file
+    targets: array-like
+        List of surface exposed residues
 
     Returns
     -------
-    all_pt_ids: array-like
-        List of pathway IDs corresponding to ShortestPath objects that have been written to file.
+    shortest_paths: array-like
+        List of ShortestPath objects representing pathways found by eMap
+
+    See Also
+    --------
+    module NetworkX.dijkstra_path
+    class ShortestPath
+    class Branch
+
+    Raises
+    ------
+    Exception e:
+        No shortest paths to surface found
+
+    """
+    shortestPaths = []
+    for goal in targets:
+        path = []
+        try:
+            path = nx.dijkstra_path(G, start, goal)
+        except:
+            path = []
+        if not path == []:
+            sum = 0
+            for i in range(0, len(path) - 1):  # sum up edge weights
+                sum += (G[path[i]][path[i + 1]]['weight'])
+            shortestPaths.append(ShortestPath(path, sum))
+    shortestPaths = sorted(shortestPaths)
+    branches = []
+    # find the parent pathways
+    for pt in shortestPaths:
+        if is_parent_pathway(pt, targets):
+            path = pt.path
+            for i in range(0, len(path) - 1):
+                G[path[i]][path[i + 1]]['color'] = '#778899FF'
+                G[path[i]][path[i + 1]]['penwidth'] = 6.0
+                G[path[i]][path[i + 1]]['style'] = 'solid'
+                G.node[path[i]]['penwidth'] = 6.0
+                G.node[path[i + 1]]['penwidth'] = 6.0
+                # make the nodes look opaque if they are connected to the source
+                if len(G.node[path[i]]['fillcolor']) != 9:
+                    G.node[path[i]]['fillcolor'] += 'FF'
+                    G.node[path[i]]['color'] = '#708090FF'
+                if len(G.node[path[i + 1]]['fillcolor']) != 9:
+                    G.node[path[i + 1]]['fillcolor'] += 'FF'
+                    G.node[path[i + 1]]['color'] = '#708090FF'
+            br = Branch(len(branches) + 1, pt.path[-1])
+            branches.append(br)
+            br.add_path(pt)
+    # find the sub pathways
+    for pt in shortestPaths:
+        if not is_parent_pathway(pt, targets):
+            find_branch(pt, targets, branches).add_path(pt)
+            path = pt.path
+            for i in range(0, len(path) - 1):
+                if G[path[i]][path[i + 1]]['color'] != '#778899FF':
+                    G[path[i]][path[i + 1]]['color'] = '#7788995F'
+                G[path[i]][path[i + 1]]['penwidth'] = 6.0
+                G[path[i]][path[i + 1]]['style'] = 'solid'
+                G.node[path[i]]['penwidth'] = 6.0
+                G.node[path[i + 1]]['penwidth'] = 6.0
+                # make the nodes look opaque if they are connected to the source
+                if len(G.node[path[i]]['fillcolor']) != 9:
+                    G.node[path[i]]['fillcolor'] += '5F'
+                    G.node[path[i]]['color'] = '#7080905F'
+                if len(G.node[path[i + 1]]['fillcolor']) != 9:
+                    G.node[path[i + 1]]['fillcolor'] += '5F'
+                    G.node[path[i + 1]]['color'] = '#7080905F'
+    if len(shortestPaths) == 0:
+        raise Exception("No paths to the surface found.")
+    return shortestPaths
+
+
+def yens_shortest_paths(G, start, target):
+    """Returns top 5 shortest paths from source to target.
+
+    Uses Yen's algorithm to calculate the 5 shortest paths from source to target, writes
+    out the ShortestPath objects to file, and returns the 5 pathway IDs. In the graph, nodes and
+    edges that are part of any pathways are made opaque, and the shortest path is highlighted.
+
+
+    Parameters
+    ----------
+    G: NetworkX graph object
+        Undirected, weighted residue graph
+    start: str
+        Source node
+    target: str
+        Target node
+
+    Returns
+    -------
+    shortest_paths: array-like
+        List of ShortestPath objects representing pathways found by eMap
 
     See Also
     --------
@@ -254,15 +389,17 @@ def yens_shortest_paths(G, start, goal, filename):
     Jin Y. Yen, Finding the K Shortest Loopless Paths in a Network, Management Science,
     Vol. 17, No. 11, Theory Series (Jul., 1971), pp. 712-716.
 
-    """
+    Raises
+    ------
+    Exception e:
+        No shortest paths to target found
 
+    """
     letters = list(string.ascii_letters)
     shortestPaths = []
-    all_pt_ids = []
-    done = False
     k = 0
     from itertools import islice
-    paths = list(islice(nx.shortest_simple_paths(G, start, goal), 5))
+    paths = list(islice(nx.shortest_simple_paths(G, start, target), 5))
     for k in range(0, len(paths)):
         path = paths[k]
         sum = 0
@@ -304,296 +441,6 @@ def yens_shortest_paths(G, start, goal, filename):
                         G.node[path[j + 1]]['fillcolor'] += '7F'
                         G.node[path[j + 1]]['color'] = '#7080907F'
             shortestPaths[i].set_id("1" + letters[i])
-        return all_pt_ids, shortestPaths
+        return shortestPaths
     else:  # no paths found
-        return []
-
-
-def is_parent_pathway(shortest_path, goals):
-    """Returns true if ShortestPath is a parent pathway, false if not.
-
-    A ShortestPath object is the parent of a branch if its terminal residue is the
-    only surface exposed residue in the path. For example, if goals=[A,B,C] and
-    the pathway is [H,I,C], then this pathway is a parent pathway. In contrast, if
-    the pathway is [H,B,A], then this pathway is not a parent pathway.
-
-    Parameters
-    ----------
-    shortest_path: ShortestPath
-        ShortestPath object
-    goals: array-like
-        List of surface exposed residues
-
-    Returns
-    -------
-    True if a parent pathway
-    False if not a parent pathway
-    """
-
-    count = 0
-    for res in shortest_path.path:
-        if res in goals:
-            count += 1
-    return count == 1
-
-
-def find_branch(pt, goals, branches):
-    """Determines which branch a pathway belongs to and returns that branch.
-
-    A ShortestPath belongs to a branch if the first surface exposed residue it reaches during the
-    pathway is the target of that particular branch.
-
-    Parameters
-    ----------
-    pt: ShortestPath
-        ShortestPath object
-    goals: array-like
-        List of surface exposed residues
-    branches: array-like
-        List of branches
-
-    Returns
-    -------
-    cur_branch: Branch
-        Branch object that pt belongs to
-
-    """
-    res = pt.path[0]
-    count = 0
-    while res not in goals:
-        count += 1
-        res = pt.path[count]
-    count = 0
-    cur_branch = branches[0]
-    while not res == cur_branch.target:
-        count += 1
-        cur_branch = branches[count]
-    return cur_branch
-
-
-def dijkstras_shortest_paths(G, start, goals, filename):
-    """Returns shortest path from source to each surface exposed residue.
-
-    Performs Dijkstra's algorithm from the source to each surface exposed residue, finding the
-    shortest path. The ShortestPath objects are organized into branches based on the first surface
-    exposed residue reached during the course of the pathway. The ShortestPaths are then written out
-    to file, and a list of pathway IDs returned. In the graph, nodes and edges that are part of any
-    paths are made opaque.
-
-    Note
-    ----
-    This function is only called when a target is not specified by the user.
-
-    Parameters
-    ----------
-    G: NetworkX graph object
-        Undirected, weighted residue graph
-    start: str
-        Source node
-    goals: array-like
-        List of surface exposed residues
-    filename: str
-        File hash for writing out to file
-
-    Returns
-    -------
-    all_pt_ids: array-like
-        List of pathway IDs corresponding to ShortestPath objects that have been written to file.
-
-    See Also
-    --------
-    module NetworkX.dijkstra_path
-    class ShortestPath
-    class Branch
-
-    """
-    shortestPaths = []
-    all_pt_ids = []
-    for goal in goals:
-        path = []
-        try:
-            path = nx.dijkstra_path(G, start, goal)
-        except:
-            path = []
-        if not path == []:
-            sum = 0
-            for i in range(0, len(path) - 1):  # sum up edge weights
-                sum += (G[path[i]][path[i + 1]]['weight'])
-            shortestPaths.append(ShortestPath(path, sum))
-    shortestPaths = sorted(shortestPaths)
-    branches = []
-    # find the parent pathways
-    for pt in shortestPaths:
-        if is_parent_pathway(pt, goals):
-            path = pt.path
-            for i in range(0, len(path) - 1):
-                G[path[i]][path[i + 1]]['color'] = '#778899FF'
-                G[path[i]][path[i + 1]]['penwidth'] = 6.0
-                G[path[i]][path[i + 1]]['style'] = 'solid'
-                G.node[path[i]]['penwidth'] = 6.0
-                G.node[path[i + 1]]['penwidth'] = 6.0
-                # make the nodes look opaque if they are connected to the source
-                if len(G.node[path[i]]['fillcolor']) != 9:
-                    G.node[path[i]]['fillcolor'] += 'FF'
-                    G.node[path[i]]['color'] = '#708090FF'
-                if len(G.node[path[i + 1]]['fillcolor']) != 9:
-                    G.node[path[i + 1]]['fillcolor'] += 'FF'
-                    G.node[path[i + 1]]['color'] = '#708090FF'
-            br = Branch(len(branches) + 1, pt.path[-1])
-            branches.append(br)
-            br.add_path(pt)
-    # find the sub pathways
-    for pt in shortestPaths:
-        if not is_parent_pathway(pt, goals):
-            find_branch(pt, goals, branches).add_path(pt)
-            path = pt.path
-            for i in range(0, len(path) - 1):
-                if G[path[i]][path[i + 1]]['color'] != '#778899FF':
-                    G[path[i]][path[i + 1]]['color'] = '#7788995F'
-                G[path[i]][path[i + 1]]['penwidth'] = 6.0
-                G[path[i]][path[i + 1]]['style'] = 'solid'
-                G.node[path[i]]['penwidth'] = 6.0
-                G.node[path[i + 1]]['penwidth'] = 6.0
-                # make the nodes look opaque if they are connected to the source
-                if len(G.node[path[i]]['fillcolor']) != 9:
-                    G.node[path[i]]['fillcolor'] += '5F'
-                    G.node[path[i]]['color'] = '#7080905F'
-                if len(G.node[path[i + 1]]['fillcolor']) != 9:
-                    G.node[path[i + 1]]['fillcolor'] += '5F'
-                    G.node[path[i + 1]]['color'] = '#7080905F'
-    if len(shortestPaths) == 0:
-        raise Exception("No paths to the surface found.")
-    return all_pt_ids,shortestPaths
-
-
-def processName(G, name):
-    """Returns the node in G that the string name corresponds to.
-
-    On the front end, the user selects a source/target residue. If there is only a single
-    chain, that chain name is omitted in what is displayed to the user, but still included
-    in G on the backend. This function ensures that the correct node is selected on
-    the backend in the single chain case.
-
-    Note
-    ----
-    This used to be for helping the user out for mis-spellings etc. but now that we use
-    combo boxes for node selection, it's really just for the single chain case.
-
-    Parameters
-    ----------
-    G: NetworkX graph
-        A weighted, undirected residue graph
-    name: str
-        A source/target node specified by the user
-
-    Raises
-    ------
-    Exception e:
-        Invalid name (should never happen)
-
-    """
-    name = name.strip()
-    for node in G.nodes():
-        if name == node:
-            return node
-    raise Exception("Invalid name")
-
-
-def draw_graph(G, original_shape_start, source, filename):
-    """Draws the graph with the shortest pathways highlighted, and writes them out to file for downlaod and use by
-    the front end.
-
-    Parameters
-    ----------
-    G: NetworkX graph object
-        Residue graph
-    source: str
-        name of source node
-    original_shape_start: str
-        shape of source node
-    filename: str
-        file hash for writing out to file
-
-    """
-    G.node[source]['fillcolor'] = '#FFD700FF'
-    G.node[source]['penwidth'] = 6.0
-    G.node[source]['shape'] = original_shape_start
-    # if not is not involved in pathways, make it less opaque on the graph.
-    # change font color to slate gray, and change transparency of edges
-    for name_node in G.nodes():
-        if len(G.node[name_node]['fillcolor']) != 9:
-            G.node[name_node]['fillcolor'] += '40'
-            G.node[name_node]['fontcolor'] = '#708090'
-    for edge in G.edges():
-        name_node1, name_node2 = edge[0], edge[1]
-        if G[name_node1][name_node2]['style'] == 'dashed':
-            G[name_node1][name_node2]['color'] = '#7788994F'
-    # draw graph
-    A_new = to_agraph(G)
-    A_new.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-    A_new.layout(args="-n2")
-    return A_new
-
-
-def pathway_analysis(emap, source, target=None):
-    """Main method of dijkstras module.
-
-    Takes in input from views module, and then performs shortest path analysis
-    on source and (optionally) target residues. After analysis is completed, the updated
-    graph is drawn and written to file.
-
-    Parameters
-    ---------
-    filename: str
-        file hash for writing out to file
-    source: str
-        source node for analysis
-    target: str
-        target node for analysis. Can be [] if no target specified
-
-    Returns
-    ------
-    all_pt_ids: array-like
-        List of pathway IDs corresponding to ShortestPath objects that have been written to file.
-
-
-    See Also
-    --------
-    module Views
-
-    Raises
-    -------
-    Exception e:
-        Invalid name
-
-    """
-    # read in graph from file
-    A = emap.init_agraph
-    G = from_agraph(A)
-    filename=emap.filename
-    for u, v, d in G.edges(data=True):
-        d['weight'] = np.float64(d['weight'])
-    # process source and target
-    source = source.strip()
-    source = processName(G, source)
-    original_shape_start = G.node[source]['shape']
-    G.node[source]['shape'] = 'oval'
-    if target:
-        target = target.strip()
-        target = processName(G, target)
-        all_pt_ids, shortest_paths = yens_shortest_paths(
-            G, source, target, filename)
-        # color target node blue
-        G.node[target]['fillcolor'] = '#40e0d0FF'
-        G.node[target]['penwidth'] = 6.0
-    else:
-        goals = []
-        for n, d in G.nodes(data=True):
-            if d['shape'] == "box":
-                goals.append(n)
-        all_pt_ids, shortest_paths = dijkstras_shortest_paths(
-            G, source, goals, filename)
-    A = draw_graph(G, original_shape_start, source, filename)
-    emap.save_paths(shortest_paths)
-    emap.save_paths_agraph(A)
-    return all_pt_ids
+        raise Exception("No paths to target found.")

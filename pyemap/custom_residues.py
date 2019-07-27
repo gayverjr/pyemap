@@ -17,10 +17,6 @@ import numpy as np
 from rdkit import Chem
 from .data import *
 
-
-
-
-
 def is_pi_bonded(cur_atom, next_atom):
     """Determines whether two atoms are pi bonded based on experimental bond lengths.
 
@@ -101,8 +97,7 @@ def find_conjugated_systems(atoms, res_names):
     only edges that are included are those between atoms that considered to be pi-bonded (see is_pi_bonded). The
     chemical graph is now a forest, and so the next step is collect each connected component subgraph. Only subgraphs
     that contain cycles (aromatic) or are larger than 10 are considered (extended conjugated systems). For each subgraph,
-    the atoms are collected and a customized Residue object is constructured and named. Lastly, a smiles string is
-    generated for that custom residue, which is then drawn and saved to file for the front end.
+    the atoms are collected and a customized Residue object is constructured and named. 
 
     See Also
     -------

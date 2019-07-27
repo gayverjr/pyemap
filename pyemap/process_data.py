@@ -5,8 +5,7 @@
 
 Main module used for constructing the graph. Takes in all user specifications to gather and prepare the appropriate
 residues. A distance matrix is constructed for these residues, and then the graph is generated. Finally, the selected
-criteria for surface exposure is used to classify residues as buried or exposed. The graph is written out to file both
-for later use by the front and back end, as well as a downloadable version for the user.
+criteria for surface exposure is used to classify residues as buried or exposed. 
 
 Usage
 -----
@@ -26,7 +25,6 @@ from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from networkx.drawing.nx_agraph import to_agraph
 from scipy.spatial import distance_matrix
-
 from .data import *
 """str: module level directory path for writing to file"""
 
@@ -36,7 +34,7 @@ PHE_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
 HIS_sc = ['CG', 'ND1', 'CD2', 'CD1', 'NE1']
 """module level lists of side chain atoms for respective residues"""
 
-# Monkey patches detach self to save original ID upon re-assignment to custom residue
+
 
 
 def pathways_model(dist, coef_alpha, exp_beta, r_offset):
@@ -54,18 +52,14 @@ def pathways_model_thrspace_penalty_COM(com_d, coef_alpha, exp_beta, r_offset):
             mod_penalty_matrix[j][i] = mod_penalty_matrix[i][j]
     return mod_penalty_matrix
 
-
+# Monkey patches detach self to save original ID upon re-assignment to custom residue
 def detach_parent(self):
     if self.parent:
         self.original_id = self.parent.full_id
     self.parent = None
-
-
 Bio.PDB.Atom.Atom.detach_parent = detach_parent
 
 # Monkey patches Atom __init__ to include a variable which tracks its original ID and assigns a unique ID
-
-
 def atm_init(self, name, coord, bfactor, occupancy, altloc, fullname, serial_number, element=None):
     self.level = "A"
     # Reference to the residue
@@ -94,13 +88,9 @@ def atm_init(self, name, coord, bfactor, occupancy, altloc, fullname, serial_num
     self.mass = self._assign_atom_mass()
     # For atom sorting (protein backbone atoms first)
     self._sorting_keys = {'N': 0, 'CA': 1, 'C': 2, 'O': 3}
-
-
 Bio.PDB.Atom.Atom.__init__ = atm_init
 
 # monkey patches mangling of disordered atoms
-
-
 def get_unpacked_list(self):
     """
      Returns all atoms from the residue,
@@ -115,8 +105,6 @@ def get_unpacked_list(self):
         else:
             undisordered_atom_list.append(atom)
     return undisordered_atom_list
-
-
 Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
 
 
@@ -469,6 +457,8 @@ def get_residues(all_residues, AROM_LIST, chain_list, custom_residues):
     residue_list: array-like
         List of standard aromatic Bio.PDB Residue objects to
         be included in graph.
+    used_atoms: array-like
+        List of atoms already included in selected standard or custom residues
 
     """
     used_atoms = []
@@ -578,8 +568,8 @@ def draw_graph(G, surface_exposed_res, chain_list, filename):
 
     Returns
     -------
-    node_labels: array-like
-        List of node labels for each residue in the graph
+    A: pygraphviz agraph
+        Graph object representing emap model
 
     See Also
     -----
@@ -605,10 +595,6 @@ def draw_graph(G, surface_exposed_res, chain_list, filename):
         node.attr['label'] = node
     A.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
     A.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-    node_labels = []
-    for node in A.nodes():
-        node_labels.append(node.attr['label'])
-    node_labels = sorted(node_labels)
     return A
 
 
@@ -780,71 +766,57 @@ def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEd
     return G
 
 
-def process(emap, 
-        chains, 
-        custom_residues,
-        distance_criteria=0,
-        surface_exposed_bool=0,
-        trp="True",
-        tyr="True",
-        phe="False",
-        his="False",
-        custom_atm_string="-1",
-        distanceCutoff=20,
-        percentEdges=1.0,
-        numStDevEdges=1.0,
-        coef_alpha=1.0,
-        exp_beta=2.3,
-        r_offset=0.0):
-    """Main method of process_data module.
-
-    Executes all functions of this module. 
-
+def process(emap,
+            chains,
+            custom_residues,
+            distance_criteria=0,
+            surface_exposed_bool=0,
+            trp="True",
+            tyr="True",
+            phe="False",
+            his="False",
+            custom_atm_string="-1",
+            distanceCutoff=20,
+            percentEdges=1.0,
+            numStDevEdges=1.0,
+            coef_alpha=1.0,
+            exp_beta=2.3,
+            r_offset=0.0):
+    """Constructs emap graph theory model based on user specs, and saves it to the emap object.
     Parameters
     ---------
-    filename: string
-        file hash for writing out to file
-    structure: Object
-        BioPython structure object
-    distance_criteria: str
-        User specification. 0 for center of mass, 1 for closest atom
-    surface_exposed_bool: str
-        User specification. 0 for residue depth, 1 for solvent accessibility
-    trp: str
-        User specification. True if tryptophan included
-    tyr: str
-        User specification. True if tyrosine included
-    phe: str
-        User specification. True if phenylalanine included
-    his: str
-        User specification. True if histidine included
+    emap: emap object
+        Object for storing state of emap analysis.
+    chains: array-like
+        List of strings corresponding to chains included in alaysis
     custom_residues: array-like
-        User specification. List of custom residues included in the analysis
-    chain_selected: array-like
-        User specification. List of chains included in the analysis
-    custom_atm_string: str
+        List of BioPython custom residue objects (replace with strings in future)
+    distance_criteria: int, optional
+        User specification. 0 for center of mass, 1 for closest atom
+    surface_exposed_bool: int, optional
+        User specification. 0 for residue depth, 1 for solvent accessibility
+    trp: str, optional
+        User specification. True if tryptophan included
+    tyr: str, optional
+        User specification. True if tyrosine included
+    phe: str, optional
+        User specification. True if phenylalanine included
+    his: str, optional 
+        User specification. True if histidine included
+    custom_atm_string: str, optional
         User specification. Custom atom string specified by user
-    distanceCutoff: float
+    distanceCutoff: float, optional
         User specification. Default is 20.0
-    percentEdges: float
+    percentEdges: float, optional
         User specification. Default is 1.0
-    numStDevEdges: float
+    numStDevEdges: float, optional
         User specification. Default is 1.0
-    coef_alpha: float
+    coef_alpha: float, optional
         User specification. Default is 1.0
-    exp_beta: float
+    exp_beta: float, optional
         User specification. Default is 2.3
-    r_offset: float
+    r_offset: float, optional
         User specification. Default is 0.0
-
-    Returns
-    ------
-    user_res_list: array-like
-        List of user residues generated from custom atom string. Alternates between name and atom serial numbers
-        Example:
-        ["CUST-1","160-164","CUST-2","170-175"]
-    node_labels: array-like
-        List of node labels in the graph
 
     Raises
     ------
@@ -877,9 +849,9 @@ def process(emap,
             node_labels, dmatrix, pathways_matrix = comDMatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
         else:
             node_labels, dmatrix, pathways_matrix = closestAtomDMatrix(aromatic_residues, coef_alpha, exp_beta,
-                                                                      r_offset)
-        for idx,residue in enumerate(aromatic_residues):
-            emap.add_residue(residue,node_label=node_labels[idx])
+                                                                       r_offset)
+        for idx, residue in enumerate(aromatic_residues):
+            emap.add_residue(residue, node_label=node_labels[idx])
         G = create_graph(dmatrix, pathways_matrix, node_labels, distanceCutoff, percentEdges, numStDevEdges)
         # define surface exposed residues
         if int(surface_exposed_bool) == 0:
@@ -888,6 +860,6 @@ def process(emap,
             pdb_file = emap.filename
             surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chain_list)
         A = draw_graph(G, surface_exposed_res, chain_list, emap.filename)
-        emap.save_initial_agraph(A)
+        emap.store_initial_agraph(A)
     except Exception as e:
         raise (Exception(e))
