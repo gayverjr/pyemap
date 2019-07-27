@@ -6,7 +6,7 @@ pyemap
 
 Implementation of eMap analysis in the form of a python package.
 
-###Installation
+### Installation
 See parent repository for system dependencies.
 
 Within conda virutal environment, install package with pip:
