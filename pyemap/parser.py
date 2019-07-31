@@ -26,37 +26,24 @@ import os
 from .emap import *
 
 
-def fetch_and_parse(filename, dest=os.getcwd(), quiet=False, pdb=False):
+def fetch_and_parse(filename, dest=os.getcwd(), quiet=False):
     if not quiet:
         print("Fetching file " + filename + " from RSCB Database...")
-    if not pdb:
-        cmd = (
-            'wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/' +
-            filename + ".cif").format(dest)
-        os.system(cmd)
-    if os.path.exists(dest + "/" + filename + ".cif"):
+    cmd = ('wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/' +
+        filename + ".pdb").format(dest)
+    os.system(cmd)
+    if os.path.exists(dest + "/" + filename + ".pdb"):
         if not quiet:
             print("Success!")
-        return parse(dest + "/" + filename + ".cif", quiet, pdb)
+        return parse(dest + "/" + filename + ".pdb", quiet)
     else:
-        if not quiet and not pdb:
-            print("Couldn't find .cif, trying .pdb ...")
-        cmd = (
-            'wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/' +
-            filename + ".pdb").format(dest)
-        if os.path.exists(dest + "/" + filename + ".pdb"):
-            if not quiet:
-                print("Success!")
-            return parse(dest + "/" + filename + ".pdb", quiet, pdb)
-        else:
-            raise Exception("Couldn't find entry matching PDB ID:" + str(filename))
+        raise Exception("Couldn't find entry matching PDB ID:" + str(filename))
 
-
-def parse(filename, quiet=False, pdb=False):
-    if pdb:
+def parse(filename, quiet=False):
+    try:
         parser = PDBParser()
         structure = parser.get_structure("protein", filename)
-    else:
+    except Exception as e:
         parser = FastMMCIFParser()
         structure = parser.get_structure("protein", filename)
         io = PDBIO()

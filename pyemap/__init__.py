@@ -4,7 +4,7 @@ Implementation of eMap analysis in the form of a python package.
 """
 
 # Add imports here
-from .parse import *
+from .parser import *
 from .process_data import process
 from .pathways import find_pathways
 # Handle versioneer
