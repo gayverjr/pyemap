@@ -27,6 +27,22 @@ from .emap import *
 
 
 def fetch_and_parse(filename, dest=os.getcwd(), quiet=False):
+    '''Fetches pdb from database and parses the file.
+
+    Parameters
+    ----------
+    filename: str
+        RCSB PDB ID
+    dest: str, optional
+        Full path to where file should be saved
+    quiet: bool, optional
+        Supresses output when set to true
+
+    Returns
+    -------
+    emap: pyemap.emap object
+        State of emap analysis
+    '''
     if not quiet:
         print("Fetching file " + filename + " from RSCB Database...")
     cmd = ('wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/' +
@@ -40,6 +56,15 @@ def fetch_and_parse(filename, dest=os.getcwd(), quiet=False):
         raise Exception("Couldn't find entry matching PDB ID:" + str(filename))
 
 def parse(filename, quiet=False):
+    '''Parses pdb file and returns emap object.
+    
+    Parameters
+    ----------
+    filename: str
+        Full path to file which needs to be parsed
+    quiet: bool, optional
+        Supresses output when set to true
+    '''
     try:
         parser = PDBParser()
         structure = parser.get_structure("protein", filename)
