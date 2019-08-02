@@ -9,7 +9,7 @@ from networkx.drawing.nx_agraph import from_agraph, to_agraph
 from .dijkstras import yens_shortest_paths, dijkstras_shortest_paths
 
 
-def draw_graph(G, original_shape_start, source):
+def finish_graph(G, original_shape_start, source):
     """Draws the graph with the shortest pathways highlighted.
 
     Parameters
@@ -36,13 +36,9 @@ def draw_graph(G, original_shape_start, source):
         if G[name_node1][name_node2]['style'] == 'dashed':
             G[name_node1][name_node2]['color'] = '#7788994F'
     # draw graph
-    A_new = to_agraph(G)
-    A_new.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-    A_new.layout(args="-n2")
-    return A_new
 
 
-def find_pathways(emap, source, target=None):
+def find_pathways(emap, source, target=None,graph_dest="",max_paths=10):
     """Function which calculates pathways from source to target or surface exposed residues.
 
     Performs shortest path analysis on source and (optionally) target residues. After analysis is completed, the pathways
@@ -56,10 +52,12 @@ def find_pathways(emap, source, target=None):
         source node for analysis
     target: str, optional
         target node for analysis
+    max_paths: int, optional
+        maximum number of paths to search for in yen's algorithm
     """
     # read in graph from file
-    A = emap.init_agraph
-    G = from_agraph(A)
+    emap.reset_paths()
+    G = emap.init_graph.copy()
     for u, v, d in G.edges(data=True):
         d['weight'] = np.float64(d['weight'])
     # process source and target
@@ -68,7 +66,7 @@ def find_pathways(emap, source, target=None):
     G.node[source]['shape'] = 'oval'
     if target:
         target = target.strip()
-        shortest_paths = yens_shortest_paths(G, source, target)
+        branches = yens_shortest_paths(G, source, target,max_paths=max_paths)
         # color target node blue
         G.node[target]['fillcolor'] = '#40e0d0FF'
         G.node[target]['penwidth'] = 6.0
@@ -77,7 +75,16 @@ def find_pathways(emap, source, target=None):
         for n, d in G.nodes(data=True):
             if d['shape'] == "box":
                 goals.append(n)
-        shortest_paths = dijkstras_shortest_paths(G, source, goals)
-    A = draw_graph(G, original_shape_start, source)
-    emap.store_paths(shortest_paths)
-    emap.store_paths_agraph(A)
+        branches = dijkstras_shortest_paths(G, source, goals)
+    finish_graph(G, original_shape_start, source)
+    emap.store_paths_graph(G)
+    shortest_paths=[]
+    for br in branches:
+        shortest_paths+=br.paths
+    if graph_dest:
+        emap.store_paths(shortest_paths)
+        emap.save_paths_graph(dest=graph_dest+".svg")
+        emap.save_paths_graph(dest=graph_dest+".png")
+    if target:
+        emap.store_paths(shortest_paths,yens=True)
+    return branches

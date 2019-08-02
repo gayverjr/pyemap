@@ -540,7 +540,7 @@ def get_user_residues(custom_atm_string, all_atoms, chain_selected, used_atoms):
             raise Exception(e)
 
 
-def draw_graph(G, surface_exposed_res, chain_list, filename):
+def finish_graph(G, surface_exposed_res, chain_list, filename):
     """Draws and writes out the graph to file in downloadable form and for later use by the application, and
     returns the node labels.
 
@@ -579,12 +579,6 @@ def draw_graph(G, surface_exposed_res, chain_list, filename):
     for node in all_nodes:
         if G[node] == {}:
             G.remove_node(node)
-    A = to_agraph(G)
-    for node in A.nodes():
-        node.attr['label'] = node
-    A.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-    A.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-    return A
 
 
 def process_user_options(include_Trp, include_Tyr, include_Phe, include_His, custom_residues, chain_selected,emap):
@@ -860,12 +854,10 @@ def process(emap,
         else:
             pdb_file = emap.filename
             surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chain_list)
-        A = draw_graph(G, surface_exposed_res, chain_list, emap.filename)
+        finish_graph(G, surface_exposed_res, chain_list, emap.filename)
+        emap.store_initial_graph(G)
         if graph_dest:
-            emap.save_init_agraph(dest=graph_dest+".svg",agraph=A)
-            emap.save_init_agraph(dest=graph_dest+".png",agraph=A)
-            emap.save_init_agraph(dest=graph_dest+".gv",agraph=A) 
-        else:
-            emap.store_initial_agraph(A)
+            emap.save_init_graph(dest=graph_dest+".svg",)
+            emap.save_init_graph(dest=graph_dest+".png")
     except Exception as e:
         raise (Exception(e))

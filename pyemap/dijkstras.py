@@ -71,57 +71,11 @@ class ShortestPath(object):
         """Setter for path_id"""
         self.path_id = path_id
 
-    def selection_str(self, customname, customnum):
-        """NGL selection language representation of this pathway.
-
-        This function returns a string that is a representation of the pathway in
-        the NGL viewer selection language, which gets written to file for later access
-        by the front end.
-
-        Parameters
-        ----------
-        customname: array-like
-            List of custom residues
-        customnum: array-like
-            List of atom serial numbers associated with the custom residue with corresponding
-            index in customname.
-
-        Returns
-        -------
-        select_arr: array-like
-            Returns an array which is used to represent pathway in NGL. Each node in pathway corresponds to
-            three consecutive entries in array:
-            Entry 1: NGL string specifying atom by atom
-            Entry 2: Color in representation
-            Entry 3: Which atom to place the residue label on in representation
-
-        """
-        colors = {"F": "orange", "Y": "blue", "W": "red", "H": "green"}
-        # each type of residue has a corresponding color
-        select_arr = []
-        # custom residues must have each atom specified individually
-        for residue in self.path:
-            cust = False
-            for name in customname:
-                if name in residue:
-                    select_arr.append(customnum[customname.index(name)])
-                    select_arr.append("pink")
-                    atm_name_index = str.index(customnum[customname.index(name)], ".")
-                    end_idx = str.index(customnum[customname.index(name)], ")", atm_name_index)
-                    select_arr.append(customnum[customname.index(name)][atm_name_index:end_idx])
-                    cust = True
-            if not cust:
-                # standard residues have only .CA specified
-                res_type = residue[0]
-                start = str.index(str(residue), "(")
-                end = str.index(str(residue), ")")
-                chain_id = residue[start + 1:end]
-                out = residue[1:start]
-                out += " and :" + chain_id
-                select_arr.append(out)
-                select_arr.append(colors.get(res_type))
-                select_arr.append(".CA")
-        return select_arr
+    def set_visualization(self,selection_strs,color_list,labeled_atoms,label_texts):
+        self.selection_strs=selection_strs
+        self.color_list=color_list
+        self.labeled_atoms=labeled_atoms
+        self.label_texts=label_texts
 
 
 class Branch(object):
@@ -354,10 +308,10 @@ def dijkstras_shortest_paths(G, start, targets):
                     G.node[path[i + 1]]['color'] = '#7080905F'
     if len(shortestPaths) == 0:
         raise Exception("No paths to the surface found.")
-    return shortestPaths
+    return branches
 
 
-def yens_shortest_paths(G, start, target):
+def yens_shortest_paths(G, start, target,max_paths=10):
     """Returns top 5 shortest paths from source to target.
 
     Uses Yen's algorithm to calculate the 5 shortest paths from source to target, writes
@@ -399,7 +353,7 @@ def yens_shortest_paths(G, start, target):
     shortestPaths = []
     k = 0
     from itertools import islice
-    paths = list(islice(nx.shortest_simple_paths(G, start, target), 5))
+    paths = list(islice(nx.shortest_simple_paths(G, start, target), max_paths))
     for k in range(0, len(paths)):
         path = paths[k]
         sum = 0
@@ -441,6 +395,9 @@ def yens_shortest_paths(G, start, target):
                         G.node[path[j + 1]]['fillcolor'] += '7F'
                         G.node[path[j + 1]]['color'] = '#7080907F'
             shortestPaths[i].set_id("1" + letters[i])
-        return shortestPaths
+        br = Branch(1,shortestPaths[0].path[-1])
+        for pt in shortestPaths:
+            br.add_path(pt)
+        return [br]
     else:  # no paths found
         raise Exception("No paths to target found.")
