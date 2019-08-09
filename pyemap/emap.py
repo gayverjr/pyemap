@@ -145,9 +145,9 @@ class emap():
         '''
         for res in self.residue_names:
             if res not in self.eta_moieties:
-                self.ngl_dict.pop(res.resname)
-                self.smiles_dict.pop(res.resname)
-                self.residue_dict.pop(res.resname)
+                self.ngl_dict.pop(res)
+                self.smiles_dict.pop(res)
+                self.residue_dict.pop(res)
         self.residue_names = self.eta_moieties.copy()
         self.user_residues=[]
         self.shortest_paths=[]
