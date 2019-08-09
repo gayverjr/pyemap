@@ -839,6 +839,7 @@ def process(emap,
         for res in user_residues:
             AROM_LIST.append(res.resname)
             emap.add_user_residue(res)
+        aromatic_residues+=user_residues
         if len(aromatic_residues) < 2:
             raise Exception(
                 "Not enough residues to construct a graph. Please try different options or a different protein.")
