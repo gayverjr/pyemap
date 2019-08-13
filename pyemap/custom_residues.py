@@ -179,6 +179,7 @@ def create_custom_residue(atm_list, res_name):
     atm_list[0].parent.get_full_id()  # initialize instance variables
     custom_res = atm_list[0].get_parent().copy()
     custom_res.resname = res_name
+    custom_res.node_label = res_name
 
     # get serial numbers of aromatic atoms
     atm_serial_list = []

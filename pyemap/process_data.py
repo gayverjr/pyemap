@@ -105,19 +105,19 @@ def get_unpacked_list(self):
 Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
 
 
-def calculateResidueDepth(aromatic_residues, model):
+def calculate_residue_depth(aromatic_residues, model):
     """Returns a list of surface exposed residues as determined by residue depth.
 
     Parameters
     ----------
-    aromatic_residues: array-like
-        List of BioPython Residue objects included in the analysis
+    aromatic_residues: list of Bio.PDB.Residue.Residue
+        residues included in the analysis
     model: object
         BioPython object containing a model of a PDB or MMCIF file
 
     Returns
     -------
-    surface_exposed_res: array-like
+    surface_exposed_res: list of str
         List of residue names corresponding to the surface exposed residues
 
     """
@@ -127,17 +127,7 @@ def calculateResidueDepth(aromatic_residues, model):
     for residue in aromatic_residues:
         depth = residue_depth(residue, surface)
         if (depth <= cutoff):
-            # custom residue
-            if res_name_to_char.get(residue.get_resname()) == None:
-                name = residue.get_resname()
-                if "(" not in name:
-                    name += "(" + residue.full_id[2] + ")"
-            # standard residue
-            else:
-                name = res_name_to_char.get(residue.get_resname())
-                name += str(residue.id[1])
-                name += "(" + residue.full_id[2] + ")"
-            surface_exposed_res.append(name)
+            surface_exposed_res.append(residue.node_label)
     return surface_exposed_res
 
 
@@ -149,12 +139,14 @@ def calculate_asa(model, filename, AROM_LIST, chain_list):
 
     Parameters
     ---------
-    aromatic_residues: array-like
-        List of BioPython Residue objects included in the analysis
-    model: object
-        BioPython object containing a model of a PDB or MMCIF file
-    AROM_LIST: array-like
-        List of aromatic residue names included in the analysis
+    model: BioPython model object
+        Model which contains chains and residues of protein strucutre
+    filename: str
+        Name of pdb file to be analyzed
+    AROM_LIST : list of str
+        List containing which standard residues are included in analysis
+    chain_list: list of str
+        Chains are included in analysis
 
     See Also
     -------
@@ -185,7 +177,7 @@ def calculate_asa(model, filename, AROM_LIST, chain_list):
                 goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
                 surface_exposed_res.append(goal_str)
     except Exception as e:
-        pass
+        raise Warning("Unable to calculate solvent accessibility for this structure.")
     return surface_exposed_res
 
 
@@ -194,9 +186,9 @@ def dist(x, y):
 
     Parameters
     ----------
-    x: 3D numpy array
+    x: 3D numpy array of float
         Point 1
-    y: 3D numpy array
+    y: 3D numpy array of float
         Point 2
 
     Returns
@@ -208,32 +200,29 @@ def dist(x, y):
     return np.sqrt(np.sum((x - y)**2))
 
 
-def closestAtomDMatrix(residues, coef_alpha, exp_beta, r_offset):
+def closest_atom_dmatrix(residues, coef_alpha, exp_beta, r_offset):
     """Constructs distance matrix based on closest atom distance.
 
     Parameters
     ----------
-    residues: array-like
+    residues: list of Bio.PDB.Residue.Residue
         List of BioPython residues
 
     Returns
     -------
-    node_label: dictionary
-        List of node labels for graph
-    distanceMatrix: array-like
+    node_label: dict of int:str
+        Node labels for graph (by index in distance_matrix)
+    distance_matrix: numpy.array of float
         Distance matrix of residues
 
     """
     node_label = {}
-    distanceMatrix = np.zeros((len(residues), len(residues)))
-    pathwaysMatrix = np.zeros((len(residues), len(residues)))
+    distance_matrix = np.zeros((len(residues), len(residues)))
+    pathways_matrix = np.zeros((len(residues), len(residues)))
     # iterate over all residues
     for i in range(0, len(residues)):
         res = residues[i]
         atm_list = list(res.get_atoms())
-        resname = res.resname
-        resnum = res.full_id[3][1]
-        chain = res.full_id[2]
         # iterate over all residues that follow
         for j in range(i + 1, len(residues)):
             res2 = residues[j]
@@ -256,32 +245,28 @@ def closestAtomDMatrix(residues, coef_alpha, exp_beta, r_offset):
                     dist_a_b = dist(a, b)
                     if dist_a_b < bestDist:
                         bestDist = dist_a_b
-            distanceMatrix[i][j] = bestDist
-            distanceMatrix[j][i] = bestDist
-            pathwaysMatrix[i][j] = pathways_model(bestDist, coef_alpha, exp_beta, r_offset)
-            pathwaysMatrix[j][i] = pathwaysMatrix[i][j]
+            distance_matrix[i][j] = bestDist
+            distance_matrix[j][i] = bestDist
+            pathways_matrix[i][j] = pathways_model(bestDist, coef_alpha, exp_beta, r_offset)
+            pathways_matrix[j][i] = pathways_matrix[i][j]
         # Node names in graph
-        res_letter = res_name_to_char.get(resname)
-        if res_letter:
-            node_label[i] = res_letter + str(resnum) + "(" + chain + ")"
-        else:
-            node_label[i] = resname + "(" + chain + ")"
-    return node_label, distanceMatrix, pathwaysMatrix
+        node_label[i] = res.node_label
+    return node_label, distance_matrix, pathways_matrix
 
 
-def comDMatrix(residues, coef_alpha, exp_beta, r_offset):
+def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
     """Constructs distance matrix based on distances between centers of mass.
 
     Parameters
     ----------
-    residues: array-like
-        List of BioPython residues
+    residues: list of Bio.PDB.Residue.Residue objects
+        List of residues to be included in analysis
 
     Returns
     -------
-    node_label: dictionary
+    node_label: dict of int:str
         List of node labels for graph
-    distanceMatrix: array-like
+    distance_matrix: numpy.array of Bio.PDB.Residue.Residue objects
         Distance matrix of residues
 
     """
@@ -293,9 +278,6 @@ def comDMatrix(residues, coef_alpha, exp_beta, r_offset):
             res = residues[i]
             res.get_full_id()
             atm_list = list(res.get_atoms())
-            resname = res.resname
-            resnum = res.full_id[3][1]
-            chain = res.full_id[2]
             x_wsum, y_wsum, z_wsum, mass_sum = 0.0, 0.0, 0.0, 0.0
             for j in range(len(atm_list)):
                 cur_atom = atm_list[j]
@@ -311,11 +293,7 @@ def comDMatrix(residues, coef_alpha, exp_beta, r_offset):
             com_y = y_wsum / mass_sum
             com_z = z_wsum / mass_sum
             # Node names in graph
-            res_letter = res_name_to_char.get(resname)
-            if res_letter:
-                node_label[i] = res_letter + str(resnum) + "(" + chain + ")"
-            else:
-                node_label[i] = resname + "(" + chain + ")"
+            node_label[i] = res.node_label
             com_d.append(np.array([com_x, com_y, com_z]))
 
         return node_label, distance_matrix(com_d, com_d), pathways_model_thrspace_penalty_COM(
@@ -326,17 +304,17 @@ def comDMatrix(residues, coef_alpha, exp_beta, r_offset):
 
 
 def process_standard_residues(standard_residue_list):
-    """Generates customized BioPython residue objects with only side chain atoms included.
+    """Generates customized Bio.PDB.Residue.Residue objects with only side chain atoms included.
 
     Parameters
     ----------
-    standard_residue_list: array-like
-        List of BioPython residue objects corresponding to protein residues
+    standard_residue_list: list of BioPython Res
+        List of Bio.PDB.Residue.Residue objects corresponding to protein residues
 
     Returns
     -------
-    res_list: array-like
-        List of BioPython residue objects with only side chain atoms included.
+    res_list: list of Bio.PDB.Residue.Residue
+        Standard residues with only side chain atoms included.
 
     """
     res_list = []
@@ -344,6 +322,10 @@ def process_standard_residues(standard_residue_list):
         # make copy of residue
         standard_residue_list[i].get_full_id()
         res = standard_residue_list[i].copy()
+        res_letter = res_name_to_char.get(res.resname)
+        chain = res.full_id[2]
+        resnum = res.full_id[3][1]
+        res.node_label = res_letter + str(resnum) + "(" + chain + ")"
         atm_ids = []
         atm_names = []
         for atm in res.get_atoms():
@@ -367,25 +349,25 @@ def process_standard_residues(standard_residue_list):
     return res_list
 
 
-def get_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res_names):
+def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res_names):
     """Creates a customized BioPython Residue object corresponding to a user specified residue.
 
     Parameters
     ----------
-    serial_list: array-like
+    serial_list: list of int
         List of atom serial numbers included in residue
-    all_atoms: array-like
-        List of BioPython Atom objects
-    chain_selected: array-like
-        List of chains included in analysis
-    used_atoms: array-like
-        List of BioPython Atom objects already included in the analysis
-    user_res_names: array-like
-        List of user residue names already included in the analysis.
+    all_atoms: list of Bio.PDB.Atom.Atom
+        All atoms in protein on selected chains
+    chain_selected: list of str
+        Chains included in analysis
+    used_atoms: list of Bio.PDB.Atom.Atom
+        Atoms already included in analysis
+    user_res_names: list of str
+        User residue names already included in the analysis.
 
     Returns
     -------
-    user_res: BioPython Residue object
+    user_res: Bio.PDB.Residue.Residue
         Customized Residue object corresponding to the atoms in serial_list
 
     """
@@ -396,7 +378,7 @@ def get_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res_na
             if atm.serial_number in serial_list:
                 if atm.serial_number in used_atoms:
                     message = "Error. Invalid atom serial number range. Atom " + str(
-                        atm.serial_number) + " is in a specified standard or custom residue."
+                        atm.serial_number) + " is already included in another residue."
                     raise Exception(message)
                 if atm.parent.parent.id not in chain_selected:
                     message = "Error. Invalid atom serial number range. Atom " + str(
@@ -422,6 +404,7 @@ def get_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res_na
             k += 1
         user_res_names.append(name + str(k))
         user_res.resname = name + str(k)
+        user_res.node_label = user_res.resname
         return user_res
     except Exception as e:
         message = []
@@ -433,7 +416,7 @@ def get_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res_na
             raise Exception(e)
 
 
-def get_residues(all_residues, AROM_LIST, chain_list, eta_moieties,emap):
+def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, include_Phe, include_His):
     """Returns list of standard aromatic residues.
 
     Runs through every residue in the structure, keeping only the TRP, TYR
@@ -442,22 +425,26 @@ def get_residues(all_residues, AROM_LIST, chain_list, eta_moieties,emap):
 
     Parameters
     ----------
-    all_residues: array-like
-        List of every Residue in Structure
-    AROM_LIST: array-like
-        List of standard aromatic residues names to be included in graph
-    chain_list: array-like
-        List of chains chosen by user for analysis
+    all_residues: list of Bio.PDB.Residue.Residue
+        List of every residue in structure
+    chain_list: list of str
+        Chains to be included in analysis
 
     Returns
     -------
-    residue_list: array-like
-        List of standard aromatic Bio.PDB Residue objects to
-        be included in graph.
-    used_atoms: array-like
-        List of atoms already included in selected standard or custom residues
+    residue_list: list of Bio.PDB.Residue.Residue
+        Residues to be included in analysis
 
     """
+    AROM_LIST = ['TRP', 'HIS', 'PHE', 'TYR']
+    if not include_Trp: 
+        AROM_LIST.remove('TRP')
+    if not include_Tyr:
+        AROM_LIST.remove('TYR')
+    if not include_Phe:
+        AROM_LIST.remove('PHE')
+    if not include_His:
+        AROM_LIST.remove('HIS')
     residue_list = []
     for res in all_residues:
         if res.resname in AROM_LIST and res.parent.id in chain_list:
@@ -465,29 +452,29 @@ def get_residues(all_residues, AROM_LIST, chain_list, eta_moieties,emap):
             arom_res = res.copy()
             residue_list.append(arom_res)
     residue_list = process_standard_residues(residue_list)
-    return residue_list
+    return residue_list,AROM_LIST
 
-def get_user_residues(custom_atm_string, all_atoms, chain_selected, used_atoms):
-    """Generates customized BioPython Residue objects from a custom atom string.
+def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
+    """Generates customized Bio.PDB.Residue.Residue objects from a custom atom string.
 
-    Users may not choose atoms that are already part of standard/included custom residues, nor those that are not
+    Users may not choose atoms that are already part of standard residues or eta moieties, nor those that are not
     part of the selected chains.
 
     Parameters
     ----------
-    custom_atm_string: str
+    custom: str
         Specified by user to select atoms for custom residues
-    all_atoms: array-like
-        List of all Atoms in structure
-    chain_selected: array-like
-        List of chains included in the analysis
-    used_atoms: array-like
-        List of atoms already included in the analyis
+    all_atoms: list of Bio.PDB.Atom.Atom
+        All atoms in protein on selected chains
+    chain_selected: list of str
+        Chains included in analysis
+    used_atoms: list of Bio.PDB.Atom.Atom
+        Atoms already included in analysis
 
     Returns
     -------
-    res_list: array-like
-        List of customized Residue objects corresponding to the atoms in custom_atm_string
+    res_list: list of Bio.PDB.Residue.Residue
+        Custom residues specified by user
 
     Raises
     ------
@@ -505,10 +492,10 @@ def get_user_residues(custom_atm_string, all_atoms, chain_selected, used_atoms):
     """
     user_res_names = []
     try:
-        custom_atm_string = custom_atm_string.strip()
-        if not custom_atm_string == "-1":
+        custom = custom.strip()
+        if not custom == "-1":
             res_list = []
-            l1 = custom_atm_string.split("),(")
+            l1 = custom.split("),(")
             for a in l1:
                 serial_number_list = []
                 # get rid of the (
@@ -527,7 +514,7 @@ def get_user_residues(custom_atm_string, all_atoms, chain_selected, used_atoms):
                             serial_number_list.append(i)
                     else:
                         serial_number_list.append(int(atm))
-                new_res = get_user_res(serial_number_list, all_atoms, chain_selected, used_atoms, user_res_names)
+                new_res = create_user_res(serial_number_list, all_atoms, chain_selected, used_atoms, user_res_names)
                 res_list.append(new_res)
                 for atm in new_res.get_atoms():
                     used_atoms.append(atm.serial_number)
@@ -540,35 +527,17 @@ def get_user_residues(custom_atm_string, all_atoms, chain_selected, used_atoms):
             raise Exception(e)
 
 
-def finish_graph(G, surface_exposed_res, chain_list, filename):
-    """Draws and writes out the graph to file in downloadable form and for later use by the application, and
-    returns the node labels.
+def finish_graph(G, surface_exposed_res, chain_list):
+    """Sets surface exposed residues as boxes in graph and removes disconnected vertices.
 
     Parameters
     ----------
     G: NetworkX Graph
         Graph object constructed from distance matrix of residues
-    surface_exposed_res: array-like
-        List of surface exposed residues
-    chain_list: array-like
-        list of chains included in analysis
-    filename: string
-        File hash used for writing to file
-
-    Returns
-    -------
-    A: pygraphviz agraph
-        Graph object representing emap model
-
-    See Also
-    -----
-    NetworkX: module used for graph theory representation
-    PyGraphViz: program used to draw the graph
-
-    Notes
-    -----
-    Disconnected vertices are not included in the final graph. For graphs with a single chain, the chain ID
-    is omitted from the node label. The graph is drawn using PyGraphViz. The graph saved in the following formats:
+    surface_exposed_res: list of str
+        Names of surface exposed residues
+    chain_list: list of str
+        Names of chains included in analysis
 
     """
     for goal in surface_exposed_res:
@@ -580,66 +549,21 @@ def finish_graph(G, surface_exposed_res, chain_list, filename):
         if G[node] == {}:
             G.remove_node(node)
 
-
-def process_user_options(include_Trp, include_Tyr, include_Phe, include_His, custom_residues, chain_selected,emap):
-    """Processes the graph drawing options specified by the user.
-
-    Removes PHE and HIS if not specified from AROM_LIST, and gathers the chains specified by the user.
-
-    Parameters
-    ----------
-    include_Trp: str
-        User specification. True if tryptophan included
-    include_Tyr: str
-        User specification. True if tyrosine included
-    include_Phe: str
-        User specification. True if phenylalanine included
-    include_His: str
-        User specification. True if histidine included
-    chain_selected: array-like
-        User specification. List of chains included in the analysis
-    custom_residues: array-like
-        List of strings corresponding to ETA moieties selected by user for analysis
-
-    Returns
-    -------
-    AROM_LIST: array-like
-        List of aromatic residue names included in the analysis
-    chain_list: array-like
-        List of chains included in the analysis
-
-    """
-    AROM_LIST = ['TRP', 'HIS', 'PHE', 'TYR']
-    if include_Trp == "False":
-        AROM_LIST.remove('TRP')
-    if include_Tyr == "False":
-        AROM_LIST.remove('TYR')
-    if include_Phe == "False":
-        AROM_LIST.remove('PHE')
-    if include_His == "False":
-        AROM_LIST.remove('HIS')
-    chain_list = []
-    for chain in chain_selected:
-        chain = chain.strip()
-        chain_list.append(chain)
-    return AROM_LIST, chain_list
-
-
-def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEdges, numStDevEdges):
+def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
     ----------
-    dmatrix: array-like
+    dmatrix: numpy.array of float
         Distance matrix of aromatic residues
-    node_label: array-like
-        List of labels for residues in the graph
-    distanceCutoff: float
+    node_label: list of str
+        Labels for residues in the graph
+    distance_cutoff: float
         Distance cutoff for edges in the graph
-    percentEdges: float
-        Percentage of top (percentEdges)% edges per vertex included in the graph
-    numStDevEdges: float
-        For particular vertex, only edges with length < average length + numStDevEdges * SD included
+    percent_edges: float
+        Percentage of top (percent_edges)% edges per vertex included in the graph
+    num_st_dev_edges: float
+        For particular vertex, only edges with length < average length + num_st_dev_edges * SD included
 
     Returns
     -------
@@ -672,10 +596,10 @@ def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEd
         for neighbor in G[node]:
             weights.append(G.get_edge_data(node, neighbor)['weight'])
         weights = sorted(weights)
-        thresh_index = math.ceil(len(weights) * percentEdges / 100)
+        thresh_index = math.ceil(len(weights) * percent_edges / 100)
         for neighbor in G[node]:
             if weights.index(G.get_edge_data(node, neighbor)['weight']) <= thresh_index and \
-                    G.get_edge_data(node, neighbor)['weight'] <= distanceCutoff:
+                    G.get_edge_data(node, neighbor)['weight'] <= distance_cutoff:
                 edge_length_per_node.append(G.get_edge_data(node, neighbor)['weight'])
 
         len_average, len_st_dev = 0.0, 0.0
@@ -686,8 +610,8 @@ def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEd
 
         for neighbor in G[node]:
             if weights.index(G.get_edge_data(node, neighbor)['weight']) <= thresh_index and \
-                    G.get_edge_data(node, neighbor)['weight'] <= distanceCutoff and \
-                    np.round(G.get_edge_data(node, neighbor)['weight'], 8) <= np.round((len_average + numStDevEdges * len_st_dev), 8):
+                    G.get_edge_data(node, neighbor)['weight'] <= distance_cutoff and \
+                    np.round(G.get_edge_data(node, neighbor)['weight'], 8) <= np.round((len_average + num_st_dev_edges * len_st_dev), 8):
                 included_edges.append([node, neighbor])
 
     excluded_edges = []
@@ -711,13 +635,7 @@ def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEd
     for u, v, d in G.edges(data=True):
         d['len'] = d['weight'] / minval_pathways
 
-    keys, values = list(node_label.keys()), list(node_label.values())
-    for i in range(0, len(values)):
-        val = values[i]
-        if val.count("(") > 1:
-            values[i] = val[:val.rindex("(")]
-    node_label = dict(zip(keys, values))
-    G = nx.relabel_nodes(G, node_label)
+    G = nx.relabel_nodes(G, node_labels)
 
     for name_node in G.nodes():
         G.node[name_node]['style'] = 'filled'
@@ -752,18 +670,18 @@ def create_graph(dmatrix, pathways_matrix, node_label, distanceCutoff, percentEd
 
 
 def process(emap,
-            chains,
-            eta_moieties,
-            distance_criteria=0,
-            surface_exposed_bool=0,
-            trp="True",
-            tyr="True",
-            phe="False",
-            his="False",
-            custom_atm_string="",
-            distanceCutoff=20,
-            percentEdges=1.0,
-            numStDevEdges=1.0,
+            chains="All",
+            eta_moieties="All",
+            dist_def=0,
+            sdef=0,
+            trp=True,
+            tyr=True,
+            phe=False,
+            his=False,
+            custom="",
+            distance_cutoff=20,
+            percent_edges=1.0,
+            num_st_dev_edges=1.0,
             coef_alpha=1.0,
             exp_beta=2.3,
             r_offset=0.0,
@@ -772,31 +690,31 @@ def process(emap,
 
     Parameters
     ---------
-    emap: emap object
+    emap: pyemap.emap.emap
         Object for storing state of emap analysis.
-    chains: array-like
+    chains: list of str
         List of strings corresponding to chains included in alaysis
-    eta_moieties: array-like
-        List of strings corresponding to residue names of BioPython custom residue objects
-    distance_criteria: int, optional
+    eta_moieties: list of str
+        List of strings corresponding to residue names of eta moieties 
+    dist_def: int, optional
         User specification. 0 for center of mass, 1 for closest atom
-    surface_exposed_bool: int, optional
+    sdef: int, optional
         User specification. 0 for residue depth, 1 for solvent accessibility
-    trp: str, optional
+    trp: bool, optional
         User specification. True if tryptophan included
-    tyr: str, optional
+    tyr: bool, optional
         User specification. True if tyrosine included
-    phe: str, optional
+    phe: bool, optional
         User specification. True if phenylalanine included
-    his: str, optional 
+    his: bool, optional 
         User specification. True if histidine included
-    custom_atm_string: str, optional
+    custom: str, optional
         User specification. Custom atom string specified by user
-    distanceCutoff: float, optional
+    distance_cutoff: float, optional
         User specification. Default is 20.0
-    percentEdges: float, optional
+    percent_edges: float, optional
         User specification. Default is 1.0
-    numStDevEdges: float, optional
+    num_st_dev_edges: float, optional
         User specification. Default is 1.0
     coef_alpha: float, optional
         User specification. Default is 1.0
@@ -807,7 +725,7 @@ def process(emap,
     store_graph: bool, optional
         Whether to store the graph in the emap object or not
     graph_dest: str, optional
-        Destination to write the graph to disk instead of saving to emap object
+        Destination to write the graph to disk
     Raises
     ------
     Exception:
@@ -816,16 +734,14 @@ def process(emap,
     """
     try:
         emap.reset_process()
-        AROM_LIST, chain_list = process_user_options(trp, tyr, phe, his, eta_moieties, chains,emap)
+        if eta_moieties == "All":
+            eta_moieties= emap.eta_moieties.keys()
+        if chains == "All":
+            chains = emap.chains
         model = emap.structure[0]
         all_residues = list(model.get_residues())
         all_atoms = list(model.get_atoms())
-        aromatic_residues = get_residues(all_residues, AROM_LIST, chain_list, eta_moieties,emap)
-        for res in aromatic_residues:
-            res_letter = res_name_to_char.get(res.resname)
-            res_num = res.full_id[3][1]
-            res_chain = res.full_id[2]
-            emap.add_standard_residue(res, res_letter + str(res_num) + "(" + res_chain + ")")
+        aromatic_residues,AROM_LIST = get_standard_residues(all_residues, chains, trp, tyr, phe, his)
         for resname in eta_moieties:
             AROM_LIST.append(resname)
             aromatic_residues.append(emap.get_residue(resname))
@@ -834,28 +750,29 @@ def process(emap,
             for atm in res.get_atoms():
                 used_atoms.append(atm.serial_number)
         user_residues=[]
-        if custom_atm_string:
-            user_residues = get_user_residues(custom_atm_string, all_atoms, chains, used_atoms)    
+        if custom:
+            user_residues = get_user_residues(custom, all_atoms, chains, used_atoms) 
         for res in user_residues:
             AROM_LIST.append(res.resname)
-            emap.add_user_residue(res)
         aromatic_residues+=user_residues
         if len(aromatic_residues) < 2:
             raise Exception(
                 "Not enough residues to construct a graph. Please try different options or a different protein.")
-        if int(distance_criteria) == 0:
-            node_labels, dmatrix, pathways_matrix = comDMatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
+        if int(dist_def) == 0:
+            node_labels, dmatrix, pathways_matrix = com_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
         else:
-            node_labels, dmatrix, pathways_matrix = closestAtomDMatrix(aromatic_residues, coef_alpha, exp_beta,
+            node_labels, dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta,
                                                                        r_offset)
-        G = create_graph(dmatrix, pathways_matrix, node_labels, distanceCutoff, percentEdges, numStDevEdges)
+        G = create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges)
         # define surface exposed residues
-        if int(surface_exposed_bool) == 0:
-            surface_exposed_res = calculateResidueDepth(aromatic_residues, model)
+        if int(sdef) == 0:
+            surface_exposed_res = calculate_residue_depth(aromatic_residues, model)
         else:
             pdb_file = emap.filename
-            surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chain_list)
-        finish_graph(G, surface_exposed_res, chain_list, emap.filename)
+            surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chains)
+        finish_graph(G, surface_exposed_res, chains)
+        for res in aromatic_residues:
+            emap._add_residue(res)
         emap.store_initial_graph(G)
         if graph_dest:
             emap.save_init_graph(dest=graph_dest+".svg",)

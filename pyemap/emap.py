@@ -6,19 +6,17 @@ import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
 from .dijkstras import Branch, ShortestPath
 from .smiles import getSimpleSmiles
+from collections import OrderedDict
 
 class emap():
     def __init__(self, filename, structure, eta_moieties, chain_list):
         self.filename = filename
         self.structure = structure
-        self.smiles_dict = {}
-        self.residue_dict = {}
-        self.ngl_dict = {}
+        self.residues = {}
         self.chains = chain_list
-        self.eta_moieties = []
-        self.user_residues = []
-        self.residue_names = []
-        self.paths_dict = {}
+        self.eta_moieties = {}
+        self.user_residues = {}
+        self.paths = OrderedDict()
         for residue in eta_moieties:
             self._add_eta_moiety(residue)
 
@@ -44,9 +42,8 @@ class emap():
         shortest_paths: array-like
             list of pyemap.ShortestPath objects representing pathways found by emap 
         '''
-        self.shortest_paths = shortest_paths
         for pt in shortest_paths:
-            self.paths_dict[pt.path_id] = pt
+            self.paths[pt.path_id] = pt
             self.visualize_pathway(pt,yens)
         
     def store_paths_graph(self, graph):
@@ -66,7 +63,14 @@ class emap():
     def save_residue(self, resname, dest="",size=(200,200)):
         '''Saves image of residue to file
         '''
-        mol = Chem.MolFromSmarts(self.smiles_dict.get(resname))
+        if self.residues and resname in self.residues:
+            if not self.residues[resname].smiles:
+                raise Exception ("Not yet implemented for standard or custom residues.")
+            mol = Chem.MolFromSmarts(self.residues[resname].smiles)
+        elif resname in self.eta_moieties:
+            mol = Chem.MolFromSmarts(self.eta_moieties[resname].smiles)
+        else:
+            raise Exception("No record of a residue with the name " + resname +".")
         if dest:
             Draw.MolToFile(mol, dest, kekulize=False, size=size)
         else:
@@ -103,28 +107,13 @@ class emap():
         else:
             raise Exception("Nothing to draw.")
     
-    def _add_residue(self, residue, node_label, smiles_str, ngl_str):
+    def _add_residue(self, residue):
         '''
         '''
-        self.smiles_dict[node_label] = smiles_str
-        self.residue_dict[node_label] = residue
-        self.residue_names.append(node_label)
-        self.ngl_dict[node_label] = self.get_ngl_string(residue)
+        residue.ngl_string = self.get_ngl_string(residue)
+        self.residues[residue.node_label] = residue
     
-    def add_user_residue(self,residue):
-        node_label = residue.resname
-        smiles_str = "NYI"
-        ngl_string = self.get_ngl_string(residue)
-        self.user_residues.append(residue.resname)
-        self._add_residue(residue,node_label,smiles_str,ngl_string)
-
-    def add_standard_residue(self,residue,node_label):
-        smiles_str = "NYI"
-        ngl_string = self.get_ngl_string(residue)
-        self._add_residue(residue,node_label,smiles_str,ngl_string)
-
     def _add_eta_moiety(self,residue):
-        node_label = residue.resname
         atoms = list(residue.get_atoms())
         arom_atoms = ['O', 'P', 'N', 'C', 'S']
         res_graph = nx.Graph()
@@ -136,38 +125,32 @@ class emap():
         smiles_str = getSimpleSmiles(res_graph, atoms)
         molecule = Chem.MolFromSmarts(smiles_str)
         smiles_str = Chem.MolToSmarts(molecule, True)
-        ngl_string = self.get_ngl_string(residue)
-        self.eta_moieties.append(residue.resname)
-        self._add_residue(residue,node_label,smiles_str,ngl_string)
+        residue.smiles = smiles_str
+        self.eta_moieties[residue.resname]=residue
 
     def reset_process(self):
         '''Returns emap object to state it was in after parsing.
         '''
-        for res in self.residue_names:
-            if res not in self.eta_moieties:
-                self.ngl_dict.pop(res)
-                self.smiles_dict.pop(res)
-                self.residue_dict.pop(res)
-        self.residue_names = self.eta_moieties.copy()
-        self.user_residues=[]
-        self.shortest_paths=[]
+        self.residues={}
+        self.user_residues={}
         self.init_graph=[]
-        self.paths_dict = {}
+        self.paths = OrderedDict()
         self.paths_graph=[]
     
     def reset_paths(self):
-        self.shortest_paths=[]
-        self.paths_dict = {}
+        self.paths = OrderedDict()
         self.paths_graph=[]
 
     def get_residue(self,resname):
-        if resname in self.residue_dict:
-            return self.residue_dict[resname]
+        if resname in self.residues:
+            return self.residues[resname]
+        elif resname in self.eta_moieties:
+            return self.eta_moieties[resname]
         else:
             raise Exception("No record of any residue by that name.")
 
     def get_ngl_string(self,residue):
-        """Determines NGL selection string for residue
+        """Returns NGL selection string for residue
 
         Parameters
         ----------
@@ -203,11 +186,11 @@ class emap():
             label_texts.append(res)
             if res in self.eta_moieties or res in self.user_residues:
                 color_list.append("pink")
-                labeled_atoms.append(next(self.residue_dict[res].get_atoms()).name)
+                labeled_atoms.append(next(self.residues[res].get_atoms()).name)
             else:
                 color_list.append(colors[res[0]])
                 labeled_atoms.append(".CA")
-            selection_strs.append(self.ngl_dict[res])
+            selection_strs.append(self.residues[res].ngl_string)
         color_list[0]="yellow"
         if yens:
             color_list[-1]="turquoise"
