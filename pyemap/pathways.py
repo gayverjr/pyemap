@@ -85,6 +85,5 @@ def find_pathways(emap, source, target=None,graph_dest="",max_paths=10):
         emap.store_paths(shortest_paths)
         emap.save_paths_graph(dest=graph_dest+".svg")
         emap.save_paths_graph(dest=graph_dest+".png")
-    if target:
-        emap.store_paths(shortest_paths,yens=True)
+    emap.store_paths(shortest_paths)
     return branches
