@@ -41,7 +41,7 @@ def fetch_and_parse(filename, dest=os.getcwd(), quiet=False):
     Returns
     -------
     emap: pyemap.emap object
-        State of emap analysis
+        emap object after parse step, ready for process step.
     '''
     if not quiet:
         print("Fetching file " + filename + " from RSCB Database...")
@@ -64,6 +64,11 @@ def parse(filename, quiet=False):
         Full path to file which needs to be parsed
     quiet: bool, optional
         Supresses output when set to true
+    
+    Returns
+    -------
+    my_emap: pyemap.emap.emap objects
+        emap object after parse step, ready for process step.
     '''
     try:
         parser = PDBParser()
@@ -82,7 +87,7 @@ def parse(filename, quiet=False):
     for model in structure.get_models():
         num_models += 1
     if num_models < 1:
-        raise Exception("Unable to parse structure. Please try another file.")
+        raise RuntimeError("Unable to parse file.")
     for chain in structure[0].get_chains():
         chain_list.append(chain.id)
     non_standard_residue_list = []

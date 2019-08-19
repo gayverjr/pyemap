@@ -5,7 +5,6 @@ import sys
 import networkx as nx
 import numpy as np
 import pygraphviz as pg
-from networkx.drawing.nx_agraph import from_agraph, to_agraph
 from .dijkstras import yens_shortest_paths, dijkstras_shortest_paths
 
 
@@ -56,7 +55,7 @@ def find_pathways(emap, source, target=None,graph_dest="",max_paths=10):
         maximum number of paths to search for in yen's algorithm
     """
     # read in graph from file
-    emap.reset_paths()
+    emap._reset_paths()
     G = emap.init_graph.copy()
     for u, v, d in G.edges(data=True):
         d['weight'] = np.float64(d['weight'])
@@ -77,13 +76,15 @@ def find_pathways(emap, source, target=None,graph_dest="",max_paths=10):
                 goals.append(n)
         branches = dijkstras_shortest_paths(G, source, goals)
     finish_graph(G, original_shape_start, source)
-    emap.store_paths_graph(G)
+    emap._store_paths_graph(G)
     shortest_paths=[]
     for br in branches:
         shortest_paths+=br.paths
+    if target:
+        emap._store_paths(shortest_paths,yens=True)
+    else:
+        emap._store_paths(shortest_paths)
     if graph_dest:
-        emap.store_paths(shortest_paths)
         emap.save_paths_graph(dest=graph_dest+".svg")
         emap.save_paths_graph(dest=graph_dest+".png")
-    emap.store_paths(shortest_paths)
     return branches

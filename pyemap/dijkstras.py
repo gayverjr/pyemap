@@ -24,28 +24,41 @@ class ShortestPath(object):
     in NGL viewer selection language for the purpose of visualization. Sorting for ShortestPath
     objects is done based on the length attribute.
 
-    Parameters
-    ----------
-    path_id: array-like
-        List of residues that make up the shortest path
-    length: float
-        Total distance from source to target
-
     Attributes
     ----------
-    path_id: array-like
+    path: list of str
+        List of residue names that make up the shortest path
+    path_id: list of str
         List of residues that make up the shortest path
     length: float
         Total distance from source to target
-    id: string
-        Unique identifier for pathway assigned based on branch and length.
-
+    selection_strs: list of str
+        NGL selection strings for visualization
+    color_list: list of str
+        Colors of residues in visualization
+    labeled_atoms: list of str
+        Atom names which are labeled in NGL visualization
+    label_texts: list of str
+        Labels of residues in NGL visualization
     """
 
     def __init__(self, path, length):
+        '''Initializes ShortestPath object.
+
+        Parameters
+        ----------
+        path: list of str
+            List of residues that make up the shortest path
+        length: float
+            Total distance from source to target
+        '''       
         self.path = path
         self.length = length
         self.path_id = "none"
+        self.selection_strs=[]
+        self.color_list=[]
+        self.labeled_atoms=[]
+        self.label_texts=[]
 
     def __eq__(self, other):
         return self.length == other.length
@@ -57,7 +70,6 @@ class ShortestPath(object):
         return self.length < other.length
 
     def __str__(self):
-        # If only one chain is present, do not include chain id in output
         printline = self.path_id + ": " + \
             str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2)))
         return printline
@@ -72,6 +84,7 @@ class ShortestPath(object):
         self.path_id = path_id
 
     def set_visualization(self,selection_strs,color_list,labeled_atoms,label_texts):
+        '''Saves information needed for NGL visualization.'''
         self.selection_strs=selection_strs
         self.color_list=color_list
         self.labeled_atoms=labeled_atoms
@@ -86,10 +99,6 @@ class Branch(object):
     surface exposed nodes B and C, the paths [A,F,B] and [A,F,B,C] will both be part of the
     "B" branch. The path [A,E,C] would be part of its own 'C" branch.
 
-    Notes
-    ----
-    This class is only used if no target is specified by the user.
-
     Parameters
     ----------
     branch_id: str
@@ -103,13 +112,8 @@ class Branch(object):
         Unique identifier for a branch
     target: str
         Target node which a branch corresponds to
-    paths: array-like
+    paths: list of pyemap.dijkstras.ShortestPath objects
         List of ShortestPath objects that make up a branch
-
-    See Also
-    --------
-    class ShortestPath
-
     """
 
     def __init__(self, branch_id, target):
@@ -170,13 +174,13 @@ def is_parent_pathway(shortest_path, targets):
     ----------
     shortest_path: ShortestPath
         ShortestPath object
-    targets: array-like
+    targets: list of str
         List of surface exposed residues
 
     Returns
     -------
-    True if a parent pathway
-    False if not a parent pathway
+    bool
+        True if path is ShortestPath object is a parent pathway
     """
 
     count = 0
@@ -196,10 +200,10 @@ def find_branch(pt, targets, branches):
     ----------
     pt: ShortestPath
         ShortestPath object
-    targets: array-like
+    targets: list of str
         List of surface exposed residues
-    branches: array-like
-        List of branches
+    branches: list of pyemap.dijkstras.Branch objects
+        List of branches already found 
 
     Returns
     -------
@@ -233,23 +237,17 @@ def dijkstras_shortest_paths(G, start, targets):
         Undirected, weighted residue graph
     start: str
         Source node
-    targets: array-like
+    targets: list of str
         List of surface exposed residues
 
     Returns
     -------
-    shortest_paths: array-like
-        List of ShortestPath objects representing pathways found by eMap
-
-    See Also
-    --------
-    module NetworkX.dijkstra_path
-    class ShortestPath
-    class Branch
+    branches: list of pyemap.dijkstras.Branch objects
+        A list of Branch objects representing the groups of pathways found
 
     Raises
     ------
-    Exception e:
+    RuntimeError:
         No shortest paths to surface found
 
     """
@@ -307,14 +305,14 @@ def dijkstras_shortest_paths(G, start, targets):
                     G.node[path[i + 1]]['fillcolor'] += '5F'
                     G.node[path[i + 1]]['color'] = '#7080905F'
     if len(shortestPaths) == 0:
-        raise Exception("No paths to the surface found.")
+        raise RuntimeError("No paths to the surface found.")
     return branches
 
 
 def yens_shortest_paths(G, start, target,max_paths=10):
     """Returns top 5 shortest paths from source to target.
 
-    Uses Yen's algorithm to calculate the 5 shortest paths from source to target, writes
+    Uses Yen's algorithm to calculate the shortest paths from source to target, writes
     out the ShortestPath objects to file, and returns the 5 pathway IDs. In the graph, nodes and
     edges that are part of any pathways are made opaque, and the shortest path is highlighted.
 
@@ -327,16 +325,13 @@ def yens_shortest_paths(G, start, target,max_paths=10):
         Source node
     target: str
         Target node
+    max_paths: int, optional
+        Maximum number of paths to search for 
 
     Returns
     -------
-    shortest_paths: array-like
-        List of ShortestPath objects representing pathways found by eMap
-
-    See Also
-    --------
-    module NetworkX.shortest_simple_paths
-    class ShortestPath
+    list of pyemap.dijkstras.Branch objects
+        A list of length 1 containing a single Branch object which represents the group of pathways found.
 
     References
     ----------
@@ -345,8 +340,8 @@ def yens_shortest_paths(G, start, target,max_paths=10):
 
     Raises
     ------
-    Exception e:
-        No shortest paths to target found
+    RuntimeError:
+        No shortest paths to target found.
 
     """
     letters = list(string.ascii_letters)
@@ -400,4 +395,4 @@ def yens_shortest_paths(G, start, target,max_paths=10):
             br.add_path(pt)
         return [br]
     else:  # no paths found
-        raise Exception("No paths to target found.")
+        raise RuntimeError("No paths to target found.")

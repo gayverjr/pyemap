@@ -4,28 +4,77 @@ from .custom_residues import is_pi_bonded, dist
 from .data import *
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
+import graphviz
 from .dijkstras import Branch, ShortestPath
 from .smiles import getSimpleSmiles
 from collections import OrderedDict
+import matplotlib
+matplotlib.use("TKAgg")
+import matplotlib.pyplot as plt
 
 class emap():
+    '''
+    Manages the data generated at all stages of eMap analysis. 
+
+    Attributes
+    ----------
+    filename: str
+        Name of the crystal structure file being processed by pyemap.
+    structure: Bio.PDB.Structure.Structure object
+        Macromolecular protein structure. Contains model which contains residues and atoms.
+    eta_moieties: dict of str:Bio.PDB.Residue.Residue
+        Non-protein eta moieties automatically identified at the parsing step.
+    chain_list: list of str
+        List of chains identified at the parsing step.
+    smiles: dict of str:Bio.PDB.Residue.Residue
+        List of smiles strings for non-protein eta moieties identified at the parsing step.
+    residues: dict of str:Bio.PDB.Residue.Residue
+        Residues included in the graph after the process step.
+    ngl_strings: dict of str:str
+        Formatted NGL viewer selection strings for residues included in the graph after the process step.
+    user_residues: dict of str:Bio.PDB.Residue.Residue
+        Custom residues specified by the user.
+    init_graph: NetworkX.Graph object
+        Graph generated after the process step.
+    paths: collections.OrderedDict of str:pyemap.ShortestPath
+        Paths found by emap sorted by lowest to highest score.
+    paths_graph: NetworkX.Graph object
+        Graph generated after the shortest paths step.
+    '''
     def __init__(self, filename, structure, eta_moieties, chain_list):
+        '''Initializes emap object.
+
+        Parameters
+        ----------
+        filename: str
+            Name of file
+        structure: Bio.PDB.Structure.Structure object
+            Macromolecular protein structure
+        eta_moieties: list of Bio.PDB.Residue.Residue objects
+            Customized residue objects generated for automatically detected eta moieties
+        chain_list: list of str
+            Chains identified by the parser
+        '''
         self.filename = filename
         self.structure = structure
         self.residues = {}
         self.chains = chain_list
         self.eta_moieties = {}
         self.user_residues = {}
+        self.smiles = {}
         self.paths = OrderedDict()
+        self.paths_graph = []
+        self.init_graph  = []
+        self.ngl_strings = {}
         for residue in eta_moieties:
             self._add_eta_moiety(residue)
-
-    def store_initial_graph(self, graph):
+    
+    def _store_initial_graph(self, graph):
         '''Stores graph representation of emap model
 
         Parameters
         ----------
-        graph: Pygraphviz graph object
+        graph: NetworkX.graph
             Graph theory representation of emap model
 
         Notes
@@ -34,24 +83,26 @@ class emap():
         '''
         self.init_graph = graph
 
-    def store_paths(self, shortest_paths,yens=False):
-        '''Stores pathways found by emap.
+    def _store_paths(self, shortest_paths,yens=False):
+        '''Stores pathways in emap object, and sets their ngl selection strings for visualization.
 
         Parameters
         ---------
-        shortest_paths: array-like
-            list of pyemap.ShortestPath objects representing pathways found by emap 
+        shortest_paths: list of pyemap.ShortestPath
+            pathways found by emap 
+        yens: boolean, optional
+            True when target specified, False when only source is specified
         '''
         for pt in shortest_paths:
             self.paths[pt.path_id] = pt
-            self.visualize_pathway(pt,yens)
+            self._visualize_pathway(pt,yens)
         
-    def store_paths_graph(self, graph):
+    def _store_paths_graph(self, graph):
         '''Stores graph representation of emap model with selected pathway(s) highlighted
 
         Parameters
         ----------
-        graph: Pygraphviz graph object
+        graph: NetworkX graph object
             Graph theory representation of emap model
 
         Notes
@@ -60,60 +111,31 @@ class emap():
         '''
         self.paths_graph = graph
 
-    def save_residue(self, resname, dest="",size=(200,200)):
-        '''Saves image of residue to file
+    def _reset_process(self):
+        '''Returns emap object to state it was in after parsing.
         '''
-        if self.residues and resname in self.residues:
-            if not self.residues[resname].smiles:
-                raise Exception ("Not yet implemented for standard or custom residues.")
-            mol = Chem.MolFromSmarts(self.residues[resname].smiles)
-        elif resname in self.eta_moieties:
-            mol = Chem.MolFromSmarts(self.eta_moieties[resname].smiles)
-        else:
-            raise Exception("No record of a residue with the name " + resname +".")
-        if dest:
-            Draw.MolToFile(mol, dest, kekulize=False, size=size)
-        else:
-            Draw.MolToFile(mol, resname + ".png", kekulize=False, size=size)
-
-    def save_init_graph(self,dest=""):
-        '''Saves image of graph generated by process to file
-        '''
-        if self.init_graph:
-            if dest:
-                fn=dest
-            else:
-                fn = self.filename[:-4] + "_graph.png"
-            agraph=to_agraph(self.init_graph)
-            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-            agraph.draw(fn,prog='neato')
-        else:
-            raise Exception("Nothing to draw.")
-
-    def save_paths_graph(self,dest=""):
-        '''Saves image of graph generated by process to file
-        '''
-        if self.paths_graph:
-            if dest:
-                fn=dest
-            else:
-                fn = self.filename[:-4] + "_graph.png"
-            agraph=to_agraph(self.paths_graph)
-            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-            agraph.layout(args="-n2")
-            agraph.draw(fn,prog='neato')
-        else:
-            raise Exception("Nothing to draw.")
+        self.residues={}
+        self.user_residues={}
+        self.init_graph=[]
+        self.paths = OrderedDict()
+        self.paths_graph = []
+        self.ngl_strings = {}
     
-    def _add_residue(self, residue):
+    def _reset_paths(self):
+        '''Returns emap object to stat it was in after the process step.
         '''
-        '''
-        residue.ngl_string = self.get_ngl_string(residue)
-        self.residues[residue.node_label] = residue
-    
+        self.paths = OrderedDict()
+        self.paths_graph=[]
+
     def _add_eta_moiety(self,residue):
+        '''Gets the smiles string for an automatically identified non-protein eta moiety, 
+        and adds the residue to the eta_moieties dictionary.
+
+        Parameters
+        ----------
+        residue: Bio.PDB.Residue.Residue
+             Customized residue object generated for automatically detected eta moiety
+        '''
         atoms = list(residue.get_atoms())
         arom_atoms = ['O', 'P', 'N', 'C', 'S']
         res_graph = nx.Graph()
@@ -126,57 +148,12 @@ class emap():
         molecule = Chem.MolFromSmarts(smiles_str)
         smiles_str = Chem.MolToSmarts(molecule, True)
         residue.smiles = smiles_str
+        self.smiles[residue.resname] = smiles_str
         self.eta_moieties[residue.resname]=residue
 
-    def reset_process(self):
-        '''Returns emap object to state it was in after parsing.
+    def _visualize_pathway(self,pathway,yens):
         '''
-        self.residues={}
-        self.user_residues={}
-        self.init_graph=[]
-        self.paths = OrderedDict()
-        self.paths_graph=[]
-    
-    def reset_paths(self):
-        self.paths = OrderedDict()
-        self.paths_graph=[]
-
-    def get_residue(self,resname):
-        if resname in self.residues:
-            return self.residues[resname]
-        elif resname in self.eta_moieties:
-            return self.eta_moieties[resname]
-        else:
-            raise Exception("No record of any residue by that name.")
-
-    def get_ngl_string(self,residue):
-        """Returns NGL selection string for residue
-
-        Parameters
-        ----------
-        residue: BioPython Residue object
-        
-        Returns
-        -------
-        select_string: str
-            NGL selection string for this residue
-        """
-        try:
-            select_string = ""
-            atm_list = list(residue.get_atoms())
-            first_atm = atm_list[0]
-            select_string += "(" + str(first_atm.original_id[3][1]) + " and :" + str(
-                first_atm.original_id[2]) + " and ." + first_atm.name + ")"
-            for i in range(1, len(atm_list)):
-                atm = atm_list[i]
-                select_string += " or "
-                select_string += "(" + str(atm.original_id[3][1]) + " and :" + str(
-                    atm.original_id[2]) + " and ." + atm.name + ")"
-            return select_string
-        except Exception as e:
-                raise Exception(e)
-    
-    def visualize_pathway(self,pathway,yens):
+        '''
         colors = {"F": "orange", "Y": "blue", "W": "red", "H": "green"}
         selection_strs = []
         color_list = []
@@ -195,4 +172,124 @@ class emap():
         if yens:
             color_list[-1]="turquoise"
         pathway.set_visualization(selection_strs,color_list,labeled_atoms,label_texts)
+
+    def _add_residue(self, residue):
+        '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
+        '''
+        residue.ngl_string = self._get_ngl_string(residue)
+        self.residues[residue.node_label] = residue
+        self.ngl_strings[residue.node_label] = residue.ngl_string
+    
+    def _get_ngl_string(self,residue):
+        """Returns NGL selection string for residue
+
+        Parameters
+        ----------
+        residue: Bio.PDB.Residue.Residue object
+        
+        Returns
+        -------
+        select_string: str
+            NGL selection string for residue
+        """
+        select_string = ""
+        atm_list = list(residue.get_atoms())
+        first_atm = atm_list[0]
+        select_string += "(" + str(first_atm.original_id[3][1]) + " and :" + str(
+            first_atm.original_id[2]) + " and ." + first_atm.name + ")"
+        for i in range(1, len(atm_list)):
+            atm = atm_list[i]
+            select_string += " or "
+            select_string += "(" + str(atm.original_id[3][1]) + " and :" + str(
+                atm.original_id[2]) + " and ." + atm.name + ")"
+        return select_string
+
+    def save_residue(self, resname, dest="",size=(200,200)):
+        '''Saves image of residue to file
+
+        Parameters
+        ----------
+        resname: str
+            Name of residue (node label) to be saved to file.
+        dest: str, optional
+            destination to save the image
+        size: (float,float), optional
+            dimensions of image saved to file
+        '''
+        if self.residues and resname in self.residues:
+            if not self.residues[resname].smiles:
+                raise KeyError("Not yet implemented for standard or custom residues.")
+            mol = Chem.MolFromSmarts(self.residues[resname].smiles)
+        elif resname in self.eta_moieties:
+            mol = Chem.MolFromSmarts(self.eta_moieties[resname].smiles)
+        else:
+            raise KeyError("No record of any residue by that name.")
+        if dest:
+            Draw.MolToFile(mol, dest, kekulize=False, size=size)
+        else:
+            Draw.MolToFile(mol, kekulize=False, size=size)
+    
+    def save_init_graph(self,dest=""):
+        '''Saves image of graph generated by process step to file.
+
+        Parameters
+        ----------
+        dest: str
+            Destination for writing to file.
+        '''
+        if self.init_graph:
+            if dest:
+                fn=dest
+            else:
+                fn = self.filename[:-4] + "_graph.png"
+            agraph=to_agraph(self.init_graph)
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
+            agraph.draw(fn,prog='neato')
+        else:
+            raise RuntimeError("Nothing to draw.")
+
+    def save_paths_graph(self,dest=""):
+        '''Saves image of graph generated by pathways step to file.
+
+        Parameters
+        ----------
+        dest:str
+            Destination for writing to file.
+        '''
+        if self.paths_graph:
+            if dest:
+                fn=dest
+            else:
+                fn = self.filename[:-4] + "_graph.png"
+            agraph=to_agraph(self.paths_graph)
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
+            agraph.layout(args="-n2")
+            agraph.draw(fn,prog='neato')
+        else:
+            raise RuntimeError("Nothing to draw.")
+        
+    def get_residue(self,resname):
+        '''Returns Bio.PDB.Residue.Residue object corresponding to resname.
+
+        Parameters
+        ----------
+        resname: str
+            Name of residue.
+        
+        Returns
+        -------
+        Bio.PDB.Residue.Residue object    
+                Object corresponding to residue name
+        '''
+        if resname in self.residues:
+            return self.residues[resname]
+        elif resname in self.eta_moieties:
+            return self.eta_moieties[resname]
+        else:
+            raise KeyError("No record of any residue by that name.")
+
+    
+
     

@@ -1,12 +1,10 @@
 import pyemap
 
 my_emap = pyemap.fetch_and_parse("1u3d")
-#print(len(list(my_emap.structure.get_residues())))
+pyemap.process(my_emap)
+pyemap.find_pathways(my_emap,"James")
 #my_emap.save_residue("FAD510(A)-1")
-#custom_atm_string="3943-3952"
-
-#pyemap.process(my_emap)
-print(my_emap.eta_moieties)
+#my_emap.show_init_graph()
 
 '''
 pyemap.find_pathways(my_emap,"Y330(A)",target="Y309(A)")
