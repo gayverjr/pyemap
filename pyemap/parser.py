@@ -40,8 +40,8 @@ def fetch_and_parse(filename, dest=os.getcwd(), quiet=False):
 
     Returns
     -------
-    emap: pyemap.emap object
-        emap object after parse step, ready for process step.
+    emap: pyemap.emap.emap 
+        emap object ready for processing.
     '''
     if not quiet:
         print("Fetching file " + filename + " from RSCB Database...")
@@ -67,8 +67,8 @@ def parse(filename, quiet=False):
     
     Returns
     -------
-    my_emap: pyemap.emap.emap objects
-        emap object after parse step, ready for process step.
+    my_emap: pyemap.emap.emap 
+        emap object reading for parsing
     '''
     try:
         parser = PDBParser()

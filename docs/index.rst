@@ -36,13 +36,48 @@ includes computational and experimental chemists, biologists, and physicists int
 in gaining insight into potentially relevant electron/hole transfer pathways in proteins.
 
 
+Citation
+--------
+
+Primary citation:|br| 
+Tazhigulov, R. N., Gayvert, J. R., Wei, M., & Bravaya, K. B. (2019). 
+eMap: A Web Application for Identifying and Visualizing Electron or Hole Hopping Pathways
+in Proteins. *The Journal of Physical Chemistry B*. https://doi.org/10.1021/acs.jpcb.9b04816
+
+In addition to citing eMap, please cite the third party software we depend on:
+
+Biopython_: |br|
+Cock PA, Antao T, Chang JT, Chapman BA, Cox CJ, Dalke A, Friedberg I, Hamelryck T, Kauff 
+F, Wilczynski B and de Hoon MJL (2009) *Bioinformatics*, 25, 1422-1423. |br|
+Hamelryck T and Manderick B (2003) *Bioinformatics*, 22, 2308-2310.
+
+
+MSMS_ (Residue Depth): |br|
+Sanner, M. F.; Olson, A. J.; Spehner, J. C. *Biopolymers*, 1996, 38, 305-320.
+
+DSSP_ (Solvent Accessibility): |br|
+Touw, W. G.; Baakman, C.; Black, J.; te Beek, T. A.; Krieger, E.; Joosten, R. P.; Vriend, G. Nucleic Acids Res., 2015, 43, D364-D368. |br|
+Wolfgang, K.; Christian, S. *Biopolymers*, 1983, 22, 2577-2637. 
+
+
+.. _MSMS: http://mgltools.scripps.edu/packages/MSMS/
+
+.. _DSSP: https://swift.cmbi.umcn.nl/gv/dssp/index.html
+
+.. _Biopython: https://biopython.org/wiki/Documentation
+
+.. |br| raw:: html
+
+  <br/>
 
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
 
-   reference
+   
    tutorial
+   reference
+   algorithms
  
 
 

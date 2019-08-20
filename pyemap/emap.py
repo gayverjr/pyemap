@@ -281,7 +281,7 @@ class emap():
         Returns
         -------
         Bio.PDB.Residue.Residue object    
-                Object corresponding to residue name
+                Residue with resname
         '''
         if resname in self.residues:
             return self.residues[resname]
