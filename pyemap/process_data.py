@@ -3,13 +3,9 @@
 # Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
 """Processes parsed .pdb/.mmcif file, and generates a graph based on user selected options.
 
-Main module used for constructing the graph. Takes in all user specifications to gather and prepare the appropriate
-residues. A distance matrix is constructed for these residues, and then the graph is generated. Finally, the selected
-criteria for surface exposure is used to classify residues as buried or exposed. 
-
-Usage
------
-Called by the views module to process the parsed file according to the user specifications, and generate the graph.
+Collects requested residues and constructs a distance matrix, from which the graph is generated. Edges are filtered out based
+on user specifications. Finally, the selected criteria for surface exposure is used to classify residues as buried or exposed. 
+Results are stored in the emap object which was passed in.
 
 """
 import math
@@ -108,28 +104,6 @@ def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     penalty = coef_alpha * np.exp(-exp_beta * (dist - r_offset))
     mod_penalty = -np.log10(penalty)
     return mod_penalty
-
-def pathways_model_thrspace_penalty_COM(com_d, coef_alpha, exp_beta, r_offset):
-    '''Applies penalty function parameters and returns modified distance matrix.
-    
-        math:: `\epsilon = \alpha \exp(-\beta(R-R_{offset}))`
-
-    Parameters
-    ----------
-    coef_alpha,exp_beta,r_offset:float
-        Penalty funciton parameters
-    
-    Returns
-    -------
-    mod_penalty: float
-    '''
-    mod_penalty_matrix = np.zeros((len(com_d), len(com_d)))
-    for i in range(len(com_d)):
-        for j in range(i + 1, len(com_d)):
-            dist_i_j = dist(com_d[i], com_d[j])
-            mod_penalty_matrix[i][j] = pathways_model(dist_i_j, coef_alpha, exp_beta, r_offset)
-            mod_penalty_matrix[j][i] = mod_penalty_matrix[i][j]
-    return mod_penalty_matrix
 
 def calculate_residue_depth(aromatic_residues, model):
     """Returns a list of surface exposed residues as determined by residue depth.
@@ -325,8 +299,14 @@ def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
         # Node names in graph
         node_label[i] = res.node_label
         com_d.append(np.array([com_x, com_y, com_z]))
-    return node_label, distance_matrix(com_d, com_d), pathways_model_thrspace_penalty_COM(
-            com_d, coef_alpha, exp_beta, r_offset)
+    # calculate matrix with penalty functions   
+    pathways_matrix = np.zeros((len(com_d), len(com_d)))
+    for i in range(len(com_d)):
+        for j in range(i + 1, len(com_d)):
+            dist_i_j = dist(com_d[i], com_d[j])
+            pathways_matrix[i][j] = pathways_model(dist_i_j, coef_alpha, exp_beta, r_offset)
+            pathways_matrix[j][i] = pathways_matrix[i][j]
+    return node_label, distance_matrix(com_d, com_d), pathways_matrix
 
 
 def process_standard_residues(standard_residue_list):
@@ -573,36 +553,18 @@ def finish_graph(G, surface_exposed_res, chain_list):
         if G[node] == {}:
             G.remove_node(node)
 
-def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges):
-    """Constructs the graph from the distance matrix and node labels.
+def filter_edges(G,G_pathways,distance_cutoff, percent_edges, num_st_dev_edges):
+    '''Applies distance based filters to edges, removing those edges which do not fit criteria.
 
     Parameters
     ----------
-    dmatrix: numpy.array of float
-        Distance matrix of aromatic residues.
-    node_label: list of str
-        Labels for residues in the graph.
+    G: NetworkX.Graph
+        graph where edge weights are pure distances
+    G_pathways: NetworkX.Graph
+        graph where edge weights are distance dependent penalty functions
     distance_cutoff,percent_edges,num_st_dev_edges: float
         Parameters that determine which edges are kept.
-
-    Returns
-    -------
-    G: NetworkX graph
-        Graph of aromatic residues in protein
-
-    References
-    ----------
-    Gray, H. B.; Winkler, J. R. Long-Range Electron Transfer. Proc. Natl. Acad. Sci. U. S. A. 2005, 102 (10),
-        3534 LP-3539.
-        Reference for 20A filter on edges
-
-    """
-    np.set_printoptions(threshold=sys.maxsize)
-    G = nx.from_numpy_matrix(dmatrix)
-
-    minval_pathways = np.min(pathways_matrix[pathways_matrix.nonzero()])
-    G_pathways = nx.from_numpy_matrix(pathways_matrix)
-
+    '''
     # keep 99th percentile and ~20A filter on all edges
     included_edges = []
     for node in G.nodes():
@@ -644,14 +606,39 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         if G_pathways.has_edge(node1, node2):
             G_pathways.remove_edge(node1, node2)
 
-    G = G_pathways
+def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges):
+    """Constructs the graph from the distance matrix and node labels.
 
-    # scaling lengths
-    for u, v, d in G.edges(data=True):
+    Parameters
+    ----------
+    dmatrix: numpy.array of float
+        Distance matrix of aromatic residues.
+    node_label: list of str
+        Labels for residues in the graph.
+    distance_cutoff,percent_edges,num_st_dev_edges: float
+        Parameters that determine which edges are kept.
+
+    Returns
+    -------
+    G: NetworkX graph
+        Graph of aromatic residues in protein
+
+    References
+    ----------
+    Gray, H. B.; Winkler, J. R. Long-Range Electron Transfer. Proc. Natl. Acad. Sci. U. S. A. 2005, 102 (10),
+        3534 LP-3539.
+        Reference for 20A filter on edges
+    """
+    np.set_printoptions(threshold=sys.maxsize)
+    G = nx.from_numpy_matrix(dmatrix)
+    minval_pathways = np.min(pathways_matrix[pathways_matrix.nonzero()])
+    G_pathways = nx.from_numpy_matrix(pathways_matrix)
+    filter_edges(G,G_pathways,distance_cutoff, percent_edges, num_st_dev_edges)
+    for u, v, d in G_pathways.edges(data=True):
         d['len'] = d['weight'] / minval_pathways
-
+        d['distance'] = G[u][v]['weight']
+    G = G_pathways
     G = nx.relabel_nodes(G, node_labels)
-
     for name_node in G.nodes():
         G.node[name_node]['style'] = 'filled'
         G.node[name_node]['fontname'] = 'Helvetica-Bold'
@@ -680,9 +667,7 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         G[name_node1][name_node2]['color'] = '#778899'
         G[name_node1][name_node2]['penwidth'] = 1.5
         G[name_node1][name_node2]['style'] = 'dashed'
-
     return G
-
 
 def process(emap,
             chains="All",
@@ -699,8 +684,7 @@ def process(emap,
             num_st_dev_edges=1.0,
             coef_alpha=1.0,
             exp_beta=2.3,
-            r_offset=0.0,
-            graph_dest=""):
+            r_offset=0.0):
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
 
     Parameters
@@ -727,9 +711,6 @@ def process(emap,
         For a particular vertex, only edges with length < average length + num_st_dev_edges * SD included
     coef_alpha,exp_beta,r_offset: float, optional
         Penalty function parameters. 
-        math:: `\epsilon = \alpha \exp(-\beta(R-R_{offset}))`
-    graph_dest: str, optional
-        Destination to write the graph to disk
     Raises
     ------
     RuntimeError:
@@ -747,7 +728,7 @@ def process(emap,
     aromatic_residues,AROM_LIST = get_standard_residues(all_residues, chains, trp, tyr, phe, his)
     for resname in eta_moieties:
         AROM_LIST.append(resname)
-        aromatic_residues.append(emap.get_residue(resname))
+        aromatic_residues.append(emap.eta_moieties[resname])
     used_atoms=[]
     for res in aromatic_residues:
         for atm in res.get_atoms():
@@ -757,6 +738,7 @@ def process(emap,
         user_residues = get_user_residues(custom, all_atoms, chains, used_atoms) 
     for res in user_residues:
         AROM_LIST.append(res.resname)
+        emap.user_residues[res.resname] = res
     aromatic_residues+=user_residues
     if len(aromatic_residues) < 2:
         raise RuntimeError(
@@ -777,6 +759,3 @@ def process(emap,
     for res in aromatic_residues:
         emap._add_residue(res)
     emap._store_initial_graph(G)
-    if graph_dest:
-        emap.save_init_graph(dest=graph_dest+".svg",)
-        emap.save_init_graph(dest=graph_dest+".png")

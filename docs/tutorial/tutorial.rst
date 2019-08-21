@@ -53,14 +53,14 @@ Find Pathways
 Finally, search for possible pathways from a specified electron/hole donor to the surface using :func:`pyemap.find_paths`:
 
    >>> pyemap.find_paths(my_emap,"FAD510(A)-2")
-   >>> pyemap.show_paths_graph()
+   >>> my_emap.show_paths_graph()
 
 .. image:: images/source_only.png
 
 Alternatively, you can search for pathways from a specified donor to a particular acceptor:
 
-   >>> pyemap.find_paths(my_emap,"FAD510(A)-2",max_paths=10)
-   >>> pyemap.show_paths_graph()
+   >>> pyemap.find_paths(my_emap,"FAD510(A)-2", target = "W324(A)", max_paths=10)
+   >>> my_emap.show_paths_graph()
 
 .. image:: images/target.png
 
@@ -122,9 +122,21 @@ edge connecting vertices FAD510(A)-2 and W400(A), do:
    >>> print(weight)
    8.793106029091886
 
+If what you need instead is the actual distance, this information is also kept:
+
+   >>> dist = my_emap.init_graph["FAD510(A)-2"]["W400(A)"]['distance']
+   >>> print(dist)
+   8.802989071175238
+
 Visualization
 -------------
+Graph images and chemical structures of non-protein electron transfer active moieties can be displayed with the 
+:func:`emap.show_init_graph`, :func:`emap.show_paths_graph`, :func:`emap.show_residue` functions. To save
+to file, use :func:`emap.save_init_graph`, :func:`emap.save_paths_graph`, and :func:`emap.save_residue`. 
 
+   >>> my_emap.show_residue("FAD510(A)-2")
+
+.. image:: images/fad.png
 
 
 

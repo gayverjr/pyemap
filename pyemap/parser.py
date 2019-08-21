@@ -3,21 +3,8 @@
 # Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
 """Parser used to parse PDB and MMCIF files.
 
-Main module used for step 1. Takes a filename input from the view, and returns a Bio.PDB structure object,
-a list of chains, and a list of Bio.PDB residue objects.
-
-Usage
------
-Called by the views module to parse the .pdb/.mmcif file and obtain the Structure object, chains, and
-custom Residue objects.
-
-See Also
-________
-custom_residues: used to identify custom residues
-Bio.PDB: module used to handle all protein data
-views: view functions which call parse
-data: contains useful dictionaries
-
+Automatically identifies non-protein electron transfer active moieties and generates customized Biopython Residue objects for them.
+Stores parsed structural information into newly instantiated emap object.
 """
 from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from .custom_residues import *
@@ -26,7 +13,7 @@ import os
 from .emap import *
 
 
-def fetch_and_parse(filename, dest=os.getcwd(), quiet=False):
+def fetch_and_parse(filename, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
 
     Parameters
@@ -43,6 +30,8 @@ def fetch_and_parse(filename, dest=os.getcwd(), quiet=False):
     emap: pyemap.emap.emap 
         emap object ready for processing.
     '''
+    if not dest:
+        dest = os.getcwd()
     if not quiet:
         print("Fetching file " + filename + " from RSCB Database...")
     cmd = ('wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/' +

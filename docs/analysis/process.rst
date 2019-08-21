@@ -15,7 +15,7 @@ where :math:`\epsilon` is a distance-dependent hopping penalty function:
 .. math::
    \epsilon = \alpha \exp(-\beta(R-R_{offset}))
 
-Importantly, you can specify custom fragments atom by atom using the "custom" optional argument,
+You can specify custom fragments atom by atom using the "custom" optional argument,
 which takes a string formatted in pyemap's custom fragment selection syntax, which is 
 based on PDB atom serial number. The syntax is summarized below:
 
@@ -31,9 +31,21 @@ based on PDB atom serial number. The syntax is summarized below:
 |"(...),(...)"| defines multiple custom fragments|
 +-------------+----------------------------------+
 
-Source
--------
-.. autosummary::
-   :toctree: autosummary
 
-   pyemap.process_data.process
+
+Process
+-------
+.. automodule:: pyemap.process_data
+   :members: process
+
+Example
+--------
+
+   >>> import pyemap
+   >>> my_emap = pyemap.fetch_and_parse("1u3d")
+   >>> pyemap.process(my_emap,eta_moieties=["ANP511(A)"],custom="(3960-3969),(3970-3980,3982,3984-3987)")
+   >>> my_emap.show_init_graph()
+
+.. image:: images/custom.png
+
+

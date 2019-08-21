@@ -36,7 +36,7 @@ def _finish_graph(G, original_shape_start, source):
     # draw graph
 
 
-def find_paths(emap, source, target=None,graph_dest="",max_paths=10):
+def find_paths(emap, source, target=None,max_paths=10):
     """Function which calculates pathways from source to target or surface exposed residues.
 
     Performs shortest path analysis on source and (optionally) target residues. After analysis is completed, the pathways
@@ -69,17 +69,12 @@ def find_paths(emap, source, target=None,graph_dest="",max_paths=10):
         G.node[target]['fillcolor'] = '#40e0d0FF'
         G.node[target]['penwidth'] = 6.0
     else:
-        goals = []
-        for n, d in G.nodes(data=True):
-            if d['shape'] == "box":
-                goals.append(n)
-        branches = dijkstras_shortest_paths(G, source, goals)
+        surface_exposed = emap.get_surface_exposed_residues()
+        branches = dijkstras_shortest_paths(G, source, surface_exposed)
     _finish_graph(G, original_shape_start, source)
     emap._store_paths_graph(G)
     if target:
         emap._store_paths(branches,yens=True)
     else:
         emap._store_paths(branches)
-    if graph_dest:
-        emap.save_paths_graph(dest=graph_dest+".svg")
-        emap.save_paths_graph(dest=graph_dest+".png")
+

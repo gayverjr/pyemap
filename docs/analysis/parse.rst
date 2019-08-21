@@ -9,10 +9,7 @@ saved to an :ref:`emap <emap>` object which is returned to the user.
 
 .. _RCSB: http://www.rcsb.org/
 
-Source
+Parser
 -------
-.. autosummary::
-   :toctree: autosummary
-
-   pyemap.parser.parse
-   pyemap.parser.fetch_and_parse
+.. automodule:: pyemap.parser
+   :members: 

@@ -53,6 +53,5 @@ Source
 
    pyemap.process_data.create_graph
    pyemap.process_data.pathways_model
-   pyemap.process_data.pathways_model_thrspace_penalty_COM
    pyemap.process_data.closest_atom_dmatrix
    pyemap.process_data.com_dmatrix
