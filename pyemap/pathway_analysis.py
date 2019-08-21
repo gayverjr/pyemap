@@ -5,10 +5,9 @@ import sys
 import networkx as nx
 import numpy as np
 import pygraphviz as pg
-from .dijkstras import yens_shortest_paths, dijkstras_shortest_paths
+from .shortest_paths import yens_shortest_paths, dijkstras_shortest_paths
 
-
-def finish_graph(G, original_shape_start, source):
+def _finish_graph(G, original_shape_start, source):
     """Draws the graph with the shortest pathways highlighted.
 
     Parameters
@@ -37,7 +36,7 @@ def finish_graph(G, original_shape_start, source):
     # draw graph
 
 
-def find_pathways(emap, source, target=None,graph_dest="",max_paths=10):
+def find_paths(emap, source, target=None,graph_dest="",max_paths=10):
     """Function which calculates pathways from source to target or surface exposed residues.
 
     Performs shortest path analysis on source and (optionally) target residues. After analysis is completed, the pathways
@@ -75,16 +74,12 @@ def find_pathways(emap, source, target=None,graph_dest="",max_paths=10):
             if d['shape'] == "box":
                 goals.append(n)
         branches = dijkstras_shortest_paths(G, source, goals)
-    finish_graph(G, original_shape_start, source)
+    _finish_graph(G, original_shape_start, source)
     emap._store_paths_graph(G)
-    shortest_paths=[]
-    for br in branches:
-        shortest_paths+=br.paths
     if target:
-        emap._store_paths(shortest_paths,yens=True)
+        emap._store_paths(branches,yens=True)
     else:
-        emap._store_paths(shortest_paths)
+        emap._store_paths(branches)
     if graph_dest:
         emap.save_paths_graph(dest=graph_dest+".svg")
         emap.save_paths_graph(dest=graph_dest+".png")
-    return branches

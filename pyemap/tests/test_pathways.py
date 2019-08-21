@@ -11,16 +11,16 @@ class PathwaysTest(unittest.TestCase):
         pyemap.process(cls.my_emap)
 
     def test_dijkstras_paths(self):
-        pyemap.find_pathways(self.my_emap,"Y167(B)")
+        pyemap.find_paths(self.my_emap,"Y167(B)")
         assert len(self.my_emap.paths)>0
 
     def test_yens_paths(self):
-        pyemap.find_pathways(self.my_emap,"Y167(B)",target="Y369(B)")
+        pyemap.find_paths(self.my_emap,"Y167(B)",target="Y369(B)")
         assert len(self.my_emap.paths)==10
-        pyemap.find_pathways(self.my_emap,"Y167(B)",target="Y369(B)",max_paths=15)
+        pyemap.find_paths(self.my_emap,"Y167(B)",target="Y369(B)",max_paths=15)
         assert len(self.my_emap.paths)==15
         try:
-            pyemap.find_pathways(self.my_emap,"Y167(B)",target="Y167(A)")
+            pyemap.find_paths(self.my_emap,"Y167(B)",target="Y167(A)")
             assert False
         except Exception as e:
             assert True

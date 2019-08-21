@@ -17,7 +17,6 @@ def buildSmiles(graph, atoms, cur, prev):
     References
     ----------
     Varnek, A. Tutorials in Chemoinformatics; John Wiley & Sons, Inc.: Hoboken, NJ, 2017.
-
     """
     visited.add(cur)
     seq = ''

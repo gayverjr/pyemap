@@ -16,7 +16,6 @@ import sys
 import networkx as nx
 import numpy as np
 
-
 class ShortestPath(object):
     """Data structure used to store shortest paths.
 
@@ -162,7 +161,7 @@ class Branch(object):
         return branch_list
 
 
-def is_parent_pathway(shortest_path, targets):
+def _is_parent_pathway(shortest_path, targets):
     """Returns true if ShortestPath is a parent pathway, false if not.
 
     A ShortestPath object is the parent of a branch if its terminal residue is the
@@ -190,7 +189,7 @@ def is_parent_pathway(shortest_path, targets):
     return count == 1
 
 
-def find_branch(pt, targets, branches):
+def _find_branch(pt, targets, branches):
     """Determines which branch a pathway belongs to and returns that branch.
 
     A ShortestPath belongs to a branch if the first surface exposed residue it reaches during the
@@ -267,7 +266,7 @@ def dijkstras_shortest_paths(G, start, targets):
     branches = []
     # find the parent pathways
     for pt in shortestPaths:
-        if is_parent_pathway(pt, targets):
+        if _is_parent_pathway(pt, targets):
             path = pt.path
             for i in range(0, len(path) - 1):
                 G[path[i]][path[i + 1]]['color'] = '#778899FF'
@@ -287,8 +286,8 @@ def dijkstras_shortest_paths(G, start, targets):
             br.add_path(pt)
     # find the sub pathways
     for pt in shortestPaths:
-        if not is_parent_pathway(pt, targets):
-            find_branch(pt, targets, branches).add_path(pt)
+        if not _is_parent_pathway(pt, targets):
+            _find_branch(pt, targets, branches).add_path(pt)
             path = pt.path
             for i in range(0, len(path) - 1):
                 if G[path[i]][path[i + 1]]['color'] != '#778899FF':

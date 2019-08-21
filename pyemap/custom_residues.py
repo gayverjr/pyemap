@@ -83,8 +83,6 @@ def find_conjugated_systems(atoms, res_names):
         List of atoms in the residue
     res_names: arary-like
         List of already used names for custom residues
-    : str
-        file hash for writing out to file
 
     Returns
     -------
@@ -98,11 +96,6 @@ def find_conjugated_systems(atoms, res_names):
     chemical graph is now a forest, and so the next step is collect each connected component subgraph. Only subgraphs
     that contain cycles (aromatic) or are larger than 10 are considered (extended conjugated systems). For each subgraph,
     the atoms are collected and a customized Residue object is constructured and named. 
-
-    See Also
-    -------
-    is_pi_bonded(): function used to determine which bonds to include in graph
-
     """
     # first let's create the chemical graph structure
     arom_atoms = ['O', 'P', 'N', 'C','S']  # only these elements will be considered in our search

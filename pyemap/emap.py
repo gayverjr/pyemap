@@ -5,12 +5,12 @@ from .data import *
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
 import graphviz
-from .dijkstras import Branch, ShortestPath
+from .shortest_paths import Branch, ShortestPath
 from .smiles import getSimpleSmiles
 from collections import OrderedDict
-import matplotlib
-matplotlib.use("TKAgg")
-import matplotlib.pyplot as plt
+from PIL import Image
+import os
+
 
 class emap():
     '''
@@ -36,6 +36,8 @@ class emap():
         Custom residues specified by the user.
     init_graph: NetworkX.Graph object
         Graph generated after the process step.
+    branches: list of pyemap.shortest_paths.Branch
+        Branches found by eMap analysis
     paths: collections.OrderedDict of str:pyemap.ShortestPath
         Paths found by emap sorted by lowest to highest score.
     paths_graph: NetworkX.Graph object
@@ -66,6 +68,7 @@ class emap():
         self.paths_graph = []
         self.init_graph  = []
         self.ngl_strings = {}
+        self.branches= []
         for residue in eta_moieties:
             self._add_eta_moiety(residue)
     
@@ -83,16 +86,20 @@ class emap():
         '''
         self.init_graph = graph
 
-    def _store_paths(self, shortest_paths,yens=False):
+    def _store_paths(self, branches,yens=False):
         '''Stores pathways in emap object, and sets their ngl selection strings for visualization.
 
         Parameters
         ---------
-        shortest_paths: list of pyemap.ShortestPath
-            pathways found by emap 
+        shortest_paths: list of pyemap.shortest_paths.Branch
+            branches found by emap
         yens: boolean, optional
             True when target specified, False when only source is specified
         '''
+        self.branches = branches
+        shortest_paths=[]
+        for br in branches:
+            shortest_paths+=br.paths
         for pt in shortest_paths:
             self.paths[pt.path_id] = pt
             self._visualize_pathway(pt,yens)
@@ -119,6 +126,7 @@ class emap():
         self.init_graph=[]
         self.paths = OrderedDict()
         self.paths_graph = []
+        self.branches = []
         self.ngl_strings = {}
     
     def _reset_paths(self):
@@ -126,6 +134,7 @@ class emap():
         '''
         self.paths = OrderedDict()
         self.paths_graph=[]
+        self.branches = []
 
     def _add_eta_moiety(self,residue):
         '''Gets the smiles string for an automatically identified non-protein eta moiety, 
@@ -289,7 +298,88 @@ class emap():
             return self.eta_moieties[resname]
         else:
             raise KeyError("No record of any residue by that name.")
+    
+    def get_surface_exposed_residues(self):
+        '''Returns list of surface exposed residues.
 
+        Returns
+        -------
+        surface_exposed: list of str
+            List of surface exposed residues identified by pyemap
+        '''
+        if self.init_graph:
+            surface_exposed=[]
+            for n, d in self.init_graph.nodes(data=True):
+                if d['shape'] == "box":
+                    surface_exposed.append(n)
+            return surface_exposed
+        else:
+            raise RuntimeError("No graph found. Please run pyemap.process(my_emap) to generate the graph.")
+    
+    def report(self,dest=""):
+        '''Writes report of most probable pathways to console or to file.
+
+        Parameters
+        -----------
+        dest: str, optional
+            Destination for writing to file
+
+        Raises
+        -------
+        RuntimeError
+            Nothing to report
+        '''
+        if self.branches:
+            if dest:
+                fi = open(dest,"w")
+            for br in self.branches:
+                if dest:
+                    fi.write(str(br))
+                else:
+                    print(str(br))
+        else:
+            raise RuntimeError("Nothing to report.")
+    
+    def show_init_graph(self):
+        '''Opens image of graph after processing in default image viewer.
+
+        Notes
+        ------
+        Uses the Pillow library.
+        '''
+        if self.init_graph:
+            fn = "tmp.png"
+            agraph=to_agraph(self.init_graph)
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
+            agraph.draw(fn,prog='neato')
+            img = Image.open("tmp.png")
+            img.show()
+            os.remove("tmp.png")
+        else:
+            raise RuntimeError("Nothing to draw.")
+    
+    def show_paths_graph(self):
+        '''Opens image of paths graph in default image viewer.
+
+        Notes
+        ------
+        Uses the Pillow library.
+        '''
+        if self.paths_graph:
+            fn = "tmp.png"
+            agraph=to_agraph(self.paths_graph)
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
+            agraph.draw(fn,prog='neato')
+            img = Image.open("tmp.png")
+            img.show()
+            os.remove("tmp.png")
+        else:
+            raise RuntimeError("Nothing to draw.")
+
+
+            
     
 
     

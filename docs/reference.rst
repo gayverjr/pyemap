@@ -3,9 +3,10 @@ Reference
 ==============================
 
 .. toctree::
-   :caption: Contents:
-   :maxdepth: 1
+   :maxdepth: 2
 
-   emap
-   process
-   parse
+   analysis/analysis
+   data_structures/data_structures
+   algorithms/algorithms
+
+

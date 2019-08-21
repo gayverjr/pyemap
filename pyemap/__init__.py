@@ -6,7 +6,7 @@ Implementation of eMap analysis in the form of a python package.
 # Add imports here
 from .parser import *
 from .process_data import process
-from .pathways import find_pathways
+from .pathway_analysis import find_paths
 # Handle versioneer
 from ._version import get_versions
 versions = get_versions()

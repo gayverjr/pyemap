@@ -6,7 +6,7 @@
 Overview of pyemap
 =========================================================
 pyemap is a python package aimed at automatic identification of electron and hole transfer
-pathways in protein. The analysis is based on a coarse-grained version of Beratan and 
+pathways in proteins. The analysis is based on a coarse-grained version of Beratan and 
 Onuchic’s Pathway model, and only accounts for the through-space hopping between
 aromatic residues side chains. Side chains of aromatic residues and non-protein electron 
 transfer active moieties are modeled as vertices in a weighted graph, where the edge 
@@ -16,10 +16,10 @@ surface of the protein, or to a user-specified acceptor.
 
 
 pyemap analysis happens in 3 steps. The first step is parsing a PDB or CIF file provided
-by the user or fetched from the RCSB_ database. The next step is to construct the graph 
-theory model of the protein crystal structure based on user specifications. 
-Finally, the shortest paths between a specified electron/hole source to the surface or 
-to a specified electron/hole acceptor are calculated. 
+by the user or fetched from the RCSB_ database. The next step is to process the file and 
+construct the graph theory model of the protein crystal structure. Finally, the shortest 
+paths between a specified electron/hole source to the surface or to a specified 
+electron/hole acceptor are calculated. 
 
 .. _RCSB: http://www.rcsb.org/
 
@@ -27,6 +27,26 @@ pyemap is intended to be used as the backend for the web application
 eMap_, and as a standalone python package.
 
 .. _eMap: http://emap.bu.edu/
+
+Current Features
+----------------
+* Accepts valid .pdb or .cif structures provided by the user or fetched from RCSB_ database
+* Tested on structures as large as 5350 residues (51599 atoms)
+* Automatic detection of non-protein aromatic moieties such as porphyrins and nucleobases
+* Automatic identification surface exposed residues using residue depth or solvent accessibility criteria
+* Visualization of chemical structures of non-protein aromatic residues 
+* Inclusion of user specified custom fragments
+* Control over various parameters which determine connectivity of graph theory model 
+* Identification of most probable electron/hole transfer pathways from a specified donor to the surface or a specified electron/hole acceptor
+
+
+Planned Features
+----------------
+* Automatic detection of non-aromatic electron transfer active moieties such as iron-sulfur clusters
+* Visualization of chemical structures of all included residues
+* Tools for screening families of proteins for common electron/hole transfer pathways
+* Generalization to DNA and other relevant biomolecules
+* Improving the physical model of electron transfer by incorporating information on geometry-dependent electronic couplings and chemical-dependent energetics
 
 Audience
 --------
@@ -36,48 +56,15 @@ includes computational and experimental chemists, biologists, and physicists int
 in gaining insight into potentially relevant electron/hole transfer pathways in proteins.
 
 
-Citation
---------
-
-Primary citation:|br| 
-Tazhigulov, R. N., Gayvert, J. R., Wei, M., & Bravaya, K. B. (2019). 
-eMap: A Web Application for Identifying and Visualizing Electron or Hole Hopping Pathways
-in Proteins. *The Journal of Physical Chemistry B*. https://doi.org/10.1021/acs.jpcb.9b04816
-
-In addition to citing eMap, please cite the third party software we depend on:
-
-Biopython_: |br|
-Cock PA, Antao T, Chang JT, Chapman BA, Cox CJ, Dalke A, Friedberg I, Hamelryck T, Kauff 
-F, Wilczynski B and de Hoon MJL (2009) *Bioinformatics*, 25, 1422-1423. |br|
-Hamelryck T and Manderick B (2003) *Bioinformatics*, 22, 2308-2310.
-
-
-MSMS_ (Residue Depth): |br|
-Sanner, M. F.; Olson, A. J.; Spehner, J. C. *Biopolymers*, 1996, 38, 305-320.
-
-DSSP_ (Solvent Accessibility): |br|
-Touw, W. G.; Baakman, C.; Black, J.; te Beek, T. A.; Krieger, E.; Joosten, R. P.; Vriend, G. Nucleic Acids Res., 2015, 43, D364-D368. |br|
-Wolfgang, K.; Christian, S. *Biopolymers*, 1983, 22, 2577-2637. 
-
-
-.. _MSMS: http://mgltools.scripps.edu/packages/MSMS/
-
-.. _DSSP: https://swift.cmbi.umcn.nl/gv/dssp/index.html
-
-.. _Biopython: https://biopython.org/wiki/Documentation
-
-.. |br| raw:: html
-
-  <br/>
-
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
 
-   
-   tutorial
+   install
+   tutorial/tutorial
    reference
-   algorithms
+   cite
+   credits
  
 
 
