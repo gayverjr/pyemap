@@ -4,12 +4,13 @@ from .custom_residues import is_pi_bonded, dist
 from .data import *
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
-import graphviz
 from .shortest_paths import Branch, ShortestPath
 from .smiles import getSimpleSmiles
 from collections import OrderedDict
 from PIL import Image
+import warnings
 import os
+from pysmiles import write_smiles, fill_valence, correct_aromatic_rings, add_explicit_hydrogens
 
 
 class emap():
@@ -137,6 +138,19 @@ class emap():
         self.paths_graph=[]
         self.branches = OrderedDict()
 
+    def _get_residue_graph(self,residue):
+        atoms = list(residue.get_atoms())
+        arom_atoms = ['O', 'P', 'N', 'C', 'S']
+        res_graph = nx.Graph()
+        for i in range(len(atoms)):
+            for k in range(i, len(atoms)):
+                if (not i == k) and is_pi_bonded(atoms[i], atoms[k]):
+                    if atoms[i].element in arom_atoms and atoms[k].element in arom_atoms:
+                        res_graph.add_edge(i, k)
+                        res_graph.nodes[i]['element'] = atoms[i].element
+                        res_graph.nodes[k]['element'] = atoms[k].element
+        return res_graph
+
     def _add_eta_moiety(self,residue):
         '''Gets the smiles string for an automatically identified non-protein eta moiety, 
         and adds the residue to the eta_moieties dictionary.
@@ -146,15 +160,12 @@ class emap():
         residue: Bio.PDB.Residue.Residue
              Customized residue object generated for automatically detected eta moiety
         '''
-        atoms = list(residue.get_atoms())
-        arom_atoms = ['O', 'P', 'N', 'C', 'S']
-        res_graph = nx.Graph()
-        for i in range(len(atoms)):
-            for k in range(i, len(atoms)):
-                if (not i == k) and is_pi_bonded(atoms[i], atoms[k]):
-                    if atoms[i].element in arom_atoms and atoms[k].element in arom_atoms:
-                        res_graph.add_edge(i, k)
-        smiles_str = getSimpleSmiles(res_graph, atoms)
+        res_graph = self._get_residue_graph(residue)
+        #smiles_str = getSimpleSmiles(res_graph, atoms)
+        fill_valence(res_graph)
+        add_explicit_hydrogens(res_graph)
+        correct_aromatic_rings(res_graph)
+        smiles_str = write_smiles(res_graph)
         molecule = Chem.MolFromSmarts(smiles_str)
         smiles_str = Chem.MolToSmarts(molecule, True)
         residue.smiles = smiles_str
@@ -186,6 +197,16 @@ class emap():
     def _add_residue(self, residue):
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
         '''
+        res_graph = self._get_residue_graph(residue)
+        #smiles_str = getSimpleSmiles(res_graph, atoms)
+        fill_valence(res_graph,respect_hcount=False,respect_bond_order=False)
+        add_explicit_hydrogens(res_graph)
+        correct_aromatic_rings(res_graph)
+        smiles_str = write_smiles(res_graph)
+        molecule = Chem.MolFromSmarts(smiles_str)
+        smiles_str = Chem.MolToSmarts(molecule, True)
+        residue.smiles = smiles_str
+        self.smiles[residue.node_label] = smiles_str
         residue.ngl_string = self._get_ngl_string(residue)
         self.residues[residue.node_label] = residue
         self.ngl_strings[residue.node_label] = residue.ngl_string
@@ -226,6 +247,7 @@ class emap():
         size: (float,float), optional
             dimensions of image saved to file
         '''
+
         if self.residues and resname in self.residues:
             if not self.residues[resname].smiles:
                 raise KeyError("Not yet implemented for standard or custom residues.")
@@ -273,7 +295,7 @@ class emap():
             else:
                 fn = self.filename[:-4] + "_graph.png"
             agraph=to_agraph(self.init_graph)
-            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="false", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
             agraph.draw(fn,prog='neato')
         else:
@@ -293,7 +315,7 @@ class emap():
             else:
                 fn = self.filename[:-4] + "_graph.png"
             agraph=to_agraph(self.paths_graph)
-            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="false", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
             agraph.layout(args="-n2")
             agraph.draw(fn,prog='neato')
@@ -370,7 +392,7 @@ class emap():
         if self.paths_graph:
             fn = "tmp.png"
             agraph=to_agraph(self.paths_graph)
-            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="false", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
             agraph.draw(fn,prog='neato')
             img = Image.open("tmp.png")
