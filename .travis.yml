@@ -39,6 +39,7 @@ install:
   - conda activate test
   - conda install -c conda-forge pygraphviz rdkit
   - conda install numpy scipy biopython networkx pillow
+  - pip install pysmiles
     # Build and install package
   - python setup.py develop --no-deps
 
