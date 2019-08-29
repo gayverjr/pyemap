@@ -377,49 +377,39 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
         Customized Residue object corresponding to the atoms in serial_list
 
     """
-    try:
-        source_res = []
-        atm_list = []
-        for atm in all_atoms:
-            if atm.serial_number in serial_list:
-                if atm.serial_number in used_atoms:
-                    message = "Invalid atom serial number range. Atom " + str(
+    source_res = []
+    atm_list = []
+    for atm in all_atoms:
+        if atm.serial_number in serial_list:
+            if atm.serial_number in used_atoms:
+                message = "Invalid atom serial number range. Atom " + str(
                         atm.serial_number) + " is already included in another residue."
-                    raise ValueError(message)
-                if atm.parent.parent.id not in chain_selected:
-                    message = "Invalid atom serial number range. Atom " + str(
+                raise ValueError(message)
+            if atm.parent.parent.id not in chain_selected:
+                message = "Invalid atom serial number range. Atom " + str(
                         atm.serial_number) + " is in chain " + str(atm.parent.parent.id) + "."
-                    raise ValueError(message)
-                atm.get_full_id()
-                if not source_res:
-                    source_res = atm.parent
-                atm.get_full_id()
-                atm_copy = atm.copy()
-                atm_list.append(atm_copy)
-        source_res.get_full_id()
-        user_res = source_res.copy()
-        for atm in list(source_res.get_atoms()):
-            user_res.detach_child(atm.id)
-        for atm in atm_list:
-            user_res.add(atm)
-        k = 1
-        name = "CUST"
-        name += "-"
-        while name + str(k) in user_res_names:
-            k += 1
-        user_res_names.append(name + str(k))
-        user_res.resname = name + str(k)
-        user_res.node_label = user_res.resname
-        return user_res
-    except Exception as e:
-        message = []
-        if "has no attribute" in str(e):
-            message = "One or more of the specified atom serial numbers do not exist."
-        if message:
-            raise IndexError(message)
-        else:
-            raise RuntimeError(e)
-
+                raise ValueError(message)
+            atm.get_full_id()
+            if not source_res:
+                source_res = atm.parent
+            atm.get_full_id()
+            atm_copy = atm.copy()
+            atm_list.append(atm_copy)
+    source_res.get_full_id()
+    user_res = source_res.copy()
+    for atm in list(source_res.get_atoms()):
+        user_res.detach_child(atm.id)
+    for atm in atm_list:
+        user_res.add(atm)
+    k = 1
+    name = "CUST"
+    name += "-"
+    while name + str(k) in user_res_names:
+        k += 1
+    user_res_names.append(name + str(k))
+    user_res.resname = name + str(k)
+    user_res.node_label = user_res.resname
+    return user_res
 
 def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, include_Phe, include_His):
     """Returns list of standard aromatic residues.
@@ -495,40 +485,37 @@ def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
 
     """
     user_res_names = []
-    try:
-        custom = custom.strip()
-        if not custom == "-1":
-            res_list = []
-            l1 = custom.split("),(")
-            for a in l1:
-                serial_number_list = []
-                # get rid of the (
-                atm_str = a[:]
-                atm_str = atm_str.replace("(", '')
-                atm_str = atm_str.replace(")", '')
-                l2 = atm_str.split(",")
-                for atm in l2:
-                    if "-" in atm:
-                        index = atm.index("-")
-                        start_atm = int(atm[:index])
-                        end_atm = atm[index + 1:]
-                        end_atm = end_atm.replace(")", "")
-                        end_atm = int(end_atm)
-                        for i in range(start_atm, end_atm + 1):
-                            serial_number_list.append(i)
-                    else:
-                        serial_number_list.append(int(atm))
+    custom = custom.strip()
+    if custom:
+        res_list = []
+        l1 = custom.split("),(")
+        for a in l1:
+            serial_number_list = []
+            # get rid of the (
+            atm_str = a[:]
+            atm_str = atm_str.replace("(", '')
+            atm_str = atm_str.replace(")", '')
+            l2 = atm_str.split(",")
+            for atm in l2:
+                if "-" in atm:
+                    index = atm.index("-")
+                    start_atm = int(atm[:index])
+                    end_atm = atm[index + 1:]
+                    end_atm = end_atm.replace(")", "")
+                    end_atm = int(end_atm)
+                    for i in range(start_atm, end_atm + 1):
+                        serial_number_list.append(i)
+                else:
+                    serial_number_list.append(int(atm))
+            if serial_number_list:
                 new_res = create_user_res(serial_number_list, all_atoms, chain_selected, used_atoms, user_res_names)
-                res_list.append(new_res)
-                for atm in new_res.get_atoms():
-                    used_atoms.append(atm.serial_number)
-            return res_list
-        return []
-    except Exception as e:
-        if "Error" not in str(e):
-            raise SyntaxError("Invalid atom serial number range. See the manual for proper syntax.")
-        else:
-            raise RuntimeError(e)
+            else:
+                raise SyntaxError("Invalid atom serial number range. See the manual for proper syntax.")
+            res_list.append(new_res)
+            for atm in new_res.get_atoms():
+                used_atoms.append(atm.serial_number)
+        return res_list
+    return []
 
 
 def finish_graph(G, surface_exposed_res, chain_list):
@@ -740,15 +727,15 @@ def process(emap,
         AROM_LIST.append(res.resname)
         emap.user_residues[res.resname] = res
     aromatic_residues+=user_residues
-    if len(aromatic_residues) < 2:
-        raise RuntimeError(
-            "Not enough residues to construct a graph.")
     if int(dist_def) == 0:
         node_labels, dmatrix, pathways_matrix = com_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
     else:
         node_labels, dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta,
                                                                    r_offset)
     G = create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges)
+    if len(G.edges()) == 0:
+        raise RuntimeError(
+            "Not enough edges to construct a graph.")
     # define surface exposed residues
     if int(sdef) == 0:
         surface_exposed_res = calculate_residue_depth(aromatic_residues, model)

@@ -10,6 +10,7 @@ from collections import OrderedDict
 from PIL import Image
 import warnings
 import os
+import logging
 from pysmiles import write_smiles, fill_valence, correct_aromatic_rings, add_explicit_hydrogens
 
 
@@ -353,13 +354,14 @@ class emap():
             Nothing to report
         '''
         if self.branches:
+            output = ""
+            for br in self.branches.values():
+                output += str(br)
             if dest:
                 fi = open(dest,"w")
-            for br in self.branches.values():
-                if dest:
-                    fi.write(str(br))
-                else:
-                    print(str(br))
+                fi.write(output)
+            else:
+                return output
         else:
             raise RuntimeError("Nothing to report.")
     

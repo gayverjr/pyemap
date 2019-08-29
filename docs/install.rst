@@ -27,10 +27,9 @@ Once you have a working copy of conda, create and activate a new virtual environ
 
 And install the necessary dependencies::
 
-    $ conda install -c conda-forge pygraphviz rdkit
+    $ conda install -c conda-forge pygraphviz rdkit 
     $ conda install numpy scipy biopython networkx pillow
-
-
+   
 Installing pyemap 
 ----------------------
 
@@ -51,9 +50,9 @@ Graphviz
 ---------
 pyemap uses the graphviz software to visualize the graphs. For graphs with <200 vertices, we use the `neato` program, 
 which works by minimizing a global energy function. Within the neato program we have found that an experimental mode called `ipsep` 
-(which you can read more about here) provides the nicest looking graphs. Older versions of graphviz enabled ipsep by default, but the versions
-available on conda do not come with ipsep enabled. To get around this, we suggest building graphviz from source, and adding a compiler 
-argument which enables ipsep. Here's how to do it:
+(which you can read more about here) provides the nicest looking graphs. The versions of graphviz available on conda unfortunately
+do not come with ipsep enabled. To get around this, we suggest building graphviz from source, and adding a compiler argument which 
+enables ipsep. Here's how to do it:
 
 First, remove the graphviz that came with pygraphviz from your conda environment::
 
@@ -65,3 +64,14 @@ Then, download the latest graphviz and compile from source::
    $ ./configure --with-ipsepcola=yes
    $ make
    $ make install
+
+
+For contributors
+------------------
+pyemap serves as the backend for the web application eMap, so any contributions need to be tested for compatibility with the web version. 
+eMap uses flask as its framework. To install the necessary dependencies, do:
+
+   $ pip install flask
+   $ pip install flask-restful
+   $ pip install flask-table
+
