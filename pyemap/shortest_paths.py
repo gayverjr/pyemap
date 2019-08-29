@@ -98,13 +98,6 @@ class Branch(object):
     surface exposed nodes B and C, the paths [A,F,B] and [A,F,B,C] will both be part of the
     "B" branch. The path [A,E,C] would be part of its own 'C" branch.
 
-    Parameters
-    ----------
-    branch_id: str
-        Unique identifier for a branch
-    target: str
-        Target node which a branch corresponds to
-
     Attributes
     ----------
     branch_id: str
@@ -123,19 +116,15 @@ class Branch(object):
     def add_path(self, path):
         """Adds a path to the branch and sets the path_id.
 
-        Paths are added to a branch if self.target is the first surface exposed residue reached
-        during the pathway. Each time a path is added, the paths in the branch are sorted. After sorting,
-        each path is assigned a path id composed of the branch id and its location in the paths list. For
-        example, the shortest path in branch 12 would be assigned the id '12a', the second shortest '12b' and
-        so on.
+        Each time a path is added, the paths in the branch are sorted. After sorting, each path is assigned a 
+        path id composed of the branch id and its location in the paths list. For example, the shortest path 
+        in branch 12 would be assigned the id '12a', the second shortest '12b' and so on.
 
         Parameters
         ----------
         path: ShortestPath
             A ShortestPath from source to a surface exposed residue
-
         """
-
         letters = list(string.ascii_letters)
         if len(self.paths) < len(letters):
             self.paths.append(path)
@@ -146,6 +135,9 @@ class Branch(object):
                 i += 1
 
     def __str__(self):
+        ''' String representation of Branch. First line is: "Branch: `branch_id`" and subsequent lines
+        are the string representations of each ShortestPath object comprising the Branch.
+        '''
         printline = "Branch: " + str(self.target)
         for pt in self.paths:
             printline += "\n" + str(pt)
@@ -153,6 +145,9 @@ class Branch(object):
         return printline
 
     def get_branch_as_list(self):
+        ''' List representation of Branch. First entry is: "Branch: `branch_id`" and the rest of the entries
+        are the string representations of each ShortestPath object comprising the Branch.
+        '''
         branch_list = []
         printline = "Branch: " + str(self.target)
         branch_list.append([printline])

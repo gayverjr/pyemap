@@ -22,9 +22,9 @@ class emap():
     ----------
     filename: str
         Name of the crystal structure file being processed by pyemap.
-    structure: Bio.PDB.Structure.Structure object
+    structure: Bio.PDB.Structure.Structure 
         Macromolecular protein structure. Contains model which contains residues and atoms.
-    eta_moieties: dict of str:Bio.PDB.Residue.Residue
+    eta_moieties: dict of str: Bio.PDB.Residue.Residue
         Non-protein eta moieties automatically identified at the parsing step.
     chain_list: list of str
         List of chains identified at the parsing step.
@@ -36,13 +36,13 @@ class emap():
         Formatted NGL viewer selection strings for residues included in the graph after the process step.
     user_residues: dict of str:Bio.PDB.Residue.Residue
         Custom residues specified by the user.
-    init_graph: NetworkX.Graph object
+    init_graph: networkx.Graph 
         Graph generated after the process step.
-    branches: dict of str:pyemap.shortest_paths.Branch
+    branches: dict of str:pyemap.Branch
         Branches found by eMap analysis
     paths: dict of str:pyemap.ShortestPath
         Paths found by emap sorted by lowest to highest score.
-    paths_graph: NetworkX.Graph object
+    paths_graph: networkx.Graph 
         Graph generated after the shortest paths step.
     '''
     def __init__(self, filename, structure, eta_moieties, chain_list):
@@ -79,7 +79,7 @@ class emap():
 
         Parameters
         ----------
-        graph: NetworkX.graph
+        graph: networkx.Graph
             Graph theory representation of emap model
 
         Notes
@@ -112,7 +112,7 @@ class emap():
 
         Parameters
         ----------
-        graph: NetworkX graph object
+        graph: networkx.Graph 
             Graph theory representation of emap model
 
         Notes

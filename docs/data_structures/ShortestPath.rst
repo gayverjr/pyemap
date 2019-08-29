@@ -1,5 +1,5 @@
 ShortestPath
 ==============================
 
-.. autoclass:: pyemap.shortest_paths.ShortestPath
+.. autoclass:: pyemap.ShortestPath
    :members:
