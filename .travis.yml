@@ -26,7 +26,6 @@ before_install:
   - uname -a
   - df -h
   - ulimit -a
-
     # Install the Python environment
   - source devtools/travis-ci/before_install.sh
   - python -V
@@ -39,6 +38,8 @@ install:
   - conda activate test
   - conda install -c conda-forge pygraphviz rdkit
   - conda install numpy scipy biopython networkx pillow
+  - conda install -c bioconda msms 
+  - conda install -c salilab dssp
   - pip install pysmiles
     # Build and install package
   - python setup.py develop --no-deps
