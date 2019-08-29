@@ -1,0 +1,17 @@
+name: pyemap
+channels:
+   - conda-forge
+   - bioconda
+   - salilab
+dependencies:
+   - rdkit
+   - pygraphviz
+   - numpy
+   - scipy
+   - biopython
+   - pillow
+   - networkx 
+   - msms
+   - dssp
+   - pip:
+      - pysmiles
