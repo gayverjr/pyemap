@@ -3,8 +3,8 @@ import pyemap
 my_emap = pyemap.fetch_and_parse("1u3d")
 pyemap.process(my_emap)
 pyemap.find_paths(my_emap,"FAD510(A)-2",target = "W324(A)")
-my_emap.report()
-#my_emap.save_init_graph("custom.png")
+print(my_emap.report())
+#my_emap.show_residue("W400(A)")
 
 
 

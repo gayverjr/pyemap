@@ -27,8 +27,8 @@ setup(
     description=short_description[0],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    version="0.0.2",
+    #cmdclass=versioneer.get_cmdclass(),
     license='BSD-3-Clause',
 
     # Which Python importable modules should be included when your package is installed
@@ -46,7 +46,14 @@ setup(
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment
+    install_requires=['pygraphviz>=1.0',
+    				  'numpy',
+    				  'networkx',
+  					  'pysmiles',
+    				  'biopython',
+    			      'scipy',
+    				  'pillow'],             
+    				   # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',
     #            'Mac OS-X',
     #            'Unix',

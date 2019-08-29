@@ -45,7 +45,13 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx'
 ]
+intersphinx_mapping ={
+    'networkx': ('https://networkx.github.io/documentation/stable/', None),
+    'networkx': ('https://biopython.readthedocs.io/en/latest/', None),
+
+}
 
 autosummary_generate = True
 
