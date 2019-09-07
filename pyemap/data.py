@@ -102,3 +102,9 @@ SB_std_dev = {
     'SS': 0.026,
     'PP': 0.025
 }
+
+import os
+# clusters
+clusters = os.listdir(os.path.abspath(
+    os.path.dirname(__file__)) + '/data/clusters')
+clusters = [cluster.replace('.svg', '') for cluster in clusters]

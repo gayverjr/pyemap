@@ -17,6 +17,7 @@ import numpy as np
 from rdkit import Chem
 from .data import *
 
+
 def is_pi_bonded(cur_atom, next_atom):
     """Determines whether two atoms are pi bonded based on experimental bond lengths.
 
@@ -95,10 +96,11 @@ def find_conjugated_systems(atoms, res_names):
     only edges that are included are those between atoms that considered to be pi-bonded (see is_pi_bonded). The
     chemical graph is now a forest, and so the next step is collect each connected component subgraph. Only subgraphs
     that contain cycles (aromatic) or are larger than 10 are considered (extended conjugated systems). For each subgraph,
-    the atoms are collected and a customized Residue object is constructured and named. 
+    the atoms are collected and a customized Residue object is constructured and named.
     """
     # first let's create the chemical graph structure
-    arom_atoms = ['O', 'P', 'N', 'C','S']  # only these elements will be considered in our search
+    # only these elements will be considered in our search
+    arom_atoms = ['O', 'P', 'N', 'C', 'S']
     cust_graph = nx.Graph()
     for i in range(len(atoms)):
         for k in range(i, len(atoms)):
@@ -131,23 +133,6 @@ def find_conjugated_systems(atoms, res_names):
             atm_list.append(atoms[node])
         custom_res_list.append(create_custom_residue(atm_list, res_name))
         res_names.append(res_name)
-
-    # Determine if it is iron-sulfur cluster
-    """iron = False
-    sulfur = False
-    iron_sulfur = False
-    for i in range(len(atoms)):
-        if atoms[i].element == 'Fe':
-            iron = True
-        elif atoms[i].element == 'S':
-            sulfur = True
-        else:
-            iron = False
-            sulfur = False
-    if iron and sulfur:
-        iron_sulfur = True
-
-    if iron_sulfur:"""
 
     return custom_res_list
 
@@ -187,6 +172,7 @@ def create_custom_residue(atm_list, res_name):
 
     return custom_res
 
+
 def process_custom_residues(non_standard_residue_list):
     """Main method of custom residues module.
 
@@ -206,6 +192,7 @@ def process_custom_residues(non_standard_residue_list):
     """
     res_names = []
     custom_res = []
+
     for residue in non_standard_residue_list:
         atm_list = list(residue.get_atoms())
         conj_systems = find_conjugated_systems(
@@ -214,4 +201,13 @@ def process_custom_residues(non_standard_residue_list):
             for system in conj_systems:
                 res_names.append(system.resname)
             custom_res += conj_systems
+
+    # Clusters
+    for residue in non_standard_residue_list:
+        if residue.resname in clusters:
+            atm_list = list(residue.get_atoms())
+            res_name = str(atm_list[0].parent.get_resname()) + str(
+                atm_list[0].get_full_id()[3][1]) + "(" + str(
+                    atm_list[0].get_full_id()[2]) + ")"
+            custom_res.append(create_custom_residue(atm_list, res_name))
     return custom_res
