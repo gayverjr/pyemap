@@ -3,8 +3,8 @@
 # Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
 """Finds shortest paths in graph given a source and optionally a target node.
 
-Defines implementations of yen's and dijkstra's algorithms for calculating the shortest path(s) from 
-the source to target/surface exposed residues. Also defines ShortestPath and Branch objects for 
+Defines implementations of yen's and dijkstra's algorithms for calculating the shortest path(s) from
+the source to target/surface exposed residues. Also defines ShortestPath and Branch objects for
 organizing the pathways based on their distances and first surface exposed residue reached during
 the pathway.
 
@@ -15,6 +15,7 @@ import string
 import sys
 import networkx as nx
 import numpy as np
+
 
 class ShortestPath(object):
     """Data structure used to store shortest paths.
@@ -50,14 +51,14 @@ class ShortestPath(object):
             List of residues that make up the shortest path
         length: float
             Total distance from source to target
-        '''       
+        '''
         self.path = path
         self.length = length
         self.path_id = "none"
-        self.selection_strs=[]
-        self.color_list=[]
-        self.labeled_atoms=[]
-        self.label_texts=[]
+        self.selection_strs = []
+        self.color_list = []
+        self.labeled_atoms = []
+        self.label_texts = []
 
     def __eq__(self, other):
         return self.length == other.length
@@ -74,7 +75,8 @@ class ShortestPath(object):
         return printline
 
     def get_path_as_list(self):
-        original_list = [[self.path_id], self.path, [str('{:.2f}'.format(round(self.length, 2)))]]
+        original_list = [[self.path_id], self.path, [
+            str('{:.2f}'.format(round(self.length, 2)))]]
         merged = list(itertools.chain(*original_list))
         return merged
 
@@ -82,12 +84,12 @@ class ShortestPath(object):
         """Setter for path_id"""
         self.path_id = path_id
 
-    def set_visualization(self,selection_strs,color_list,labeled_atoms,label_texts):
+    def set_visualization(self, selection_strs, color_list, labeled_atoms, label_texts):
         '''Saves information needed for NGL visualization.'''
-        self.selection_strs=selection_strs
-        self.color_list=color_list
-        self.labeled_atoms=labeled_atoms
-        self.label_texts=label_texts
+        self.selection_strs = selection_strs
+        self.color_list = color_list
+        self.labeled_atoms = labeled_atoms
+        self.label_texts = label_texts
 
 
 class Branch(object):
@@ -116,8 +118,8 @@ class Branch(object):
     def add_path(self, path):
         """Adds a path to the branch and sets the path_id.
 
-        Each time a path is added, the paths in the branch are sorted. After sorting, each path is assigned a 
-        path id composed of the branch id and its location in the paths list. For example, the shortest path 
+        Each time a path is added, the paths in the branch are sorted. After sorting, each path is assigned a
+        path id composed of the branch id and its location in the paths list. For example, the shortest path
         in branch 12 would be assigned the id '12a', the second shortest '12b' and so on.
 
         Parameters
@@ -197,7 +199,7 @@ def _find_branch(pt, targets, branches):
     targets: list of str
         List of surface exposed residues
     branches: list of pyemap.dijkstras.Branch objects
-        List of branches already found 
+        List of branches already found
 
     Returns
     -------
@@ -223,7 +225,7 @@ def dijkstras_shortest_paths(G, start, targets):
 
     Performs Dijkstra's algorithm from the source to each surface exposed residue, finding the
     shortest path. The ShortestPath objects are organized into branches based on the first surface
-    exposed residue reached during the course of the pathway. 
+    exposed residue reached during the course of the pathway.
 
     Parameters
     ----------
@@ -303,7 +305,7 @@ def dijkstras_shortest_paths(G, start, targets):
     return branches
 
 
-def yens_shortest_paths(G, start, target,max_paths=10):
+def yens_shortest_paths(G, start, target, max_paths=10):
     """Returns top 5 shortest paths from source to target.
 
     Uses Yen's algorithm to calculate the shortest paths from source to target, writes
@@ -320,7 +322,7 @@ def yens_shortest_paths(G, start, target,max_paths=10):
     target: str
         Target node
     max_paths: int, optional
-        Maximum number of paths to search for 
+        Maximum number of paths to search for
 
     Returns
     -------
@@ -384,7 +386,7 @@ def yens_shortest_paths(G, start, target,max_paths=10):
                         G.node[path[j + 1]]['fillcolor'] += '7F'
                         G.node[path[j + 1]]['color'] = '#7080907F'
             shortestPaths[i].set_id("1" + letters[i])
-        br = Branch(1,shortestPaths[0].path[-1])
+        br = Branch(1, shortestPaths[0].path[-1])
         for pt in shortestPaths:
             br.add_path(pt)
         return [br]

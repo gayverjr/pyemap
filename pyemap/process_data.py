@@ -4,7 +4,7 @@
 """Processes parsed .pdb/.mmcif file, and generates a graph based on user selected options.
 
 Collects requested residues and constructs a distance matrix, from which the graph is generated. Edges are filtered out based
-on user specifications. Finally, the selected criteria for surface exposure is used to classify residues as buried or exposed. 
+on user specifications. Finally, the selected criteria for surface exposure is used to classify residues as buried or exposed.
 Results are stored in the emap object which was passed in.
 
 """
@@ -27,17 +27,23 @@ from .data import *
 TRP_sc = ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
 TYR_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
 PHE_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
-HIS_sc = ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1','AE2','AD2']
+HIS_sc = ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2']
 """module level lists of side chain atoms for respective residues"""
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
+
+
 def detach_parent(self):
     if self.parent:
         self.original_id = self.parent.full_id
     self.parent = None
+
+
 Bio.PDB.Atom.Atom.detach_parent = detach_parent
 
 # Monkey patches Atom __init__ to include a variable which tracks its original ID and assigns a unique ID
+
+
 def atm_init(self, name, coord, bfactor, occupancy, altloc, fullname, serial_number, element=None):
     self.level = "A"
     # Reference to the residue
@@ -66,9 +72,13 @@ def atm_init(self, name, coord, bfactor, occupancy, altloc, fullname, serial_num
     self.mass = self._assign_atom_mass()
     # For atom sorting (protein backbone atoms first)
     self._sorting_keys = {'N': 0, 'CA': 1, 'C': 2, 'O': 3}
+
+
 Bio.PDB.Atom.Atom.__init__ = atm_init
 
 # monkey patches mangling of disordered atoms
+
+
 def get_unpacked_list(self):
     """
      Returns all atoms from the residue,
@@ -83,19 +93,21 @@ def get_unpacked_list(self):
         else:
             undisordered_atom_list.append(atom)
     return undisordered_atom_list
+
+
 Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
 
 
 def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     '''Applies penalty function parameters and returns score.
-    
+
         math:: `\epsilon = \alpha \exp(-\beta(R-R_{offset}))`
-    
+
     Parameters
     ----------
     coef_alpha,exp_beta,r_offset:float
         Penalty funciton parameters
-    
+
     Returns
     -------
     mod_penalty: float
@@ -104,6 +116,7 @@ def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     penalty = coef_alpha * np.exp(-exp_beta * (dist - r_offset))
     mod_penalty = -np.log10(penalty)
     return mod_penalty
+
 
 def calculate_residue_depth(aromatic_residues, model):
     """Returns a list of surface exposed residues as determined by residue depth.
@@ -174,10 +187,12 @@ def calculate_asa(model, filename, AROM_LIST, chain_list):
         keys = list(dssp.keys())
         for key in keys:
             if key[0] in chain_list and dssp[key][3] >= cutoff and dssp[key][1] in letter_list:
-                goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
+                goal_str = dssp[key][1] + \
+                    str(key[1][1]) + "(" + str(key[0]) + ")"
                 surface_exposed_res.append(goal_str)
     except Exception as e:
-        raise RuntimeWarning("Unable to calculate solvent accessibility for this structure.")
+        raise RuntimeWarning(
+            "Unable to calculate solvent accessibility for this structure.")
     return surface_exposed_res
 
 
@@ -250,7 +265,8 @@ def closest_atom_dmatrix(residues, coef_alpha, exp_beta, r_offset):
                         bestDist = dist_a_b
             distance_matrix[i][j] = bestDist
             distance_matrix[j][i] = bestDist
-            pathways_matrix[i][j] = pathways_model(bestDist, coef_alpha, exp_beta, r_offset)
+            pathways_matrix[i][j] = pathways_model(
+                bestDist, coef_alpha, exp_beta, r_offset)
             pathways_matrix[j][i] = pathways_matrix[i][j]
         # Node names in graph
         node_label[i] = res.node_label
@@ -299,12 +315,13 @@ def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
         # Node names in graph
         node_label[i] = res.node_label
         com_d.append(np.array([com_x, com_y, com_z]))
-    # calculate matrix with penalty functions   
+    # calculate matrix with penalty functions
     pathways_matrix = np.zeros((len(com_d), len(com_d)))
     for i in range(len(com_d)):
         for j in range(i + 1, len(com_d)):
             dist_i_j = dist(com_d[i], com_d[j])
-            pathways_matrix[i][j] = pathways_model(dist_i_j, coef_alpha, exp_beta, r_offset)
+            pathways_matrix[i][j] = pathways_model(
+                dist_i_j, coef_alpha, exp_beta, r_offset)
             pathways_matrix[j][i] = pathways_matrix[i][j]
     return node_label, distance_matrix(com_d, com_d), pathways_matrix
 
@@ -383,11 +400,11 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
         if atm.serial_number in serial_list:
             if atm.serial_number in used_atoms:
                 message = "Invalid atom serial number range. Atom " + str(
-                        atm.serial_number) + " is already included in another residue."
+                    atm.serial_number) + " is already included in another residue."
                 raise ValueError(message)
             if atm.parent.parent.id not in chain_selected:
                 message = "Invalid atom serial number range. Atom " + str(
-                        atm.serial_number) + " is in chain " + str(atm.parent.parent.id) + "."
+                    atm.serial_number) + " is in chain " + str(atm.parent.parent.id) + "."
                 raise ValueError(message)
             atm.get_full_id()
             if not source_res:
@@ -410,6 +427,7 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
     user_res.resname = name + str(k)
     user_res.node_label = user_res.resname
     return user_res
+
 
 def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, include_Phe, include_His):
     """Returns list of standard aromatic residues.
@@ -436,7 +454,7 @@ def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, in
 
     """
     AROM_LIST = ['TRP', 'HIS', 'PHE', 'TYR']
-    if not include_Trp: 
+    if not include_Trp:
         AROM_LIST.remove('TRP')
     if not include_Tyr:
         AROM_LIST.remove('TYR')
@@ -451,7 +469,8 @@ def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, in
             arom_res = res.copy()
             residue_list.append(arom_res)
     residue_list = process_standard_residues(residue_list)
-    return residue_list,AROM_LIST
+    return residue_list, AROM_LIST
+
 
 def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
     """Generates customized Bio.PDB.Residue.Residue objects from a custom atom string.
@@ -508,9 +527,11 @@ def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
                 else:
                     serial_number_list.append(int(atm))
             if serial_number_list:
-                new_res = create_user_res(serial_number_list, all_atoms, chain_selected, used_atoms, user_res_names)
+                new_res = create_user_res(
+                    serial_number_list, all_atoms, chain_selected, used_atoms, user_res_names)
             else:
-                raise SyntaxError("Invalid atom serial number range. See the manual for proper syntax.")
+                raise SyntaxError(
+                    "Invalid atom serial number range. See the manual for proper syntax.")
             res_list.append(new_res)
             for atm in new_res.get_atoms():
                 used_atoms.append(atm.serial_number)
@@ -540,7 +561,8 @@ def finish_graph(G, surface_exposed_res, chain_list):
         if G[node] == {}:
             G.remove_node(node)
 
-def filter_edges(G,G_pathways,distance_cutoff, percent_edges, num_st_dev_edges):
+
+def filter_edges(G, G_pathways, distance_cutoff, percent_edges, num_st_dev_edges):
     '''Applies distance based filters to edges, removing those edges which do not fit criteria.
 
     Parameters
@@ -564,11 +586,13 @@ def filter_edges(G,G_pathways,distance_cutoff, percent_edges, num_st_dev_edges):
         for neighbor in G[node]:
             if weights.index(G.get_edge_data(node, neighbor)['weight']) <= thresh_index and \
                     G.get_edge_data(node, neighbor)['weight'] <= distance_cutoff:
-                edge_length_per_node.append(G.get_edge_data(node, neighbor)['weight'])
+                edge_length_per_node.append(
+                    G.get_edge_data(node, neighbor)['weight'])
 
         len_average, len_st_dev = 0.0, 0.0
         if edge_length_per_node != []:
-            edge_length_per_node = np.array(edge_length_per_node, dtype='float64')
+            edge_length_per_node = np.array(
+                edge_length_per_node, dtype='float64')
             len_average = np.average(edge_length_per_node)
             len_st_dev = np.std(edge_length_per_node)
 
@@ -592,6 +616,7 @@ def filter_edges(G,G_pathways,distance_cutoff, percent_edges, num_st_dev_edges):
             G.remove_edge(node1, node2)
         if G_pathways.has_edge(node1, node2):
             G_pathways.remove_edge(node1, node2)
+
 
 def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges):
     """Constructs the graph from the distance matrix and node labels.
@@ -620,7 +645,8 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
     G = nx.from_numpy_matrix(dmatrix)
     minval_pathways = np.min(pathways_matrix[pathways_matrix.nonzero()])
     G_pathways = nx.from_numpy_matrix(pathways_matrix)
-    filter_edges(G,G_pathways,distance_cutoff, percent_edges, num_st_dev_edges)
+    filter_edges(G, G_pathways, distance_cutoff,
+                 percent_edges, num_st_dev_edges)
     for u, v, d in G_pathways.edges(data=True):
         d['len'] = d['weight'] / minval_pathways
         d['distance'] = G[u][v]['weight']
@@ -656,6 +682,7 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         G[name_node1][name_node2]['style'] = 'dashed'
     return G
 
+
 def process(emap,
             chains="All",
             eta_moieties="All",
@@ -681,7 +708,7 @@ def process(emap,
     chains: list of str
         List of strings corresponding to chains included in analysis
     eta_moieties: list of str
-        List of strings corresponding to residue names of eta moieties 
+        List of strings corresponding to residue names of eta moieties
     dist_def: int, optional
         0 for center of mass, 1 for closest atom
     sdef: int, optional
@@ -697,7 +724,7 @@ def process(emap,
     num_st_dev_edges: float
         For a particular vertex, only edges with length < average length + num_st_dev_edges * SD included
     coef_alpha,exp_beta,r_offset: float, optional
-        Penalty function parameters. 
+        Penalty function parameters.
     Raises
     ------
     RuntimeError:
@@ -706,33 +733,37 @@ def process(emap,
     """
     emap._reset_process()
     if eta_moieties == "All":
-        eta_moieties= emap.eta_moieties.keys()
+        eta_moieties = emap.eta_moieties.keys()
     if chains == "All":
         chains = emap.chains
     model = emap.structure[0]
     all_residues = list(model.get_residues())
     all_atoms = list(model.get_atoms())
-    aromatic_residues,AROM_LIST = get_standard_residues(all_residues, chains, trp, tyr, phe, his)
+    aromatic_residues, AROM_LIST = get_standard_residues(
+        all_residues, chains, trp, tyr, phe, his)
     for resname in eta_moieties:
         AROM_LIST.append(resname)
         aromatic_residues.append(emap.eta_moieties[resname])
-    used_atoms=[]
+    used_atoms = []
     for res in aromatic_residues:
         for atm in res.get_atoms():
             used_atoms.append(atm.serial_number)
-    user_residues=[]
+    user_residues = []
     if custom:
-        user_residues = get_user_residues(custom, all_atoms, chains, used_atoms) 
+        user_residues = get_user_residues(
+            custom, all_atoms, chains, used_atoms)
     for res in user_residues:
         AROM_LIST.append(res.resname)
         emap.user_residues[res.resname] = res
-    aromatic_residues+=user_residues
+    aromatic_residues += user_residues
     if int(dist_def) == 0:
-        node_labels, dmatrix, pathways_matrix = com_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
+        node_labels, dmatrix, pathways_matrix = com_dmatrix(
+            aromatic_residues, coef_alpha, exp_beta, r_offset)
     else:
         node_labels, dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta,
-                                                                   r_offset)
-    G = create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges)
+                                                                     r_offset)
+    G = create_graph(dmatrix, pathways_matrix, node_labels,
+                     distance_cutoff, percent_edges, num_st_dev_edges)
     if len(G.edges()) == 0:
         raise RuntimeError(
             "Not enough edges to construct a graph.")

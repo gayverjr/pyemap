@@ -7,6 +7,7 @@ import numpy as np
 import pygraphviz as pg
 from .shortest_paths import yens_shortest_paths, dijkstras_shortest_paths
 
+
 def _finish_graph(G, original_shape_start, source):
     """Draws the graph with the shortest pathways highlighted.
 
@@ -36,7 +37,7 @@ def _finish_graph(G, original_shape_start, source):
     # draw graph
 
 
-def find_paths(emap, source, target=None,max_paths=10):
+def find_paths(emap, source, target=None, max_paths=10):
     """Function which calculates pathways from source to target or surface exposed residues.
 
     Performs shortest path analysis on source and (optionally) target residues. After analysis is completed, the pathways
@@ -64,17 +65,17 @@ def find_paths(emap, source, target=None,max_paths=10):
     G.node[source]['shape'] = 'oval'
     if target:
         target = target.strip()
-        branches = yens_shortest_paths(G, source, target,max_paths=max_paths)
+        branches = yens_shortest_paths(G, source, target, max_paths=max_paths)
         # color target node blue
         G.node[target]['fillcolor'] = '#40e0d0FF'
         G.node[target]['penwidth'] = 6.0
     else:
         surface_exposed = emap.get_surface_exposed_residues()
+        surface_exposed.remove(source)
         branches = dijkstras_shortest_paths(G, source, surface_exposed)
     _finish_graph(G, original_shape_start, source)
     emap._store_paths_graph(G)
     if target:
-        emap._store_paths(branches,yens=True)
+        emap._store_paths(branches, yens=True)
     else:
         emap._store_paths(branches)
-
