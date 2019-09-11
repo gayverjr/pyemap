@@ -163,7 +163,7 @@ class emap():
         residue: Bio.PDB.Residue.Residue
              Customized residue object generated for automatically detected eta moiety
         '''
-        if not residue.resname[:3] in clusters:
+        if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
             #smiles_str = getSimpleSmiles(res_graph, atoms)
             fill_valence(res_graph)
@@ -202,7 +202,7 @@ class emap():
     def _add_residue(self, residue):
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
         '''
-        if not residue.resname[:3] in clusters:
+        if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
             #smiles_str = getSimpleSmiles(res_graph, atoms)
             fill_valence(res_graph, respect_hcount=False,
@@ -256,9 +256,9 @@ class emap():
         '''
 
         if self.residues and resname in self.residues:
-            if not self.residues[resname].smiles and not resname[:3] in clusters:
+            if not self.residues[resname].smiles and not resname[:3] in clusters or "CUST" in resname:
                 raise KeyError(
-                    "Not yet implemented for standard or custom residues.")
+                    "Not yet implemented for standard or user defined residues.")
             mol = Chem.MolFromSmarts(self.residues[resname].smiles)
         elif resname in self.eta_moieties and not resname[:3] in clusters:
             mol = Chem.MolFromSmarts(self.eta_moieties[resname].smiles)
@@ -292,9 +292,9 @@ class emap():
         Uses pillow library.
         '''
         if self.residues and resname in self.residues:
-            if resname not in self.smiles and not resname[:3] in clusters:
+            if resname not in self.smiles and not resname[:3] in clusters or "CUST" in resname:
                 raise KeyError(
-                    "Not yet implemented for standard or custom residues.")
+                    "Not yet implemented for standard or user defined residues.")
             mol = Chem.MolFromSmarts(self.smiles[resname])
         elif resname in self.eta_moieties:
             if not resname[:3] in clusters:

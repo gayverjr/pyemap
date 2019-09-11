@@ -71,7 +71,8 @@ def find_paths(emap, source, target=None, max_paths=10):
         G.node[target]['penwidth'] = 6.0
     else:
         surface_exposed = emap.get_surface_exposed_residues()
-        surface_exposed.remove(source)
+        if source in surface_exposed:
+            surface_exposed.remove(source)
         branches = dijkstras_shortest_paths(G, source, surface_exposed)
     _finish_graph(G, original_shape_start, source)
     emap._store_paths_graph(G)
