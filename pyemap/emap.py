@@ -1,18 +1,19 @@
 from rdkit import Chem
 from rdkit.Chem import Draw
 from .custom_residues import is_pi_bonded, dist
+import numpy as np
 from .data import *
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
 from .shortest_paths import Branch, ShortestPath
-from .smiles import getSimpleSmiles
+from .smiles import getSimpleSmiles,cleanup_bonding,remove_side_chains
 from collections import OrderedDict
 from PIL import Image
 import warnings
 import os
 import logging
-from pysmiles import write_smiles, fill_valence, correct_aromatic_rings, add_explicit_hydrogens
 from shutil import copyfile
+from .data import *
 
 
 class emap():
@@ -150,9 +151,15 @@ class emap():
                 if (not i == k) and is_pi_bonded(atoms[i], atoms[k]):
                     if atoms[i].element in arom_atoms and atoms[k].element in arom_atoms:
                         res_graph.add_edge(i, k)
-                        res_graph.nodes[i]['element'] = atoms[i].element
-                        res_graph.nodes[k]['element'] = atoms[k].element
+                        res_graph.nodes[i]["element"] = atoms[i].element
+                        res_graph.nodes[i]["coords"] = atoms[i].coord
+                        res_graph.nodes[k]["element"] = atoms[k].element
+                        res_graph.nodes[k]["coords"] = atoms[k].coord
+        if nx.cycle_basis(res_graph):
+            cleanup_bonding(res_graph)
+            remove_side_chains(res_graph)
         return res_graph
+
 
     def _add_eta_moiety(self, residue):
         '''Gets the smiles string for an automatically identified non-protein eta moiety,
@@ -165,11 +172,7 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            #smiles_str = getSimpleSmiles(res_graph, atoms)
-            fill_valence(res_graph)
-            add_explicit_hydrogens(res_graph)
-            correct_aromatic_rings(res_graph)
-            smiles_str = write_smiles(res_graph)
+            smiles_str = getSimpleSmiles(res_graph)
             molecule = Chem.MolFromSmarts(smiles_str)
             smiles_str = Chem.MolToSmarts(molecule, True)
             residue.smiles = smiles_str
@@ -204,12 +207,7 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            #smiles_str = getSimpleSmiles(res_graph, atoms)
-            fill_valence(res_graph, respect_hcount=False,
-                         respect_bond_order=False)
-            add_explicit_hydrogens(res_graph)
-            correct_aromatic_rings(res_graph)
-            smiles_str = write_smiles(res_graph)
+            smiles_str = getSimpleSmiles(res_graph)
             molecule = Chem.MolFromSmarts(smiles_str)
             smiles_str = Chem.MolToSmarts(molecule, True)
             residue.smiles = smiles_str
