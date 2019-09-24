@@ -17,7 +17,7 @@ See example.py for a basic view of how it works.
 
 ### Copyright
 
-Copyright (c) 2019, James Gayvert
+Copyright (c) 2019, James Gayvert, Ruslan Tazhigulov
 
 
 #### Acknowledgements
