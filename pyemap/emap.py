@@ -1,19 +1,20 @@
 from rdkit import Chem
 from rdkit.Chem import Draw
 from .custom_residues import is_pi_bonded, dist
+import numpy as np
 from .data import *
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
 from .shortest_paths import Branch, ShortestPath
-from .smiles import getSimpleSmiles
+from .smiles import getSimpleSmiles,cleanup_bonding,remove_side_chains
 from collections import OrderedDict
 from PIL import Image
-import warnings
 import os
-import logging
-from pysmiles import write_smiles, fill_valence, correct_aromatic_rings, add_explicit_hydrogens
 from shutil import copyfile
-
+import tempfile
+from .data import *
+from svglib.svglib import svg2rlg
+from reportlab.graphics import renderPM
 
 class emap():
     '''
@@ -150,9 +151,15 @@ class emap():
                 if (not i == k) and is_pi_bonded(atoms[i], atoms[k]):
                     if atoms[i].element in arom_atoms and atoms[k].element in arom_atoms:
                         res_graph.add_edge(i, k)
-                        res_graph.nodes[i]['element'] = atoms[i].element
-                        res_graph.nodes[k]['element'] = atoms[k].element
+                        res_graph.nodes[i]["element"] = atoms[i].element
+                        res_graph.nodes[i]["coords"] = atoms[i].coord
+                        res_graph.nodes[k]["element"] = atoms[k].element
+                        res_graph.nodes[k]["coords"] = atoms[k].coord
+        if nx.cycle_basis(res_graph):
+            cleanup_bonding(res_graph)
+            remove_side_chains(res_graph)
         return res_graph
+
 
     def _add_eta_moiety(self, residue):
         '''Gets the smiles string for an automatically identified non-protein eta moiety,
@@ -165,11 +172,7 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            #smiles_str = getSimpleSmiles(res_graph, atoms)
-            fill_valence(res_graph)
-            add_explicit_hydrogens(res_graph)
-            correct_aromatic_rings(res_graph)
-            smiles_str = write_smiles(res_graph)
+            smiles_str = getSimpleSmiles(res_graph)
             molecule = Chem.MolFromSmarts(smiles_str)
             smiles_str = Chem.MolToSmarts(molecule, True)
             residue.smiles = smiles_str
@@ -204,12 +207,7 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            #smiles_str = getSimpleSmiles(res_graph, atoms)
-            fill_valence(res_graph, respect_hcount=False,
-                         respect_bond_order=False)
-            add_explicit_hydrogens(res_graph)
-            correct_aromatic_rings(res_graph)
-            smiles_str = write_smiles(res_graph)
+            smiles_str = getSimpleSmiles(res_graph)
             molecule = Chem.MolFromSmarts(smiles_str)
             smiles_str = Chem.MolToSmarts(molecule, True)
             residue.smiles = smiles_str
@@ -243,7 +241,7 @@ class emap():
         return select_string
 
     def save_residue(self, resname, dest="", size=(200, 200)):
-        '''Saves image of residue to file
+        '''Saves image of residue to file in .svg format.
 
         Parameters
         ----------
@@ -255,61 +253,42 @@ class emap():
             dimensions of image saved to file
         '''
 
-        if self.residues and resname in self.residues:
-            if not self.residues[resname].smiles and not resname[:3] in clusters or "CUST" in resname:
-                raise KeyError(
-                    "Not yet implemented for standard or user defined residues.")
-            mol = Chem.MolFromSmarts(self.residues[resname].smiles)
-        elif resname in self.eta_moieties and not resname[:3] in clusters:
-            mol = Chem.MolFromSmarts(self.eta_moieties[resname].smiles)
-        elif resname[:3] in clusters:
-            pass
+        if resname in self.residues or resname in eta_moieties:
+            if "CUST" in resname:
+                raise KeyError("Not available for user defined residues.")
+            elif resname[:3] in clusters:
+                cluster_img_name = os.path.abspath(os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                if dest:
+                    target_name = dest
+                else:
+                    target_name = resname + ".svg"
+                copyfile(cluster_img_name, target_name)
+            else:
+                mol = Chem.MolFromSmarts(self.smiles[resname])
+                if dest:
+                    Draw.MolToFile(mol, dest, kekulize=False, size=size)
+                else:
+                    Draw.MolToFile(mol, resname + ".svg",kekulize=False, size=size)
         else:
             raise KeyError("No record of any residue by that name.")
 
-        if dest:
-            if not resname[:3] in clusters:
-                Draw.MolToFile(mol, dest, kekulize=False, size=size)
-            else:
-                cluster_img_name = os.path.abspath(
-                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
-                copyfile(cluster_img_name, dest)
-        else:
-            if not resname[:3] in clusters:
-                Draw.MolToFile(mol, resname + ".svg",
-                               kekulize=False, size=size)
-            else:
-                cluster_img_name = os.path.abspath(
-                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
-                target_name = resname + ".svg"
-                copyfile(cluster_img_name, target_name)
 
     def show_residue(self, resname, size=(200, 200)):
-        '''Opens image of chemical structure in default image viewer.
-
-        Notes
-        -----
-        Uses pillow library.
+        '''Opens image of chemical structure in PIL viewer.
         '''
-        if self.residues and resname in self.residues:
-            if resname not in self.smiles and not resname[:3] in clusters or "CUST" in resname:
-                raise KeyError(
-                    "Not yet implemented for standard or user defined residues.")
-            mol = Chem.MolFromSmarts(self.smiles[resname])
-        elif resname in self.eta_moieties:
-            if not resname[:3] in clusters:
+        if resname in self.residues or resname in self.eta_moieties:
+            if "CUST" in resname:
+                raise KeyError("Not available for user defined residues.")
+            elif resname[:3] in clusters:
+                cluster_img_name = os.path.abspath(os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                drawing = svg2rlg(cluster_img_name)
+                img = renderPM.drawToPIL(drawing)
+            else:
                 mol = Chem.MolFromSmarts(self.smiles[resname])
+                img = Draw.MolToImage(mol, kekulize=False, size=size)
+            img.show()
         else:
             raise KeyError("No record of any residue by that name.")
-        if not resname[:3] in clusters:
-            Draw.MolToFile(mol, "tmp.png", kekulize=False, size=size)
-        else:
-            cluster_img_name = os.path.abspath(
-                os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
-            raise KeyError("Not yet implemented for inorganic clusters.")
-        img = Image.open("tmp.png")
-        img.show()
-        os.remove("tmp.png")
 
     def save_init_graph(self, dest=""):
         '''Saves image of graph generated by process step to file.
@@ -379,7 +358,7 @@ class emap():
                 "No graph found. Please run pyemap.process(my_emap) to generate the graph.")
 
     def report(self, dest=""):
-        '''Writes report of most probable pathways to console or to file.
+        '''Returns report of most probable pathways. Writes to file if destination is specified.
 
         Parameters
         -----------
@@ -398,54 +377,49 @@ class emap():
             if dest:
                 fi = open(dest, "w")
                 fi.write(output)
+                return output
             else:
                 return output
         else:
             raise RuntimeError("Nothing to report.")
 
     def show_init_graph(self):
-        '''Opens image of graph after processing in default image viewer.
+        '''Opens 2D graph image in PIL viewer.
 
         Notes
         ------
         Uses the Pillow library.
         '''
         if self.init_graph:
-            fn = "tmp.png"
+            fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(self.init_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
             if agraph.number_of_nodes() <= 200:
-                agraph.draw(fn, prog='neato')
+                agraph.draw(fout.name,prog='neato')
             else:
-                agraph.draw(fn, prog='dot')
-            img = Image.open("tmp.png")
+                agraph.draw(fout.name, prog='dot')
+            img = Image.open(fout.name)
             img.show()
-            os.remove("tmp.png")
         else:
             raise RuntimeError("Nothing to draw.")
 
     def show_paths_graph(self):
-        '''Opens image of paths graph in default image viewer.
-
-        Notes
-        ------
-        Uses the Pillow library.
+        '''Opens 2d graph image with pathways highlighted in PIL viewer.
         '''
         if self.paths_graph:
-            fn = "tmp.png"
+            fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(self.paths_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
             agraph.layout(args="-n2")
             if agraph.number_of_nodes() <= 200:
-                agraph.draw(fn, prog='neato')
+                agraph.draw(fout.name, prog='neato')
             else:
-                agraph.draw(fn, prog='dot')
-            img = Image.open("tmp.png")
+                agraph.draw(fout.name, prog='dot')
+            img = Image.open(fout.name)
             img.show()
-            os.remove("tmp.png")
         else:
             raise RuntimeError("Nothing to draw.")

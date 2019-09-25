@@ -49,7 +49,7 @@ def is_pi_bonded(cur_atom, next_atom):
     bond = str(cur_atom.element.upper()) + str(next_atom.element.upper())
     cutoff = SB_means.get(bond)
     if cutoff:
-        cutoff -= 3 * SB_std_dev.get(bond)
+        cutoff -= 2 * SB_std_dev.get(bond)
         return dist(v1, v2) <= cutoff
     else:
         return False
@@ -72,7 +72,6 @@ def dist(x, y):
 
     """
     return np.sqrt(np.sum((x - y)**2))
-
 
 def find_conjugated_systems(atoms, res_names):
     """Finds conjugated systems within a BioPython residue object, and returns them as individual customized BioPython
@@ -107,13 +106,17 @@ def find_conjugated_systems(atoms, res_names):
             if (not i == k) and is_pi_bonded(atoms[i], atoms[k]):
                 if atoms[i].element in arom_atoms and atoms[k].element in arom_atoms:
                     cust_graph.add_edge(i, k)
+                    cust_graph.nodes[i]["element"] = atoms[i].element
+                    cust_graph.nodes[i]["coords"] = atoms[i].coord
+                    cust_graph.nodes[k]["element"] = atoms[k].element
+                    cust_graph.nodes[k]["coords"] = atoms[k].coord
 
     # now we have a forest, let's get each individual tree (only take cycles or bigger than 10)
     subgraphs = []
     all_subgraphs = (cust_graph.subgraph(c)
                      for c in nx.connected_components(cust_graph))
     for graph in all_subgraphs:
-        if len(graph.nodes()) >= 10 or nx.cycle_basis(graph):
+        if nx.cycle_basis(graph) or len(graph.nodes()) >= 10:
             subgraphs.append(graph)
     custom_res_list = []
     count = 1
