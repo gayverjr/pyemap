@@ -305,9 +305,12 @@ class emap():
                 fn = self.filename[:-4] + "_graph.png"
             agraph = to_agraph(self.init_graph)
             agraph.graph_attr.update(
-                ratio=1.0, overlap="false", mode="ipsep", splines="true")
+                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-            agraph.draw(fn, prog='neato')
+            if agraph.number_of_nodes() <= 200:
+                agraph.draw(fn, prog='neato')
+            else:
+                agraph.draw(fn, prog='dot')
         else:
             raise RuntimeError("Nothing to draw.")
 
@@ -326,10 +329,13 @@ class emap():
                 fn = self.filename[:-4] + "_graph.png"
             agraph = to_agraph(self.paths_graph)
             agraph.graph_attr.update(
-                ratio=1.0, overlap="false", mode="ipsep", splines="true")
+                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
             agraph.layout(args="-n2")
-            agraph.draw(fn, prog='neato')
+            if agraph.number_of_nodes() <= 200:
+                agraph.draw(fn, prog='neato')
+            else:
+                agraph.draw(fn, prog='dot')
         else:
             raise RuntimeError("Nothing to draw.")
 
@@ -390,7 +396,10 @@ class emap():
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-            agraph.draw(fout.name,prog='neato')
+            if agraph.number_of_nodes() <= 200:
+                agraph.draw(fout.name,prog='neato')
+            else:
+                agraph.draw(fout.name, prog='dot')
             img = Image.open(fout.name)
             img.show()
         else:
@@ -403,9 +412,13 @@ class emap():
             fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(self.paths_graph)
             agraph.graph_attr.update(
-                ratio=1.0, overlap="false", mode="ipsep", splines="true")
+                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-            agraph.draw(fout.name, prog='neato')
+            agraph.layout(args="-n2")
+            if agraph.number_of_nodes() <= 200:
+                agraph.draw(fout.name, prog='neato')
+            else:
+                agraph.draw(fout.name, prog='dot')
             img = Image.open(fout.name)
             img.show()
         else:

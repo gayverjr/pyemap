@@ -1,7 +1,7 @@
 License
 =======
 
-Pyemap is distributed the the BSD-3 license.
+PyeMap is distributed the the BSD-3 license.
 
 ::
 
