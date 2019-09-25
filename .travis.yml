@@ -36,11 +36,10 @@ install:
   - python devtools/scripts/create_conda_env.py -n=test -p=$PYTHON_VER devtools/conda-envs/test_env.yaml
     # Activate the test environment
   - conda activate test
-  - conda install -c conda-forge pygraphviz rdkit
+  - conda install -c conda-forge pygraphviz rdkit svglib
   - conda install numpy scipy biopython networkx pillow
   - conda install -c bioconda msms 
   - conda install -c salilab dssp
-  - pip install pysmiles 
     # Build and install package
   - python setup.py develop --no-deps
 

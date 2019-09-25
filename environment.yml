@@ -13,5 +13,4 @@ dependencies:
    - networkx 
    - msms
    - dssp
-   - pip:
-      - pysmiles
+   - svglib
