@@ -6,7 +6,7 @@ from .data import *
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
 from .shortest_paths import Branch, ShortestPath
-from .smiles import getSimpleSmiles,cleanup_bonding,remove_side_chains
+from .smiles import getSimpleSmiles, cleanup_bonding, remove_side_chains
 from collections import OrderedDict
 from PIL import Image
 import os
@@ -15,6 +15,7 @@ import tempfile
 from .data import *
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+
 
 class emap():
     '''
@@ -256,7 +257,8 @@ class emap():
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
-                cluster_img_name = os.path.abspath(os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                cluster_img_name = os.path.abspath(os.path.dirname(
+                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
                 if dest:
                     target_name = dest
                 else:
@@ -267,10 +269,10 @@ class emap():
                 if dest:
                     Draw.MolToFile(mol, dest, kekulize=False, size=size)
                 else:
-                    Draw.MolToFile(mol, resname + ".svg",kekulize=False, size=size)
+                    Draw.MolToFile(mol, resname + ".svg",
+                                   kekulize=False, size=size)
         else:
             raise KeyError("No record of any residue by that name.")
-
 
     def residue_to_Image(self, resname, size=(200, 200)):
         '''Opens image of chemical structure in PIL viewer.
@@ -279,7 +281,8 @@ class emap():
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
-                cluster_img_name = os.path.abspath(os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                cluster_img_name = os.path.abspath(os.path.dirname(
+                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
                 drawing = svg2rlg(cluster_img_name)
                 img = renderPM.drawToPIL(drawing)
                 return img
@@ -299,18 +302,22 @@ class emap():
             Destination for writing to file.
         '''
         if self.init_graph:
-            if dest:
-                fn = dest
-            else:
-                fn = self.filename[:-4] + "_graph.png"
             agraph = to_agraph(self.init_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
             if agraph.number_of_nodes() <= 200:
-                agraph.draw(fn, prog='neato')
+                agraph.layout(
+                    prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
             else:
-                agraph.draw(fn, prog='dot')
+                agraph.layout(prog='dot')
+            if dest:
+                svg_fn = dest + '.svg'
+                png_fn = dest + '.png'
+                agraph.draw(svg_fn)
+                agraph.draw(png_fn)
+            else:
+                png_fn = self.filename[:-4] + "_graph.png"
+                agraph.draw(png_fn)
         else:
             raise RuntimeError("Nothing to draw.")
 
@@ -323,19 +330,22 @@ class emap():
             Destination for writing to file.
         '''
         if self.paths_graph:
-            if dest:
-                fn = dest
-            else:
-                fn = self.filename[:-4] + "_graph.png"
             agraph = to_agraph(self.paths_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-            agraph.layout(args="-n2")
             if agraph.number_of_nodes() <= 200:
-                agraph.draw(fn, prog='neato')
+                agraph.layout(
+                    prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
             else:
-                agraph.draw(fn, prog='dot')
+                agraph.layout(prog='dot')
+            if dest:
+                svg_fn = dest + '.svg'
+                png_fn = dest + '.png'
+                agraph.draw(svg_fn)
+                agraph.draw(png_fn)
+            else:
+                png_fn = self.filename[:-4] + "_graph.png"
+                agraph.draw(png_fn)
         else:
             raise RuntimeError("Nothing to draw.")
 
@@ -395,9 +405,9 @@ class emap():
             agraph = to_agraph(self.init_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
+            agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
             if agraph.number_of_nodes() <= 200:
-                agraph.draw(fout.name,prog='neato')
+                agraph.draw(fout.name, prog='neato')
             else:
                 agraph.draw(fout.name, prog='dot')
             img = Image.open(fout.name)
@@ -405,7 +415,7 @@ class emap():
         else:
             raise RuntimeError("Nothing to draw.")
 
-    def paths_graph_to_Image(self,test=False):
+    def paths_graph_to_Image(self, test=False):
         '''Opens 2d graph image with pathways highlighted in PIL viewer.
         '''
         if self.paths_graph:
@@ -413,8 +423,7 @@ class emap():
             agraph = to_agraph(self.paths_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.05 -Gmaxiter=50")
-            agraph.layout(args="-n2")
+            agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
             if agraph.number_of_nodes() <= 200:
                 agraph.draw(fout.name, prog='neato')
             else:
