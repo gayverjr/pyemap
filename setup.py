@@ -27,7 +27,7 @@ setup(
     description=short_description[0],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.0.2",
+    version="0.0.94",
     #cmdclass=versioneer.get_cmdclass(),
     license='BSD-3-Clause',
 
@@ -46,19 +46,20 @@ setup(
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    install_requires=['pygraphviz>=1.0',
+    install_requires=['pygraphviz',
     				  'numpy',
     				  'networkx',
-  					  'pysmiles',
     				  'biopython',
     			      'scipy',
-    				  'pillow']
+    				  'pillow',
+                      'reportlab',
+                      'svglib']
     				   # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',
     #            'Mac OS-X',
     #            'Unix',
     #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
-    # python_requires=">=3.5",          # Python version restrictions
+    #python_requires=">=3.7"         # Python version restrictions
 
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     # zip_safe=False,
