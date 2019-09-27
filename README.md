@@ -1,4 +1,6 @@
-# PyeMap
+<div align="left">
+  <img src="https://github.com/gayverjr/pyemap/blob/docs/docs/logo/pyemap_logo.png">
+</div>
 
 [![Build Status](https://travis-ci.org/gayverjr/pyemap.svg?branch=master)](https://travis-ci.org/gayverjr/pyemap) [![codecov](https://codecov.io/gh/gayverjr/pyemap/branch/master/graph/badge.svg)](https://codecov.io/gh/gayverjr/pyemap/branch/master)
 
@@ -6,19 +8,20 @@ PyeMap is a Python package aimed at automatic identification of electron and hol
 
 - **Documentation:** https://readthedocs.org/projects/pyemap/ 
 - **Website:** https://emap.bu.edu
+- **News:** https://twitter.com/eMap_protein
 # Installation
-For more detailed instructions, specifically on getting nicer looking graphs please see the [documentation](https://readthedocs.org/projects/pyemap/).
+For more detailed instructions, specifically on getting nicer looking graphs from graphviz please see the [documentation](https://readthedocs.org/projects/pyemap/).
 #### Conda(recommended):
 The conda recipe will install all dependencies necessary for full functionality.
 ```
 # create new virtual environment
-$ conda create -n pyemap_env
+$ conda create -n pyemap_env python=3.7
 $ conda activate pyemap_env
 #include channels for dependencies, only needs to be done once
-$ conda config --add channels conda-forge --add channels salilab --add channels bioconda 
+$ conda config --add channels conda-forge --add channels salilab --add channels bioconda --add channels gayverjr
 $ conda update --all
 # install pyemap
-$ conda install -c gayverjr pyemap
+$ conda install pyemap
 ```
 
 ### Pip
@@ -26,8 +29,6 @@ Pip installation will only install python dependencies, which is sufficient to r
 ```
 pip install --extra-index-url https://testpypi.python.org/pypi pyemap
 ```
-For full functionality, you can download and install [MSMS](http://mgltools.scripps.edu/packages/MSMS), [DSSP](https://github.com/cmbi/xssp/releases), and [Graphviz](https://graphviz.gitlab.io/) separately. 
-
 # Bugs and feature requests
 Please report any bugs and make feature requests [here](https://github.com/gayverjr/pyemap/issues). For issues exlcusive to the web version [eMap](https:emap.bu.edu), please send an email to <emap.bu@gmail.com>. We also greatly encourage users to contribute by making pull requests on [Github](https://github.com/gayverjr/pyemap)!
  
