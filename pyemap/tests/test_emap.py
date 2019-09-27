@@ -6,7 +6,7 @@ import pyemap
 import tempfile
 
 def test_save_functions():
-    my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/4dja.pdb")) 
+    my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/4DJA.pdb")) 
     #cluster
     fout = tempfile.NamedTemporaryFile(suffix=".png")
     my_emap.residue_to_Image("SF4603(A)")
