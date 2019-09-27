@@ -7,7 +7,7 @@ PyeMap is a Python package aimed at automatic identification of electron and hol
 - **Documentation:** https://readthedocs.org/projects/pyemap/ 
 - **Website:** https://emap.bu.edu
 # Installation
-For more detailed instructions, specifically on getting nicer looking graphs from graphviz please see the [documentation](https://readthedocs.org/projects/pyemap/).
+For more detailed instructions, specifically on getting nicer looking graphs please see the [documentation](https://readthedocs.org/projects/pyemap/).
 #### Conda(recommended):
 The conda recipe will install all dependencies necessary for full functionality.
 ```
@@ -20,12 +20,14 @@ $ conda update --all
 # install pyemap
 $ conda install -c gayverjr pyemap
 ```
-For full functionality, you can download and install [MSMS](http://mgltools.scripps.edu/packages/MSMS), [DSSP](https://github.com/cmbi/xssp/releases), and [Graphviz](https://graphviz.gitlab.io/) separately. 
+
 ### Pip
 Pip installation will only install python dependencies, which is sufficient to run PyeMap analysis, but will be missing some features such as surface exposure and visualization. 
 ```
 pip install --extra-index-url https://testpypi.python.org/pypi pyemap
 ```
+For full functionality, you can download and install [MSMS](http://mgltools.scripps.edu/packages/MSMS), [DSSP](https://github.com/cmbi/xssp/releases), and [Graphviz](https://graphviz.gitlab.io/) separately. 
+
 # Bugs and feature requests
 Please report any bugs and make feature requests [here](https://github.com/gayverjr/pyemap/issues). For issues exlcusive to the web version [eMap](https:emap.bu.edu), please send an email to <emap.bu@gmail.com>. We also greatly encourage users to contribute by making pull requests on [Github](https://github.com/gayverjr/pyemap)!
  
