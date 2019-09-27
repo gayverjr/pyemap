@@ -9,11 +9,7 @@ Results are stored in the emap object which was passed in.
 
 """
 import math
-import os
 import sys
-import time
-import traceback
-import ast
 import Bio.PDB
 import networkx as nx
 import numpy as np

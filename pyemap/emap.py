@@ -1,5 +1,3 @@
-from rdkit import Chem
-from rdkit.Chem import Draw
 from .custom_residues import is_pi_bonded, dist
 import numpy as np
 from .data import *
@@ -173,8 +171,6 @@ class emap():
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
             smiles_str = getSimpleSmiles(res_graph)
-            molecule = Chem.MolFromSmarts(smiles_str)
-            smiles_str = Chem.MolToSmarts(molecule, True)
             residue.smiles = smiles_str
             self.smiles[residue.resname] = smiles_str
         self.eta_moieties[residue.resname] = residue
@@ -208,8 +204,6 @@ class emap():
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
             smiles_str = getSimpleSmiles(res_graph)
-            molecule = Chem.MolFromSmarts(smiles_str)
-            smiles_str = Chem.MolToSmarts(molecule, True)
             residue.smiles = smiles_str
             self.smiles[residue.node_label] = smiles_str
         residue.ngl_string = self._get_ngl_string(residue)
@@ -252,7 +246,8 @@ class emap():
         size: (float,float), optional
             dimensions of image saved to file
         '''
-
+        from rdkit import Chem
+        from rdkit.Chem import Draw
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
@@ -277,6 +272,8 @@ class emap():
     def residue_to_Image(self, resname, size=(200, 200)):
         '''Opens image of chemical structure in PIL viewer.
         '''
+        from rdkit import Chem
+        from rdkit.Chem import Draw
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")

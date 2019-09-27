@@ -10,12 +10,8 @@ the pathway.
 
 """
 import itertools
-import os
 import string
-import sys
 import networkx as nx
-import numpy as np
-
 
 class ShortestPath(object):
     """Data structure used to store shortest paths.
@@ -343,8 +339,7 @@ def yens_shortest_paths(G, start, target, max_paths=10):
     letters = list(string.ascii_letters)
     shortestPaths = []
     k = 0
-    from itertools import islice
-    paths = list(islice(nx.shortest_simple_paths(G, start, target), max_paths))
+    paths = list(itertools.islice(nx.shortest_simple_paths(G, start, target), max_paths))
     for k in range(0, len(paths)):
         path = paths[k]
         sum = 0

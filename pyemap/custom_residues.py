@@ -9,12 +9,8 @@ non protein residues. The residues are drawn using the RDKit Module and written 
 on the front end.
 
 """
-from collections import defaultdict
-from heapq import heappop, heappush
-
 import networkx as nx
 import numpy as np
-from rdkit import Chem
 from .data import *
 
 
