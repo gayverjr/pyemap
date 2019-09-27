@@ -37,7 +37,9 @@ Released under the 3-Clause BSD license (see LICENSE).
 Copyright (C) 2019 PyeMap developers
 
 James Gayvert <jrg444@gmail.com>
+
 Ruslan Tazhigulov <ruslan.tazhigulov@gmail.com>
+
 Ksenia Bravaya <bravaya@bu.edu>
 
 
