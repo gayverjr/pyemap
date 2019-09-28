@@ -31,7 +31,7 @@ Process
 Next, construct the graph theory model of the protein crystal structure using :func:`pyemap.process`
 
    >>> pyemap.process(my_emap)
-   >>> my_emap.show_init_graph()
+   >>> my_emap.init_graph_to_Image().show()
 
 .. image:: images/1u3d.png
 
@@ -44,7 +44,7 @@ There are various parameters one can specify to control which residues are inclu
 For example, to include phenylalanine residues, and to modify the pure distance filter for edges, do:
 
    >>> pyemap.process(my_emap,phe=True,distance_cutoff=15)
-   >>> my_emap.show_init_graph()
+   >>> my_emap.init_graph_to_Image().show()
 
 .. image:: images/phe.png
 
@@ -53,21 +53,21 @@ Find Pathways
 Finally, search for possible pathways from a specified electron/hole donor to the surface using :func:`pyemap.find_paths`:
 
    >>> pyemap.find_paths(my_emap,"FAD510(A)-2")
-   >>> my_emap.show_paths_graph()
+   >>> my_emap.paths_graph_to_Image().show()
 
 .. image:: images/source_only.png
 
 Alternatively, you can search for pathways from a specified donor to a particular acceptor:
 
    >>> pyemap.find_paths(my_emap,"FAD510(A)-2", target = "W324(A)", max_paths=10)
-   >>> my_emap.show_paths_graph()
+   >>> my_emap.paths_graph_to_Image().show()
 
 .. image:: images/target.png
 
 To get a report of the pathways found by pyemap, use :func:`emap.report`
 
 
-   >>> my_emap.report()
+   >>> print(my_emap.report())
    Branch: W324(A)
    1a: ['FAD510(A)-2', 'W400(A)', 'W377(A)', 'W324(A)'] 24.15
    1b: ['FAD510(A)-2', 'W385(A)', 'Y53(A)', 'W377(A)', 'W324(A)'] 35.25
@@ -95,7 +95,7 @@ to directly access the Biopython residue object corresponding to the node W324(A
    <class 'Bio.PDB.Residue.Residue'>
 
 The same is true of pathways. Any pathway(and by extension its attributes) can be accessed by its pathway ID. For example, if you want
-the selection string for visualization of pathway 1a in the NGL viewer, do:
+the selection string for visualization of pathway 1a in the NGL_ viewer, do:
 
    >>> my_path = my_emap.paths["1a"]
    >>> print(my_path.selection_strs)
@@ -111,6 +111,7 @@ the selection string for visualization of pathway 1a in the NGL viewer, do:
    (324 and :A and .CD2) or (324 and :A and .NE1) or (324 and :A and .CE2) or (324 and :A and .CE3) or 
    (324 and :A and .CZ2) or (324 and :A and .CZ3) or (324 and :A and .CH2)'
 
+.. _NGL: http://nglviewer.org/ngl/api/
 
 Graphs
 ------
@@ -130,11 +131,11 @@ If what you need instead is the actual distance, this information is also kept:
 
 Visualization
 -------------
-Graph images and chemical structures of non-protein electron transfer active moieties can be displayed with the 
-:func:`emap.show_init_graph`, :func:`emap.show_paths_graph`, :func:`emap.show_residue` functions. To save
-to file, use :func:`emap.save_init_graph`, :func:`emap.save_paths_graph`, and :func:`emap.save_residue`. 
+Graph images and chemical structures of non-protein electron transfer active moieties can be exported to PIL with the 
+:func:`emap.residue_to_Image()`, :func:`emap.init_graph_to_Image()`, :func:`emap.paths_graph_to_Image()` functions. To save
+to file, use :func:`emap.paths_graph_to_file()`, :func:`emap.init_graph_to_file()`, and :func:`emap.residue_to_file`. 
 
-   >>> my_emap.show_residue("FAD510(A)-2")
+   >>> my_emap.residue_to_Image("FAD510(A)-2").show()
 
 .. image:: images/fad.png
 

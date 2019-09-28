@@ -1,17 +1,9 @@
 Installation
 =========================================================
-pyemap requires python version 3.5 or later. Ensure that you have working installations of git_ and pip_ on your machine.
 
-While not a requirement, for nicer looking graphs, please see our note below regarding graphviz.
+.. rubric:: Conda(recommended)
 
-.. _git: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
-
-.. _pip: https://pypi.org/project/pip/
-
-
-Setting up conda environment
------------------------------
-In order to set up the pre-requisites for pyemap, you need to install the conda_ package manager. The easiest ways to get conda are
+In order to set up the pre-requisites for PyeMap, you need to install the conda_ package manager. The easiest ways to get conda are
 through the Anaconda_ and Miniconda_ distributions.
 
 .. _conda: https://docs.conda.io/en/latest/
@@ -22,37 +14,38 @@ through the Anaconda_ and Miniconda_ distributions.
 
 Once you have a working copy of conda, create and activate a new virtual environment::
 
-    $ conda create -n pyemap_env
+    $ conda create -n pyemap_env python=3.7
     $ conda activate pyemap_env
 
-And install the necessary dependencies::
+Now add conda channels in order to download dependencies::
 
-    $ conda install -c conda-forge pygraphviz rdkit 
-    $ conda install numpy scipy biopython networkx pillow
+    $ conda config --add channels conda-forge --add channels salilab --add channels bioconda --add channels gayverjr
+    $ conda update --all
+
+And finally, install pyemap::
+
+    $ conda install pyemap 
    
-Installing pyemap 
-----------------------
+.. rubric:: Pip
 
-First obtain the source code from Github::
+Pip installation will only install python dependencies, which is sufficient to run PyeMap analysis, but will be missing some features such as surface exposure and visualization::
 
-   $ git clone https://github.com/gayverjr/pyemap.git
+    $ pip install --extra-index-url https://testpypi.python.org/pypi pyemap
 
-And then install the pyemap package with pip::
+For full functionality, you can download and install  MSMS_, DSSP_, and Graphviz_ separately.    
 
-   $ pip install -e pyemap
+.. rubric:: Graphviz
 
-To test your installation, try running the example in pyemap/examples::
-
-   $ cd pyemap/examples
-   $ python example.py
-
-Graphviz
----------
-pyemap uses the graphviz software to visualize the graphs. For graphs with <200 vertices, we use the `neato` program, 
+PyeMap uses the Graphviz_ software to visualize the graphs. For graphs with <200 vertices, we use the `neato` program, 
 which works by minimizing a global energy function. Within the neato program we have found that an experimental mode called `ipsep` 
-(which you can read more about here) provides the nicest looking graphs. The versions of graphviz available on conda unfortunately
+(which you can read more about here_) provides the nicest looking graphs. The versions of graphviz available on conda unfortunately
 do not come with ipsep enabled. To get around this, we suggest building graphviz from source, and adding a compiler argument which 
 enables ipsep. Here's how to do it:
+
+.. _here: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.591.840&rep=rep1&type=pdf
+.. _MSMS: http://mgltools.scripps.edu/packages/MSMS
+.. _DSSP: https://github.com/cmbi/xssp/releases
+.. _Graphviz: https://graphviz.gitlab.io/
 
 First, remove the graphviz that came with pygraphviz from your conda environment::
 
@@ -65,13 +58,9 @@ Then, download the latest graphviz and compile from source::
    $ make
    $ make install
 
+We emphasize that the safest way to do this is inside a newly prepared virtual environment. It is not recommended to try this within your base conda environment.
 
-For contributors
-------------------
-pyemap serves as the backend for the web application eMap, so any contributions need to be tested for compatibility with the web version. 
-eMap uses flask as its framework. To install the necessary dependencies, do:
 
-   $ pip install flask
-   $ pip install flask-restful
-   $ pip install flask-table
+
+
 

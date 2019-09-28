@@ -2,13 +2,13 @@ Credits
 =========================================================
 
 Original Authors
----------------
+------------------
 * Ruslan Tazhigulov
 * James Gayvert
 * Ksenia Bravaya
 
 Contributors to eMap(web version)
--------------------------------
+-----------------------------------
 Melissa Wei
 
 Funding
