@@ -1,5 +1,5 @@
 <div align="left">
-  <img src="https://github.com/gayverjr/pyemap/blob/docs/docs/logo/pyemap_logo.png">
+  <img src="https://github.com/gayverjr/pyemap/blob/master/docs/logo/pyemap_logo.png">
 </div>
 
 [![Build Status](https://travis-ci.org/gayverjr/pyemap.svg?branch=master)](https://travis-ci.org/gayverjr/pyemap) [![codecov](https://codecov.io/gh/gayverjr/pyemap/branch/master/graph/badge.svg)](https://codecov.io/gh/gayverjr/pyemap/branch/master)
