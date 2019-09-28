@@ -70,7 +70,6 @@ in gaining insight into potentially relevant electron/hole transfer pathways in 
    credits
  
 
-
 Indices and tables
 ==================
 

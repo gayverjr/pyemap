@@ -135,7 +135,7 @@ class emap():
         self.ngl_strings = {}
 
     def _reset_paths(self):
-        '''Returns emap object to stat it was in after the process step.
+        '''Returns emap object to state it was in after the process step.
         '''
         self.paths = OrderedDict()
         self.paths_graph = []
@@ -271,6 +271,13 @@ class emap():
 
     def residue_to_Image(self, resname, size=(200, 200)):
         '''Opens image of chemical structure in PIL viewer.
+
+        Parameters
+        -----------
+        resname: str
+            Name of residue
+        size: (float,float), optional
+            dimensions of image saved to file
         '''
         from rdkit import Chem
         from rdkit.Chem import Draw

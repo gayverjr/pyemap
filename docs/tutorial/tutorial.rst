@@ -95,7 +95,7 @@ to directly access the Biopython residue object corresponding to the node W324(A
    <class 'Bio.PDB.Residue.Residue'>
 
 The same is true of pathways. Any pathway(and by extension its attributes) can be accessed by its pathway ID. For example, if you want
-the selection string for visualization of pathway 1a in the NGL viewer, do:
+the selection string for visualization of pathway 1a in the NGL_ viewer, do:
 
    >>> my_path = my_emap.paths["1a"]
    >>> print(my_path.selection_strs)
@@ -111,6 +111,7 @@ the selection string for visualization of pathway 1a in the NGL viewer, do:
    (324 and :A and .CD2) or (324 and :A and .NE1) or (324 and :A and .CE2) or (324 and :A and .CE3) or 
    (324 and :A and .CZ2) or (324 and :A and .CZ3) or (324 and :A and .CH2)'
 
+.. _NGL: http://nglviewer.org/ngl/api/
 
 Graphs
 ------

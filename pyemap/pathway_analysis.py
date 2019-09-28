@@ -33,8 +33,7 @@ def _finish_graph(G, original_shape_start, source):
 def find_paths(emap, source, target=None, max_paths=10):
     """Function which calculates pathways from source to target or surface exposed residues.
 
-    Performs shortest path analysis on source and (optionally) target residues. After analysis is completed, the pathways
-    graph is drawn and saved to the passed emap object.
+    Performs shortest path analysis on source and (optionally) target residues.
 
     Parameters
     ---------

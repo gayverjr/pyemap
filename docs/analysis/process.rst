@@ -44,7 +44,7 @@ Example
    >>> import pyemap
    >>> my_emap = pyemap.fetch_and_parse("1u3d")
    >>> pyemap.process(my_emap,eta_moieties=["ANP511(A)"],custom="(3960-3969),(3970-3980,3982,3984-3987)")
-   >>> my_emap.show_init_graph()
+   >>> my_emap.init_graph_to_Image().show()
 
 .. image:: images/custom.png
 

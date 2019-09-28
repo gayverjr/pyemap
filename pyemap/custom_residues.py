@@ -1,18 +1,11 @@
 # This Python script is a part of
-# eMAP: online mapping of electron transfer channels in biomolecules
-# Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
-"""Takes a list of non-standard Bio.PDB Residue objects, and returns a list of custom residues.
-
-Module used to identify and draw custom aromatic/conjugated residues. Aromatic residues are identified using
-experimental bond lengths, and customized BioPython Residue objects are constructed for those aromatic
-non protein residues. The residues are drawn using the RDKit Module and written out to file for visualization
-on the front end.
-
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2019 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
+"""Functions for identifying electron transfer active moieties, and constructing customized Bio.PDB.Residue objects.
 """
 import networkx as nx
 import numpy as np
 from .data import *
-
 
 def is_pi_bonded(cur_atom, next_atom):
     """Determines whether two atoms are pi bonded based on experimental bond lengths.
@@ -49,7 +42,6 @@ def is_pi_bonded(cur_atom, next_atom):
         return dist(v1, v2) <= cutoff
     else:
         return False
-
 
 def dist(x, y):
     """Returns Euclidean distance between two 3 dimensional points.
@@ -135,9 +127,8 @@ def find_conjugated_systems(atoms, res_names):
 
     return custom_res_list
 
-
 def create_custom_residue(atm_list, res_name):
-    """Generates customized BioPython residue object corresponding to a conjugated system.
+    """Generates customized BioPython residue object corresponding to an ETA moiety.
 
     Parameters
     ----------
@@ -171,11 +162,8 @@ def create_custom_residue(atm_list, res_name):
 
     return custom_res
 
-
 def process_custom_residues(non_standard_residue_list):
-    """Main method of custom residues module.
-
-    Executes all major functions of this module.
+    """Identifies and returns customized Bio.PDB.Residue objects corresponding to electron transfer active moieties.
 
     Parameters
     ---------
@@ -185,7 +173,7 @@ def process_custom_residues(non_standard_residue_list):
     Returns
     ------
     custom_res: array-like
-        List of customized BioPython residue objects corresponding to aromatic/conjugated systems that are not part of
+        List of customized BioPython residue objects corresponding to electron transfer active moieties that are not part of
         standard protein residues
 
     """

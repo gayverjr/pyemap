@@ -1,4 +1,4 @@
-Graph Construction
+Graph construction
 =========================================================
 
 Introduction
@@ -9,7 +9,7 @@ closest atoms. For standard protein residues, only side chain atoms
 are considered in the calculation. All atoms of automatically identified
 non-protein ET active moieties and user-specified custom fragments
 are considered in the distance calculations. From the distance matrix,
-an undirected weighted graph is constructed using NetworkX, with
+an undirected weighted graph is constructed using NetworkX_, with
 the calculated distances as weights. The following thresholds are then
 imposed on the graph:
 
@@ -39,14 +39,16 @@ Distance thresholds and penalty function parameters can be modified at the proce
 
 Visualization
 --------------
-The graph can be interacted with and written to file using the :ref:`emap <emap>` object. The graph is visualized using the 
-neato program in the PyGraphviz_ visualization software.
+The graph can be interacted with and written to file using the :ref:`emap <emap>` object. The graph is visualized using PyGraphviz_ and 
+Graphviz_.
 
 .. _PyGraphviz: https://pygraphviz.github.io/
+.. _Graphviz: http://www.graphviz.org/
+.. _NetworkX: https://networkx.github.io/
 
 
 Source
-------
+-------
 
 .. autosummary::
    :toctree: autosummary

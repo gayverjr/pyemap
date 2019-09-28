@@ -101,8 +101,10 @@ def pathways_model(dist, coef_alpha, exp_beta, r_offset):
 
     Parameters
     ----------
+    dist: float
+        Actual distance in angstroms
     coef_alpha,exp_beta,r_offset:float
-        Penalty funciton parameters
+        Penalty function parameters
 
     Returns
     -------

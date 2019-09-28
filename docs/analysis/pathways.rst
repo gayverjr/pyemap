@@ -11,17 +11,20 @@ pathways found by pyemap, use :func:`emap.report()`.
 
 Source only
 ------------
-When only a source node is selected, Dijkstra’s algorithm is used to
+When only a source node is selected, a NetworkX implementation of `Dijkstra’s algorithm`_ is used to
 calculate the shortest path from the source to each surface-exposed
 residue. In the output, the pathways are organized into "branches"
 based on the first surface-exposed residue reached during the course
-of the pathway.
+of the pathway. The source node will be colored yellow in the graph visualization.
 
 Specified target
 -----------------
-If a target is specified, a procedure based on Yen’s Algorithm is used to 
+If a target is specified, a NetworkX procedure based on `Yen’s algorithm`_ is used to 
 calculate the shortest paths from source to target. The target does not
-need to be a surface-exposed residue. 
+need to be a surface-exposed residue. The target node will be colored blue in the graph visualization.
+
+.. _Yen’s algorithm: https://en.wikipedia.org/wiki/Yen%27s_algorithm
+.. _Dijkstra’s algorithm: https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
 
 Examples
 --------
@@ -31,7 +34,7 @@ Examples
    >>> my_emap = pyemap.fetch_and_parse("1u3d")
    >>> pyemap.process(my_emap)
    >>> pyemap.find_paths(my_emap,"FAD510(A)-2")
-   >>> my_emap.report()
+   >>> print(my_emap.report())
    Branch: W356(A)
    1a: ['FAD510(A)-2', 'W356(A)'] 9.48
    1b: ['FAD510(A)-2', 'W356(A)', 'Y432(A)', 'W436(A)'] 26.44
@@ -40,7 +43,7 @@ Examples
    2a: ['FAD510(A)-2', 'FAD510(A)-1', 'ANP511(A)'] 14.15
    ...
 
-   >>> my_emap.show_paths_graph()
+   >>> my_emap.paths_graph_to_Image().show()
 
 .. image:: images/source_only.png
 
@@ -56,7 +59,7 @@ Examples
    1e: ['FAD510(A)-2', 'W385(A)', 'Y53(A)', 'Y309(A)', 'W377(A)', 'W324(A)'] 50.67
    ...
 
-   >>> my_emap.show_paths_graph()
+   >>> my_emap.paths_graph_to_Image().show()
 
 .. image:: images/target.png
 

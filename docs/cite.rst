@@ -2,10 +2,10 @@ How to cite
 =========================================================
 
 Primary citation
------------------
+------------------
 Tazhigulov, R. N., Gayvert, J. R., Wei, M., & Bravaya, K. B. (2019). 
 eMap: A Web Application for Identifying and Visualizing Electron or Hole Hopping Pathways
-in Proteins. *The Journal of Physical Chemistry B*. https://doi.org/10.1021/acs.jpcb.9b04816
+in Proteins. *J Phys. Chem. B* **2019**, 123, 32, 6946-6951. https://doi.org/10.1021/acs.jpcb.9b04816
 
 Third Party Software
 ---------------------
@@ -37,8 +37,8 @@ NetworkX_: |br|
 Hagberg, A. A.; Schult, D. A.; Swart, P. J. *Exploring Network Structure, Dynamics, and Function using NetworkX*. Pasadena, CA USA, **2008**.
 
 Other Supporting Software
------------------------
-RDKit_ , NumPy_ , SciPy_ , PyGraphviz_
+---------------------------
+RDKit_ , NumPy_ , SciPy_ , PyGraphviz_ , Graphviz_
 
 .. _MSMS: http://mgltools.scripps.edu/packages/MSMS/
 
@@ -55,6 +55,8 @@ RDKit_ , NumPy_ , SciPy_ , PyGraphviz_
 .. _NumPy: https://www.numpy.org/
 
 .. _PyGraphviz: https://pygraphviz.github.io/
+
+.. _Graphviz: https://graphviz.gitlab.io/
 
 .. |br| raw:: html
 

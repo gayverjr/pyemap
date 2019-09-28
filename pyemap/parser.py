@@ -1,17 +1,16 @@
 # This Python script is a part of
-# eMAP: online mapping of electron transfer channels in biomolecules
-# Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
-"""Parser used to parse PDB and MMCIF files.
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2019 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
+"""Parser used to parse PDB and MMCIF files. 
 
-Automatically identifies non-protein electron transfer active moieties and generates customized Biopython Residue objects for them.
-Stores parsed structural information into newly instantiated emap object.
+Constructs an emap object containing parsed Bio.PDB.Structure and a list of customized Bio.PDB.Residue objects
+corresponding to automatically identified electron transfer moieties.
 """
 from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from .custom_residues import *
 from .data import *
 import os
 from .emap import *
-
 
 def fetch_and_parse(filename, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
@@ -85,7 +84,7 @@ def parse(filename, quiet=False):
             res.get_full_id()
             arom_res = res.copy()
             non_standard_residue_list.append(arom_res)
-    custom_residue_list = process_custom_residues(non_standard_residue_list)
+    custom_residue_list = process_non_standard_residues(non_standard_residue_list)
     if not quiet:
         print("Identified " + str(len(custom_residue_list)) + " non-protein ET active moieties.")
     my_emap = emap(filename, structure, custom_residue_list, chain_list)
