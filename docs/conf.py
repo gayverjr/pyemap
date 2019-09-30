@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'PyeMap'
-copyright = ("2019, PyeMap Developers. Project structure based on the "
+copyright = ("2019, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya. Project structure based on the "
              "Computational Molecular Science Python Cookiecutter version 1.0")
 author = 'James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya'
 
@@ -47,10 +47,10 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx'
 ]
-intersphinx_mapping ={
+intersphinx_mapping = {
     'networkx': ('https://networkx.github.io/documentation/stable/', None),
     'Biopython': ('https://biopython.readthedocs.io/en/latest/', None),
-    'Pillow': ('https://pillow.readthedocs.io/en/stable/',None),
+    'Pillow': ('https://pillow.readthedocs.io/en/stable/', None),
 
 }
 
@@ -82,7 +82,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
-
 
 
 # -- Options for HTML output -------------------------------------------------

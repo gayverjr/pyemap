@@ -3,8 +3,7 @@ How to cite
 
 Primary citation
 ------------------
-Tazhigulov, R. N., Gayvert, J. R., Wei, M., & Bravaya, K. B. (2019). 
-eMap: A Web Application for Identifying and Visualizing Electron or Hole Hopping Pathways
+R.N. Tazhigulov, J.R. Gayvert, M. Wei, and K.B. Bravaya, eMap: A Web Application for Identifying and Visualizing Electron or Hole Hopping Pathways
 in Proteins. *J Phys. Chem. B* **2019**, 123, 32, 6946-6951. https://doi.org/10.1021/acs.jpcb.9b04816
 
 Third Party Software
@@ -28,7 +27,7 @@ Tien, M. Z.; Meyer, A. G.; Sydykova, D. K.; Spielman, S. J.; Wilke, C. O. *PLoS 
 
 Biopython_: |br|
 Application note:|br|
-Cock, P. J. A.; Antao, T.; Chang, J. T.; Chapman, B. A.; Cox, C. J.; Dalke, A.; Friedberg, I.; 
+Cock, P. J. A.; Antao, T.; Chang, J. T.; Chapman, B. A.; Cox, C. J.; Dalke, A.; Friedberg, I.;
 Hamelryck, T.; Kauff, F.; Wilczynski, B.; de Hoon, M. J. L. *Bioinformatics*, **2009**, 25, 1422-1423.  |br|
 PDB Parser: |br|
 Hamelryck, T.; Manderick, B. *Bioinformatics*, **2003**, 19, 2308-2310.
