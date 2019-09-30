@@ -22,7 +22,7 @@ Now add conda channels in order to download dependencies::
     $ conda config --add channels conda-forge --add channels salilab --add channels bioconda --add channels gayverjr
     $ conda update --all
 
-And finally, install pyemap::
+And finally, install PyeMap::
 
     $ conda install pyemap 
    

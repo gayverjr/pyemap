@@ -1,16 +1,16 @@
 ==============================
 Tutorial
 ==============================
-This guide can help you start working with pyemap.
+This guide can help you start working with PyeMap.
 
 Basic Usage
 ===========
 
 Parsing
 -------
-The first step of pyemap analysis is parsing of a .cif or pdb file.
+The first step of PyeMap analysis is parsing of a .cif or pdb file.
 
-You can either provide pyemap with the path to the file:
+You can either provide PyeMap with the path to the file:
 
    >>> import pyemap
    >>> my_emap = pyemap.parse("path/to/protein.pdb")

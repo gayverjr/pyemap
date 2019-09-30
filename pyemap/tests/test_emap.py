@@ -27,4 +27,6 @@ def test_save_functions():
     my_emap.paths_graph_to_Image()
     my_emap.paths_graph_to_file(dest=fout.name)
     assert True
+    #check that report does something
+    assert my_emap.report() != None
     

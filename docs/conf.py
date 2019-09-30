@@ -19,10 +19,10 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'pyemap'
-copyright = ("2019, James Gayvert. Project structure based on the "
+project = 'PyeMap'
+copyright = ("2019, PyeMap Developers. Project structure based on the "
              "Computational Molecular Science Python Cookiecutter version 1.0")
-author = 'James Gayvert'
+author = 'James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya'
 
 # The short X.Y version
 version = ''
@@ -144,7 +144,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pyemap.tex', 'pyemap Documentation',
+    (master_doc, 'pyemap.tex', 'PyeMap Documentation',
      'pyemap', 'manual'),
 ]
 
@@ -154,7 +154,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pyemap', 'pyemap Documentation',
+    (master_doc, 'pyemap', 'PyeMap Documentation',
      [author], 1)
 ]
 

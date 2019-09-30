@@ -5,9 +5,13 @@ import warnings
 import pyemap
 
 def test_parse():
-    #from file
+    #from PDB file
     my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/1u3d.pdb"))  
     assert len(list(my_emap.structure.get_residues()))==577 
+    #from CIF file
+    my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/1u3d.cif"))  
+    assert len(list(my_emap.structure.get_residues()))==577 
+
 
 def test_fetch():
     #fetch from pdb database
