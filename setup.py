@@ -46,13 +46,13 @@ setup(
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    install_requires=['pygraphviz',
-    				  'numpy',
+    install_requires=['numpy',
     				  'networkx',
     				  'biopython',
     			      'scipy',
     				  'pillow',
                       'reportlab',
+                      'pygraphviz',
                       'svglib']
     				   # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',

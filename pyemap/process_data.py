@@ -17,6 +17,7 @@ from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from networkx.drawing.nx_agraph import to_agraph
 from scipy.spatial import distance_matrix
+import warnings
 from .data import *
 """str: module level directory path for writing to file"""
 
@@ -132,7 +133,11 @@ def calculate_residue_depth(aromatic_residues, model):
         List of residue names corresponding to the surface exposed residues
 
     """
-    surface = get_surface(model)
+    try:
+        surface = get_surface(model)
+    except:
+        warnings.warn("Unable to calculate residue depth. Check that MSMS is installed.", RuntimeWarning,stacklevel=2)
+        return []
     surface_exposed_res = []
     cutoff = 3.03
     for residue in aromatic_residues:
@@ -185,8 +190,7 @@ def calculate_asa(model, filename, AROM_LIST, chain_list):
                     str(key[1][1]) + "(" + str(key[0]) + ")"
                 surface_exposed_res.append(goal_str)
     except Exception as e:
-        raise RuntimeWarning(
-            "Unable to calculate solvent accessibility for this structure.")
+        warnings.warn("Unable to calculate solvent accessibility. Check that DSSP is installed.", RuntimeWarning,stacklevel=2)
     return surface_exposed_res
 
 

@@ -13,6 +13,7 @@ import tempfile
 from .data import *
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+import warnings
 
 
 class emap():
@@ -250,8 +251,12 @@ class emap():
         size: (float,float), optional
             dimensions of image saved to file
         '''
-        from rdkit import Chem
-        from rdkit.Chem import Draw
+        try:
+            from rdkit import Chem
+            from rdkit.Chem import Draw
+        except:
+            warnings.warn("To draw chemical structures you must install RDKit. See http://www.rdkit.org/docs/Install.html.",RuntimeWarning,stacklevel=2)
+            return
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
@@ -286,8 +291,12 @@ class emap():
         --------
         img: :class:`PIL.Image.Image`
         '''
-        from rdkit import Chem
-        from rdkit.Chem import Draw
+        try:
+            from rdkit import Chem
+            from rdkit.Chem import Draw
+        except:
+            warnings.warn("To draw chemical structures you must install RDKit. See http://www.rdkit.org/docs/Install.html.",RuntimeWarning,stacklevel=2)
+            return Image.new('RGB', size)
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
@@ -317,10 +326,18 @@ class emap():
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             if agraph.number_of_nodes() <= 200:
-                agraph.layout(
-                    prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                try:
+                    agraph.layout(
+                        prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                except:
+                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
+                    return
             else:
-                agraph.layout(prog='dot')
+                try:
+                    agraph.layout(prog='dot')
+                except:
+                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
+                    return
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
@@ -345,10 +362,18 @@ class emap():
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             if agraph.number_of_nodes() <= 200:
-                agraph.layout(
-                    prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                try:
+                    agraph.layout(
+                        prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                except:
+                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
+                    return
             else:
-                agraph.layout(prog='dot')
+                try:
+                    agraph.layout(prog='dot')
+                except:
+                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
+                    return
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
@@ -421,7 +446,11 @@ class emap():
             agraph = to_agraph(self.init_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
+            try:
+                agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
+            except:
+                warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
+                return Image.new('RGB', (200, 200))
             if agraph.number_of_nodes() <= 200:
                 agraph.draw(fout.name, prog='neato')
             else:
@@ -443,7 +472,11 @@ class emap():
             agraph = to_agraph(self.paths_graph)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
+            try:
+                agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
+            except:
+                warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
+                return Image.new('RGB', (200, 200))
             if agraph.number_of_nodes() <= 200:
                 agraph.draw(fout.name, prog='neato')
             else:
