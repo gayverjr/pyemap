@@ -186,8 +186,12 @@ class emap():
         for res in pathway.get_path_as_list()[1:-1]:
             label_texts.append(res)
             try:
-                color_list.append(colors[res[0]])
-                labeled_atoms.append(".CA")
+                if res not in self.eta_moieties:
+                    color_list.append(colors[res[0]])
+                    labeled_atoms.append(".CA")
+                else:
+                    color_list.append("pink")
+                    labeled_atoms.append(next(self.residues[res].get_atoms()).name)
             except KeyError:
                 color_list.append("pink")
                 labeled_atoms.append(next(self.residues[res].get_atoms()).name)

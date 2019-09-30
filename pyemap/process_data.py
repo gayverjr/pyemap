@@ -612,7 +612,7 @@ def filter_edges(G, G_pathways, distance_cutoff, percent_edges, num_st_dev_edges
             G_pathways.remove_edge(node1, node2)
 
 
-def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges):
+def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges, eta_moieties):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
@@ -623,6 +623,8 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         Labels for residues in the graph.
     distance_cutoff,percent_edges,num_st_dev_edges: float
         Parameters that determine which edges are kept.
+    eta_moieties: list of str
+        Non standard residues that were automatically identified
 
     Returns
     -------
@@ -657,14 +659,15 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         G.node[name_node]['penwidth'] = 2.0
         try:
             val = int(name_node[1])
-            if 'Y' == name_node[0]:
-                G.node[name_node]['fillcolor'] = '#96c8f0'
-            elif 'W' == name_node[0]:
-                G.node[name_node]['fillcolor'] = '#f07878'
-            elif 'F' == name_node[0]:
-                G.node[name_node]['fillcolor'] = '#f09664'
-            elif 'H' == name_node[0]:
-                G.node[name_node]['fillcolor'] = '#c8f0c8'
+            if name_node not in eta_moieties:
+                if 'Y' == name_node[0]:
+                    G.node[name_node]['fillcolor'] = '#96c8f0'
+                elif 'W' == name_node[0]:
+                    G.node[name_node]['fillcolor'] = '#f07878'
+                elif 'F' == name_node[0]:
+                    G.node[name_node]['fillcolor'] = '#f09664'
+                elif 'H' == name_node[0]:
+                    G.node[name_node]['fillcolor'] = '#c8f0c8'
             else:
                 G.node[name_node]['fillcolor'] = '#FFC0CB'
         except ValueError:
@@ -757,7 +760,7 @@ def process(emap,
         node_labels, dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta,
                                                                      r_offset)
     G = create_graph(dmatrix, pathways_matrix, node_labels,
-                     distance_cutoff, percent_edges, num_st_dev_edges)
+                     distance_cutoff, percent_edges, num_st_dev_edges,emap.eta_moieties.keys())
     if len(G.edges()) == 0:
         raise RuntimeError(
             "Not enough edges to construct a graph.")
