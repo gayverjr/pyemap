@@ -4,7 +4,7 @@ Implementation of eMap analysis in the form of a python package.
 """
 import sys
 from setuptools import setup, find_packages
-import versioneer
+
 
 short_description = __doc__.split("\n")
 
@@ -28,7 +28,6 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.0.94",
-    #cmdclass=versioneer.get_cmdclass(),
     license='BSD-3-Clause',
 
     # Which Python importable modules should be included when your package is installed
