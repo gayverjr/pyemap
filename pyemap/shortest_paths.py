@@ -102,7 +102,7 @@ class Branch(object):
         Unique identifier for a branch
     target: str
         Target node which a branch corresponds to
-    paths: list of pyemap.dijkstras.ShortestPath objects
+    paths: list of :class:`~pyemap.ShortestPath`
         List of ShortestPath objects that make up a branch
     """
 
@@ -120,7 +120,7 @@ class Branch(object):
 
         Parameters
         ----------
-        path: ShortestPath
+        path: :class:`~pyemap.ShortestPath`
             A ShortestPath from source to a surface exposed residue
         """
         letters = list(string.ascii_letters)
@@ -194,7 +194,7 @@ def _find_branch(pt, targets, branches):
         ShortestPath object
     targets: list of str
         List of surface exposed residues
-    branches: list of pyemap.dijkstras.Branch objects
+    branches: list of pyemapBranch objects
         List of branches already found
 
     Returns
@@ -225,7 +225,7 @@ def dijkstras_shortest_paths(G, start, targets):
 
     Parameters
     ----------
-    G: NetworkX graph object
+    G: :class:`networkx.Graph`
         Undirected, weighted residue graph
     start: str
         Source node
@@ -234,7 +234,7 @@ def dijkstras_shortest_paths(G, start, targets):
 
     Returns
     -------
-    branches: list of pyemap.dijkstras.Branch objects
+    branches: list of :class:`~pyemap.Branch`
         A list of Branch objects representing the groups of pathways found
 
     Raises
@@ -311,7 +311,7 @@ def yens_shortest_paths(G, start, target, max_paths=10):
 
     Parameters
     ----------
-    G: NetworkX graph object
+    G: :class:`networkx.Graph` object
         Undirected, weighted residue graph
     start: str
         Source node
@@ -322,7 +322,7 @@ def yens_shortest_paths(G, start, target, max_paths=10):
 
     Returns
     -------
-    list of pyemap.dijkstras.Branch objects
+    list of :class:`~pyemap.Branch` objects
         A list of length 1 containing a single Branch object which represents the group of pathways found.
 
     References

@@ -10,12 +10,11 @@ def buildSmiles(graph, cur, prev):
 
     Parameters
     ----------
-    graph: NetworkX chemical graph
+    graph: :class:`networkx.Graph`
     atoms: array-like
         List of atoms in structure
-    cur: BioPython Atom object
-    prev: BioPython Atom object
-        Atoms being considered at this step of the iteration
+    cur,prev: int 
+        Atom indices
 
     References
     ----------
@@ -48,12 +47,10 @@ def buildSmiles(graph, cur, prev):
 def getClosures(graph, cur, prev):
     '''DFS algorithm to generate smiles string.
 
-    graph: NetworkX.Graph
+    graph: :class:`networkx.Graph`
         Chemical graph
-    cur: int
-        Atom index
-    prev: int
-        Atom index
+    cur,prev: int
+        Atom indices
 
     References
     ----------
@@ -78,7 +75,7 @@ def getSimpleSmiles(graph):
 
     Parameters
     ----------
-    graph: NetworkX.Graph
+    graph: :class:`networkx.Graph`
         Chemical graph
 
     References
@@ -116,6 +113,11 @@ def is_close(node, node2, res_graph):
 
 def cleanup_bonding(res_graph):
     '''Connects nodes that should be connected to fix broken aromaticity.
+    
+    Parameters
+    -----------
+    res_graph: :class:`networkx.Graph`
+        residue graph
     '''
     for node in res_graph.nodes:
         if not is_part_of_cycle(node, res_graph) and len(list(res_graph.neighbors(node))) < 3:
@@ -147,6 +149,11 @@ def remove_atoms(prev, cur, remove_list, res_graph):
 
 def remove_side_chains(res_graph):
     ''' Removes non-aromatic sides chains on aromatic eta moieties.
+
+    Parameters
+    -----------
+    res_graph: :class:`networkx.Graph`
+        residue graph
     '''
     remove_list = []
     for node in res_graph.nodes:

@@ -49,7 +49,8 @@ extensions = [
 ]
 intersphinx_mapping ={
     'networkx': ('https://networkx.github.io/documentation/stable/', None),
-    'networkx': ('https://biopython.readthedocs.io/en/latest/', None),
+    'Biopython': ('https://biopython.readthedocs.io/en/latest/', None),
+    'Pillow': ('https://pillow.readthedocs.io/en/stable/',None),
 
 }
 

@@ -97,7 +97,7 @@ Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
 def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     '''Applies penalty function parameters and returns score.
 
-        math:: `\epsilon = \alpha \exp(-\beta(R-R_{offset}))`
+        :math:`\epsilon =\\alpha \exp(-\\beta(R-R_{offset}))`
 
     Parameters
     ----------
@@ -121,9 +121,9 @@ def calculate_residue_depth(aromatic_residues, model):
 
     Parameters
     ----------
-    aromatic_residues: list of Bio.PDB.Residue.Residue
+    aromatic_residues: list of :class:`Bio.PDB.Residue.Residue`
         residues included in the analysis
-    model: Bio.PDB.Model.Model
+    model: :class:`Bio.PDB.Model.Model`
         BioPython object containing a model of a PDB or MMCIF file
 
     Returns
@@ -150,7 +150,7 @@ def calculate_asa(model, filename, AROM_LIST, chain_list):
 
     Parameters
     ---------
-    model: BioPython model object
+    model: :class:`Bio.PDB.Model.Model`
         Model which contains chains and residues of protein strucutre
     filename: str
         Name of pdb file to be analyzed
@@ -158,10 +158,6 @@ def calculate_asa(model, filename, AROM_LIST, chain_list):
         List containing which standard residues are included in analysis
     chain_list: list of str
         Chains are included in analysis
-
-    See Also
-    -------
-    Bio.PDB.DSSP: module used to calculate relative solvent accessibility
 
     Notes
     -----
@@ -218,7 +214,7 @@ def closest_atom_dmatrix(residues, coef_alpha, exp_beta, r_offset):
 
     Parameters
     ----------
-    residues: list of Bio.PDB.Residue.Residue
+    residues: list of :class:`Bio.PDB.Residue.Residue`
         List of BioPython residues
     coef_alpha,exp_beta,r_offset:float
         Penalty funciton parameters
@@ -276,7 +272,7 @@ def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
 
     Parameters
     ----------
-    residues: list of Bio.PDB.Residue.Residue objects
+    residues: list of :class:`Bio.PDB.Residue.Residue`
         List of residues to be included in analysis
     coef_alpha,exp_beta,r_offset:float
         Penalty funciton parameters
@@ -285,7 +281,7 @@ def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
     -------
     node_label: dict of int:str
         List of node labels for graph
-    distance_matrix: numpy.array of Bio.PDB.Residue.Residue objects
+    distance_matrix: numpy array of :class:`Bio.PDB.Residue.Residue`
         Distance matrix of residues
 
     """
@@ -329,12 +325,12 @@ def process_standard_residues(standard_residue_list):
 
     Parameters
     ----------
-    standard_residue_list: list of Bio.PDB.Residue.Residue
+    standard_residue_list: list of :class:`Bio.PDB.Residue.Residue`
         List of Bio.PDB.Residue.Residue objects corresponding to protein residues
 
     Returns
     -------
-    res_list: list of Bio.PDB.Residue.Residue
+    res_list: list of :class:`Bio.PDB.Residue.Residue`
         Standard residues with only side chain atoms included.
 
     """
@@ -377,19 +373,19 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
     ----------
     serial_list: list of int
         List of atom serial numbers included in residue
-    all_atoms: list of Bio.PDB.Atom.Atom
+    all_atoms: list of :class:`Bio.PDB.Atom.Atom`
         All atoms in protein on selected chains
     chain_selected: list of str
         Chains included in analysis
-    used_atoms: list of Bio.PDB.Atom.Atom
+    used_atoms: list of :class:`Bio.PDB.Atom.Atom`
         Atoms already included in analysis
     user_res_names: list of str
         User residue names already included in the analysis.
 
     Returns
     -------
-    user_res: Bio.PDB.Residue.Residue
-        Customized Residue object corresponding to the atoms in serial_list
+    user_res: :class:`Bio.PDB.Residue.Residue`
+        Customized residue object corresponding to the atoms in serial_list
 
     """
     source_res = []
@@ -436,7 +432,7 @@ def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, in
 
     Parameters
     ----------
-    all_residues: list of Bio.PDB.Residue.Residue
+    all_residues: list of :class:`Bio.PDB.Residue.Residue`
         List of every residue in structure
     chain_list: list of str
         Chains to be included in analysis
@@ -445,7 +441,7 @@ def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, in
 
     Returns
     -------
-    residue_list: list of Bio.PDB.Residue.Residue
+    residue_list: list of :class:`Bio.PDB.Residue.Residue`
         Residues to be included in analysis
     AROM_LIST: list of str
         Types of aromatic residues included in graph
@@ -480,16 +476,16 @@ def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
     ----------
     custom: str
         Specified by user to select atoms for custom residues
-    all_atoms: list of Bio.PDB.Atom.Atom
+    all_atoms: list of :class:`Bio.PDB.Atom.Atom`
         All atoms in protein on selected chains
     chain_selected: list of str
         Chains included in analysis
-    used_atoms: list of Bio.PDB.Atom.Atom
+    used_atoms: list of :class:`Bio.PDB.Atom.Atom`
         Atoms already included in analysis
 
     Returns
     -------
-    res_list: list of Bio.PDB.Residue.Residue
+    res_list: list of :class:`Bio.PDB.Residue.Residue`
         Custom residues specified by user
 
     Notes
@@ -542,7 +538,7 @@ def finish_graph(G, surface_exposed_res, chain_list):
 
     Parameters
     ----------
-    G: NetworkX Graph
+    G: :class:`networkx.graph`
         Graph object constructed from distance matrix of residues
     surface_exposed_res: list of str
         Names of surface exposed residues
@@ -565,9 +561,9 @@ def filter_edges(G, G_pathways, distance_cutoff, percent_edges, num_st_dev_edges
 
     Parameters
     ----------
-    G: NetworkX.Graph
+    G: :class:`networkx.graph`
         graph where edge weights are pure distances
-    G_pathways: NetworkX.Graph
+    G_pathways: :class:`networkx.graph`
         graph where edge weights are distance dependent penalty functions
     distance_cutoff,percent_edges,num_st_dev_edges: float
         Parameters that determine which edges are kept.
@@ -630,7 +626,7 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
 
     Returns
     -------
-    G: NetworkX graph
+    G: :class:`networkx.Graph`
         Graph of aromatic residues in protein
 
     References
@@ -701,7 +697,7 @@ def process(emap,
 
     Parameters
     ---------
-    emap: pyemap.emap.emap
+    emap: :class:`~pyemap.emap`
         Object for storing state of emap analysis.
     chains: list of str
         List of strings corresponding to chains included in analysis
@@ -716,7 +712,7 @@ def process(emap,
     custom: str, optional
         Custom atom string specified by user
     distance_cutoff: float
-         Defines a pure distance threshold. eMap will only keep edges with distances less than or equal distance_cutoff.
+         Defines a pure distance threshold. PyeMap will only keep edges with distances less than or equal distance_cutoff.
     percent_edges: float
         Specifies a percentage of the shortest edges per vertex to keep.
     num_st_dev_edges: float

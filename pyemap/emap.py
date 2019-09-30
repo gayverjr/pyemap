@@ -17,33 +17,33 @@ from reportlab.graphics import renderPM
 
 class emap():
     '''
-    Manages the data generated at all stages of eMap analysis.
+    Manages the data generated at all stages of PyeMap analysis.
 
     Attributes
     ----------
     filename: str
-        Name of the crystal structure file being processed by pyemap.
-    structure: Bio.PDB.Structure.Structure
+        Name of the crystal structure file being processed by PyeMap.
+    structure: :class:`Bio.PDB.Structure.Structure`
         Macromolecular protein structure. Contains model which contains residues and atoms.
-    eta_moieties: dict of str: Bio.PDB.Residue.Residue
+    eta_moieties: dict of str: :class:`Bio.PDB.Residue.Residue`
         Non-protein eta moieties automatically identified at the parsing step.
     chain_list: list of str
         List of chains identified at the parsing step.
-    smiles: dict of str:Bio.PDB.Residue.Residue
+    smiles: dict of str:str
         List of smiles strings for non-protein eta moieties identified at the parsing step.
-    residues: dict of str:Bio.PDB.Residue.Residue
+    residues: dict of str: :class:`Bio.PDB.Residue.Residue`
         Residues included in the graph after the process step.
     ngl_strings: dict of str:str
         Formatted NGL viewer selection strings for residues included in the graph after the process step.
-    user_residues: dict of str:Bio.PDB.Residue.Residue
+    user_residues: dict of str: :class:`Bio.PDB.Residue.Residue`
         Custom residues specified by the user.
-    init_graph: networkx.Graph
+    init_graph: :class:`networkx.Graph`
         Graph generated after the process step.
-    branches: dict of str:pyemap.Branch
-        Branches found by eMap analysis
-    paths: dict of str:pyemap.ShortestPath
-        Paths found by emap sorted by lowest to highest score.
-    paths_graph: networkx.Graph
+    branches: dict of str: :class:`~pyemap.Branch`
+        Branches found by PyeMap analysis
+    paths: dict of str: :class:`~pyemap.ShortestPath`
+        Paths found by PyeMap sorted by lowest to highest score.
+    paths_graph: :class:`networkx.Graph`
         Graph generated after the shortest paths step.
     '''
 
@@ -54,9 +54,9 @@ class emap():
         ----------
         filename: str
             Name of file
-        structure: Bio.PDB.Structure.Structure object
+        structure: :class:`Bio.PDB.Structure.Structure`
             Macromolecular protein structure
-        eta_moieties: list of Bio.PDB.Residue.Residue objects
+        eta_moieties: list of :class:`Bio.PDB.Residue.Residue`
             Customized residue objects generated for automatically detected eta moieties
         chain_list: list of str
             Chains identified by the parser
@@ -270,7 +270,7 @@ class emap():
             raise KeyError("No record of any residue by that name.")
 
     def residue_to_Image(self, resname, size=(200, 200)):
-        '''Opens image of chemical structure in PIL viewer.
+        '''Returns PIL image of chemical structure
 
         Parameters
         -----------
@@ -278,6 +278,9 @@ class emap():
             Name of residue
         size: (float,float), optional
             dimensions of image saved to file
+        Returns
+        --------
+        img: :class:`PIL.Image.Image`
         '''
         from rdkit import Chem
         from rdkit.Chem import Draw
@@ -379,6 +382,11 @@ class emap():
         dest: str, optional
             Destination for writing to file
 
+        Returns
+        --------
+        output: str
+            Formatted report of pathways found
+
         Raises
         -------
         RuntimeError
@@ -398,11 +406,11 @@ class emap():
             raise RuntimeError("Nothing to report.")
 
     def init_graph_to_Image(self):
-        '''Opens 2D graph image in PIL viewer.
+        '''Returns PIL image of graph
 
-        Notes
-        ------
-        Uses the Pillow library.
+        Returns
+        --------
+        img: :class:`PIL.Image.Image`
         '''
         if self.init_graph:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
@@ -419,8 +427,12 @@ class emap():
         else:
             raise RuntimeError("Nothing to draw.")
 
-    def paths_graph_to_Image(self, test=False):
-        '''Opens 2d graph image with pathways highlighted in PIL viewer.
+    def paths_graph_to_Image(self):
+        '''Returns PIL image of pathways graph
+        
+        Returns
+        --------
+        img: :class:`PIL.Image.Image`
         '''
         if self.paths_graph:
             fout = tempfile.NamedTemporaryFile(suffix=".png")

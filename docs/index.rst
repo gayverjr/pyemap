@@ -13,7 +13,7 @@ Overview of PyeMap
 PyeMap is a python package aimed at automatic identification of electron and hole transfer
 pathways in proteins. The analysis is based on a coarse-grained version of Beratan and 
 Onuchic’s Pathway model, and only accounts for through-space hopping between
-aromatic residues side chains. Side chains of aromatic residues and non-protein electron 
+aromatic residues side chains [Beratan1992]_. Side chains of aromatic residues and non-protein electron 
 transfer active moieties are modeled as vertices in a weighted graph, where the edge 
 weights are modified distance dependent penalty functions. Shortest path algorithms are 
 used to compute the shortest pathways from a specified electron or hole donor to the 
@@ -58,7 +58,6 @@ be investigated further in quantitative and experimental studies. As such, our a
 includes computational and experimental chemists, biologists, and physicists interested
 in gaining insight into potentially relevant electron/hole transfer pathways in proteins.
 
-
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
@@ -66,6 +65,7 @@ in gaining insight into potentially relevant electron/hole transfer pathways in 
    install
    tutorial/tutorial
    reference
+   bibliography
    cite
    credits
  

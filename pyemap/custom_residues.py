@@ -75,7 +75,7 @@ def find_conjugated_systems(atoms, res_names):
     Returns
     -------
     custom_res_list: array-like
-        List of customized BioPython residue objects
+        List of customized :class:`Bio.PDB.Residue.Residue`
 
     Notes
     -----
@@ -167,12 +167,12 @@ def process_custom_residues(non_standard_residue_list):
 
     Parameters
     ---------
-    non_standard_residue_list: array-like
+    non_standard_residue_list: list of :class:`Bio.PDB.Residue.Residue`
         List of non-protein residues in the structure
 
     Returns
     ------
-    custom_res: array-like
+    custom_res: list of :class:`Bio.PDB.Residue.Residue`
         List of customized BioPython residue objects corresponding to electron transfer active moieties that are not part of
         standard protein residues
 
