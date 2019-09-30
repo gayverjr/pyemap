@@ -5,9 +5,9 @@ Find Shortest Pathways
 Introduction
 -------------
 Once you have a processed emap object which contains the graph theory model of the protein structure, you can search for pathways.
-There are two modes of search: source only and specified target. Pathways are stored as :class:`ShortestPath` objects, which are
-organized into :class:`Branch` objects. The data is stored in the :class:`emap` object which was passed in. For a report of 
-pathways found by pyemap, use :func:`emap.report()`.
+There are two modes of search: source only and specified target. Pathways are stored as :class:`~pyemap.ShortestPath` objects, which are
+organized into :class:`~pyemap.Branch` objects. The data is stored in the :class:`~pyemap.emap` object which was passed in. For a report of 
+pathways found by pyemap, use :func:`~pyemap.emap.report`.
 
 Source only
 ------------

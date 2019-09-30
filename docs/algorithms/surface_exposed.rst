@@ -16,18 +16,17 @@ Residue depth
 
 Residue depth is a measure of solvent exposure that describes the extent to which a 
 residue is buried within the protein structure. The parameter was first introduced by 
-Chakravarty and coworkers, and is computed in pyemap using the ResidueDepth module of 
-Biopython, and the freely available program MSMS. MSMS computes a solvent-excluded surface
+Chakravarty [Chakravarty1999]_ and coworkers, and is computed in PyeMap using the freely available program MSMS. MSMS computes a solvent-excluded surface
 by rolling a probe sphere along the surface of the protein, which is represented as 
 atomic spheres. The boundary of the volume reachable by the probe is taken to be the 
 solvent-excluded surface The residue depth for each residue is calculated as the 
-average distance of its respective atoms from the solvent-excluded surface. In pyemap, 
+average distance of its respective atoms from the solvent-excluded surface [Sanner1996]_. In PyeMap, 
 the threshold for classifying residues as buried/exposed is:
 
 .. math::
    \mathbf{RD \leq}~\mathbf{3.03Å}
 
-which is the threshold proposed by Tan and coworkers. Residues
+which is the threshold proposed by Tan and coworkers [Tan2009]_. Residues
 3.03 Å and shallower will be classified as exposed in the final graph;
 those deeper will be classified as buried.
 
@@ -35,9 +34,9 @@ Relative Solvent Accessibility
 -------------------------------
 Accessible surface area is a measure of solvent exposure, first introduced by 
 Lee and Richards, which describes the surface area of a biomolecule that is accessible 
-to solvent molecules. To calculate the accessible surface of each atom, a water sphere is 
+to solvent molecules [Lee1971]_. To calculate the accessible surface of each atom, a water sphere is 
 rolled along the surface of the protein, making the maximum permitted van der Waals 
-contacts without penetrating neighboring atoms.14 The total accessible surface area for a
+contacts without penetrating neighboring atoms [Shrake1973]_. The total accessible surface area for a
 residue is the sum of the solvent accessible surface areas of its respective atoms.
 In order to develop a threshold to classify residues as buried or exposed,
 calculated ASA values need to be normalized based on corresponding reference values for a 
@@ -50,11 +49,10 @@ solvent accessibility (RSA) can be calculated by the formula:
 .. math::
    RSA=\frac{ASA}{Max ASA}
 
-Several scales for MaxASA have been published. pyemap uses the most
-recent theoretical scale from Tien and coworkers.
-Relative solvent accessibility is calculated via the DSSP module in
-Biopython, and the DSSP program developed by Kabsch and Sander.
-In pyemap, the RSA threshold chosen for exposed residues is:
+Several scales for MaxASA have been published. PyeMap uses the most
+recent theoretical scale from Tien and coworkers [Tien2013]_.
+Relative solvent accessibility is calculated using the DSSP program developed by Kabsch and Sander [Sander1983]_.
+In PyeMap, the RSA threshold chosen for exposed residues is:
 
 .. math::
    \mathbf{RSA \geq 0.05}
@@ -71,3 +69,4 @@ Source
 
    pyemap.process_data.calculate_residue_depth
    pyemap.process_data.calculate_asa
+

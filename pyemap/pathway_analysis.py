@@ -37,7 +37,7 @@ def find_paths(emap, source, target=None, max_paths=10):
 
     Parameters
     ---------
-    emap: emap object
+    emap: :class:`~pyemap.emap` 
         Object for storing state of emap analysis.
     source: str
         source node for analysis

@@ -6,10 +6,10 @@ Introduction
 Frequently, protein crystal structures contain residues which are not
 amino acids, and do not belong to the polypeptide chain(s). Unless they
 are solvent molecules or salt ions not belonging to any co-factors, they
-can play significant role in electron/hole transfer. pyemap automatically
+can play significant role in electron/hole transfer. PyeMap automatically
 identifies those non-protein electron/hole transfer (ET) active moieties,
 and gives users the option to include them in the analysis.
-In the current implementation, non-protein ET active moieties identified by pyemap are 
+In the current implementation, non-protein ET active moieties identified by PyeMap are 
 non-amino acid aromatic sites, extended conjugated systems, and a pre-defined list of metal clusters. For a given non-standard 
 co-factor (e.g., flavin adenine dinucleotide), there can be multiple non-protein ET 
 active moieties identified by PyeMap, and they will appear as separate nodes on the graph
@@ -30,22 +30,21 @@ edge is only drawn between two atoms j and k if:
    r_{\text{jk}} \leq \ \ \overline{x} - 2\sigma_{\overline{x}}
 
 where x is the mean single-bond distance between those two elements,
-and σx is the standard deviation. The data was obtained from the
-online CRC Handbook of Chemistry and Physics. If there are any conjugated systems, the resulting chemical graph will
+and :math:`\sigma_\bar{x}` is the standard deviation. If there are any conjugated systems, the resulting chemical graph will
 be a forest of connected component subgraphs. Each subgraph that
 contains a cycle, or consists of 10 or more atoms will be considered a
 non-protein ET active moiety, and can be selected for the analysis.
 
 **Clusters**
 
-The PyeMap repository contains a list of 66 metal clusters which can be automatically identified by their 3 character residue names. All atoms
+The PyeMap repository contains a list of 66 metal clusters which are automatically identified by their 3 character residue names. All atoms
 in the residue are collected as part of the customized residue object, and a pre-rendered image is used for visualization of chemical structure.
 Otherwise, they can be used and interacted with just like any other residue.
 
 Visualization
 -------------
-Chemical structures of residues(not including user-specified residues) can be visualized using the :func:`emap.residue_to_Image()`, :func:`emap.init_graph_to_Image()` functions. 
-SMILES strings and `NGL Viewer`_ selection strings are also accessible through the :ref:`emap <emap>` object. Note that SMILES strings are 
+Chemical structures of residues(not including user-specified residues) can be visualized using the :func:`~pyemap.emap.residue_to_Image()`, :func:`~pyemap.emap.init_graph_to_Image()` functions. 
+SMILES strings and `NGL Viewer`_ selection strings are also accessible through the :class:`~pyemap.emap` object. Note that SMILES strings are 
 not available for clusters and user-specified residues.
 
 

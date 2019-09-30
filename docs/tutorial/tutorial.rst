@@ -22,13 +22,13 @@ Or fetch from the RCSB database by 4 character PDB ID:
    Success!
    Identified 3 non-protein ET active moieties.
 
-This generates an :class:`emap` object; a dynamic data structure which manages the data at all phases of pyemap analysis.
-At this stage, the :class:`emap` object contains the parsed protein structure, and a list of automatically identified non-protein electron 
+This generates an :class:`~pyemap.emap` object; a dynamic data structure which manages the data at all phases of pyemap analysis.
+At this stage, the :class:`~pyemap.emap` object contains the parsed protein structure, and a list of automatically identified non-protein electron 
 transfer active moieties. 
 
 Process
 -------
-Next, construct the graph theory model of the protein crystal structure using :func:`pyemap.process`
+Next, construct the graph theory model of the protein crystal structure using :func:`~pyemap.process_data.process`
 
    >>> pyemap.process(my_emap)
    >>> my_emap.init_graph_to_Image().show()
@@ -50,7 +50,7 @@ For example, to include phenylalanine residues, and to modify the pure distance 
 
 Find Pathways
 --------------
-Finally, search for possible pathways from a specified electron/hole donor to the surface using :func:`pyemap.find_paths`:
+Finally, search for possible pathways from a specified electron/hole donor to the surface using :func:`~pyemap.pathway_analysis.find_paths`:
 
    >>> pyemap.find_paths(my_emap,"FAD510(A)-2")
    >>> my_emap.paths_graph_to_Image().show()
@@ -64,7 +64,7 @@ Alternatively, you can search for pathways from a specified donor to a particula
 
 .. image:: images/target.png
 
-To get a report of the pathways found by pyemap, use :func:`emap.report`
+To get a report of the pathways found by pyemap, use :func:`~pyemap.emap.report`
 
 
    >>> print(my_emap.report())
@@ -82,19 +82,19 @@ To get a report of the pathways found by pyemap, use :func:`emap.report`
 
 Interacting with the emap object
 =================================
-The :class:`emap` object manages all of the data at every stage of the analysis, and this data is accessible through its 
+The :class:`~pyemap.emap` object manages all of the data at every stage of the analysis, and this data is accessible through its 
 attributes and functions. 
 
 Dictionaries
 -------------
 Much of the data on residues is stored in various dictionaries, where the key is residue name is it appears in the graph image. For example,
-to directly access the Biopython residue object corresponding to the node W324(A) do:
+to directly access the Biopython :class:`~Bio.PDB.Residue.Residue` object corresponding to the node W324(A) do:
 
    >>> residue_obj = my_emap.residues["W324(A)"]
    >>> print(type(residue_obj))
    <class 'Bio.PDB.Residue.Residue'>
 
-The same is true of pathways. Any pathway(and by extension its attributes) can be accessed by its pathway ID. For example, if you want
+The same is true of pathways, which are stored as :class:`~pyemap.ShortestPath` objects. Any pathway(and by extension its attributes) can be accessed by its pathway ID. For example, if you want
 the selection string for visualization of pathway 1a in the NGL_ viewer, do:
 
    >>> my_path = my_emap.paths["1a"]
@@ -115,7 +115,7 @@ the selection string for visualization of pathway 1a in the NGL_ viewer, do:
 
 Graphs
 ------
-The graphs are stored in the :class:`emap` object as NetworkX graphs. The attributes of edges and vertices can be accessed
+The graphs are stored in the :class:`~pyemap.emap` object as NetworkX :class:`~networkx.Graph` objects. The attributes of edges and vertices can be accessed
 from these graphs in usual NetworkX fashion (see their documentation for more information). For example, to access the weight of the
 edge connecting vertices FAD510(A)-2 and W400(A), do:
 
@@ -132,8 +132,8 @@ If what you need instead is the actual distance, this information is also kept:
 Visualization
 -------------
 Graph images and chemical structures of non-protein electron transfer active moieties can be exported to PIL with the 
-:func:`emap.residue_to_Image()`, :func:`emap.init_graph_to_Image()`, :func:`emap.paths_graph_to_Image()` functions. To save
-to file, use :func:`emap.paths_graph_to_file()`, :func:`emap.init_graph_to_file()`, and :func:`emap.residue_to_file`. 
+:func:`~pyemap.emap.residue_to_Image()`, :func:`~pyemap.emap.init_graph_to_Image()`, :func:`~pyemap.emap.paths_graph_to_Image()` functions. To save
+to file, use :func:`~pyemap.emap.paths_graph_to_file()`, :func:`~pyemap.emap.init_graph_to_file()`, and :func:`~pyemap.emap.residue_to_file`. 
 
    >>> my_emap.residue_to_Image("FAD510(A)-2").show()
 

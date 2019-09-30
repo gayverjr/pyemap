@@ -26,7 +26,7 @@ def fetch_and_parse(filename, dest="", quiet=False):
 
     Returns
     -------
-    emap: pyemap.emap.emap 
+    emap: :class:`~pyemap.emap`
         emap object ready for processing.
     '''
     if not dest:
@@ -55,7 +55,7 @@ def parse(filename, quiet=False):
     
     Returns
     -------
-    my_emap: pyemap.emap.emap 
+    my_emap: :class:`~pyemap.emap`
         emap object reading for parsing
     '''
     try:

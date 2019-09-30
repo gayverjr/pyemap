@@ -29,7 +29,7 @@ where:
    \epsilon = \alpha \exp(-\beta(R-R_{offset}))
 
 α, β, and :math:`R_{offset}` are hopping parameters, similar to the through-space
-tunneling penalty function in the Pathways model. All subsequent
+tunneling penalty function in the Pathways model [Beratan1992]_. All subsequent
 calculations are performed using the modified penalty functions as
 edge weights. When using default hopping parameters (α = 1.0,
 β = 2.3, Roffset = 0.0), the edge weights will be equal to the distances
@@ -39,7 +39,7 @@ Distance thresholds and penalty function parameters can be modified at the proce
 
 Visualization
 --------------
-The graph can be interacted with and written to file using the :ref:`emap <emap>` object. The graph is visualized using PyGraphviz_ and 
+The graph can be interacted with and written to file using the :class:`~pyemap.emap` object. The graph is visualized using PyGraphviz_ and 
 Graphviz_.
 
 .. _PyGraphviz: https://pygraphviz.github.io/
