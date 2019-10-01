@@ -2,7 +2,7 @@ from .custom_residues import is_pi_bonded, dist
 import numpy as np
 from .data import *
 import networkx as nx
-from networkx.drawing.nx_agraph import from_agraph, to_agraph
+from networkx.drawing.nx_agraph import to_agraph
 from .shortest_paths import Branch, ShortestPath
 from .smiles import getSimpleSmiles, cleanup_bonding, remove_side_chains
 from collections import OrderedDict
@@ -13,7 +13,6 @@ import tempfile
 from .data import *
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
-import warnings
 
 
 class emap():
@@ -47,7 +46,6 @@ class emap():
     paths_graph: :class:`networkx.Graph`
         Graph generated after the shortest paths step.
     '''
-
     def __init__(self, filename, structure, eta_moieties, chain_list):
         '''Initializes emap object.
 
@@ -200,8 +198,7 @@ class emap():
         color_list[0] = "yellow"
         if yens:
             color_list[-1] = "turquoise"
-        pathway.set_visualization(
-            selection_strs, color_list, labeled_atoms, label_texts)
+        pathway.set_visualization(selection_strs, color_list, labeled_atoms, label_texts)
 
     def _add_residue(self, residue):
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
@@ -254,15 +251,16 @@ class emap():
         try:
             from rdkit import Chem
             from rdkit.Chem import Draw
-        except:
-            warnings.warn("To draw chemical structures you must install RDKit. See http://www.rdkit.org/docs/Install.html.",RuntimeWarning,stacklevel=2)
-            return
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                "RDKit is required for visualization of chemical structures. See https://www.rdkit.org/docs/Install.html"
+            ) from e
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
-                cluster_img_name = os.path.abspath(os.path.dirname(
-                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                cluster_img_name = os.path.abspath(
+                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
                 if dest:
                     target_name = dest
                 else:
@@ -273,8 +271,7 @@ class emap():
                 if dest:
                     Draw.MolToFile(mol, dest, kekulize=False, size=size)
                 else:
-                    Draw.MolToFile(mol, resname + ".svg",
-                                   kekulize=False, size=size)
+                    Draw.MolToFile(mol, resname + ".svg", kekulize=False, size=size)
         else:
             raise KeyError("No record of any residue by that name.")
 
@@ -294,15 +291,16 @@ class emap():
         try:
             from rdkit import Chem
             from rdkit.Chem import Draw
-        except:
-            warnings.warn("To draw chemical structures you must install RDKit. See http://www.rdkit.org/docs/Install.html.",RuntimeWarning,stacklevel=2)
-            return Image.new('RGB', size)
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                "RDKit is required for visualization of chemical structures. See https://www.rdkit.org/docs/Install.html"
+            ) from e
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
-                cluster_img_name = os.path.abspath(os.path.dirname(
-                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                cluster_img_name = os.path.abspath(
+                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
                 drawing = svg2rlg(cluster_img_name)
                 img = renderPM.drawToPIL(drawing)
                 return img
@@ -321,23 +319,23 @@ class emap():
         dest: str
             Destination for writing to file.
         '''
+        try:
+            import pygraphviz as pg
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
         if self.init_graph:
             agraph = to_agraph(self.init_graph)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             if agraph.number_of_nodes() <= 200:
                 try:
-                    agraph.layout(
-                        prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-                except:
-                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
-                    return
+                    agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                except Exception as e:
+                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
             else:
                 try:
                     agraph.layout(prog='dot')
-                except:
-                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
-                    return
+                except Exception as e:
+                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
@@ -357,23 +355,23 @@ class emap():
         dest:str
             Destination for writing to file.
         '''
+        try:
+            import pygraphviz as pg
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
         if self.paths_graph:
             agraph = to_agraph(self.paths_graph)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             if agraph.number_of_nodes() <= 200:
                 try:
-                    agraph.layout(
-                        prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-                except:
-                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
-                    return
+                    agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                except Exception as e:
+                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
             else:
                 try:
                     agraph.layout(prog='dot')
-                except:
-                    warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
-                    return
+                except Exception as e:
+                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
@@ -399,9 +397,14 @@ class emap():
                 if d['shape'] == "box":
                     surface_exposed.append(n)
             return surface_exposed
+        elif self.paths_graph:
+            surface_exposed = []
+            for n, d in self.init_graph.nodes(data=True):
+                if d['shape'] == "box":
+                    surface_exposed.append(n)
+            return surface_exposed
         else:
-            raise RuntimeError(
-                "No graph found. Please run pyemap.process(my_emap) to generate the graph.")
+            raise RuntimeError("No graph found. Run pyemap.process(my_emap) to generate a graph.")
 
     def report(self, dest=""):
         '''Returns report of most probable pathways. Writes to file if destination is specified.
@@ -441,16 +444,18 @@ class emap():
         --------
         img: :class:`PIL.Image.Image`
         '''
+        try:
+            import pygraphviz as pg
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
         if self.init_graph:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(self.init_graph)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             try:
                 agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
-            except:
-                warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
-                return Image.new('RGB', (200, 200))
+            except Exception as e:
+                raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
             if agraph.number_of_nodes() <= 200:
                 agraph.draw(fout.name, prog='neato')
             else:
@@ -467,16 +472,18 @@ class emap():
         --------
         img: :class:`PIL.Image.Image`
         '''
+        try:
+            import pygraphviz as pg
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
         if self.paths_graph:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(self.paths_graph)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             try:
                 agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
-            except:
-                warnings.warn("To draw graphs you must have graphviz installed. See https://graphviz.gitlab.io/",RuntimeWarning,stacklevel=2)
-                return Image.new('RGB', (200, 200))
+            except Exception as e:
+                raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
             if agraph.number_of_nodes() <= 200:
                 agraph.draw(fout.name, prog='neato')
             else:
