@@ -30,7 +30,7 @@ Pip installation will only install python dependencies, which is sufficient to r
 ```
 pip install --extra-index-url https://testpypi.python.org/pypi pyemap
 ```
-For full functionality you will need to install [PyGraphviz](https://pygraphviz.github.io/), [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS), [MKDSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), and [Graphviz](https://graphviz.gitlab.io/), all of which can be downloaded free of charge from their owners, and are available on most platforms. Windows users should refer to our [documentation](https://pyemap.readthedocs.io/en/latest/install.html) for more information.
+For full functionality you will need to install [PyGraphviz](https://pygraphviz.github.io/), [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS), [MKDSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), and [Graphviz](https://graphviz.gitlab.io/), all of which can be downloaded free of charge from their owners, and are available on most platforms.
 
 
 # Bugs and feature requests
