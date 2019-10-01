@@ -52,7 +52,6 @@ setup(
     			      'scipy',
     				  'pillow',
                       'reportlab',
-                      'pygraphviz',
                       'svglib']
     				   # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',

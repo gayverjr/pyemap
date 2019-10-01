@@ -58,12 +58,6 @@ In Development
 
 Documentation
 ---------------
-
-.. only:: html
-
-    :Release: 1.0.0
-    :Date: |today|
-
 .. toctree::
    :maxdepth: 1
 

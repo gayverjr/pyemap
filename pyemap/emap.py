@@ -251,7 +251,7 @@ class emap():
         try:
             from rdkit import Chem
             from rdkit.Chem import Draw
-        except ModuleNotFoundError as e:
+        except (ModuleNotFoundError, ImportError) as e:
             raise ModuleNotFoundError(
                 "RDKit is required for visualization of chemical structures. See https://www.rdkit.org/docs/Install.html"
             ) from e
@@ -291,7 +291,7 @@ class emap():
         try:
             from rdkit import Chem
             from rdkit.Chem import Draw
-        except ModuleNotFoundError as e:
+        except (ModuleNotFoundError, ImportError) as e:
             raise ModuleNotFoundError(
                 "RDKit is required for visualization of chemical structures. See https://www.rdkit.org/docs/Install.html"
             ) from e
@@ -321,8 +321,8 @@ class emap():
         '''
         try:
             import pygraphviz as pg
-        except ModuleNotFoundError as e:
-            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
+        except (ModuleNotFoundError, ImportError) as e:
+            raise ModuleNotFoundError("Drawing graphs requires PyGraphviz and Graphviz. See http://pygraphviz.github.io/") from e
         if self.init_graph:
             agraph = to_agraph(self.init_graph)
             agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
@@ -330,12 +330,12 @@ class emap():
                 try:
                     agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
                 except Exception as e:
-                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
+                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             else:
                 try:
                     agraph.layout(prog='dot')
                 except Exception as e:
-                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
+                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
@@ -357,8 +357,8 @@ class emap():
         '''
         try:
             import pygraphviz as pg
-        except ModuleNotFoundError as e:
-            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
+        except (ModuleNotFoundError, ImportError) as e:
+            raise ModuleNotFoundError("Drawing graphs requires PyGraphviz and Graphviz. See http://pygraphviz.github.io/") from e
         if self.paths_graph:
             agraph = to_agraph(self.paths_graph)
             agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
@@ -366,12 +366,12 @@ class emap():
                 try:
                     agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
                 except Exception as e:
-                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
+                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             else:
                 try:
                     agraph.layout(prog='dot')
                 except Exception as e:
-                    raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
+                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
@@ -446,8 +446,8 @@ class emap():
         '''
         try:
             import pygraphviz as pg
-        except ModuleNotFoundError as e:
-            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
+        except (ModuleNotFoundError, ImportError) as e:
+            raise ModuleNotFoundError("Drawing graphs requires PyGraphviz and Graphviz. See http://pygraphviz.github.io/") from e
         if self.init_graph:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(self.init_graph)
@@ -455,7 +455,7 @@ class emap():
             try:
                 agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
             except Exception as e:
-                raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
+                raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             if agraph.number_of_nodes() <= 200:
                 agraph.draw(fout.name, prog='neato')
             else:
@@ -474,8 +474,8 @@ class emap():
         '''
         try:
             import pygraphviz as pg
-        except ModuleNotFoundError as e:
-            raise ModuleNotFoundError("Drawing graphs requires pygraphviz. See http://pygraphviz.github.io/") from e
+        except (ModuleNotFoundError, ImportError) as e:
+            raise ModuleNotFoundError("Drawing graphs requires PyGraphviz and Graphviz. See http://pygraphviz.github.io/") from e
         if self.paths_graph:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(self.paths_graph)
@@ -483,7 +483,7 @@ class emap():
             try:
                 agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
             except Exception as e:
-                raise RuntimeError("There was a problem with graphviz. See https://graphviz.gitlab.io/") from e
+                raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             if agraph.number_of_nodes() <= 200:
                 agraph.draw(fout.name, prog='neato')
             else:

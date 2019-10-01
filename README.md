@@ -10,12 +10,13 @@ PyeMap is a Python package aimed at automatic identification of electron and hol
 - **Website:** https://emap.bu.edu
 - **News:** https://twitter.com/eMap_protein
 # Installation
-This is an abbreviated version of the instructions provided in our [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
-### Conda (recommended):
-The conda recipe will install all dependencies necessary for full functionality.
+PyeMap requires Python versions 3.5 and later, and a working copy of [wget](https://www.gnu.org/software/wget/) in the path. It has been tested on OSX and Linux platforms. This is an abbreviated version of the instructions provided in our [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
+
+### Conda(recommended OSX and Linux):
+For OSX and Linux users, the conda recipe will install all dependencies necessary for full functionality.
 ```
 # create new virtual environment
-$ conda create -n pyemap_env python=3.7
+$ conda create -n pyemap_env
 $ conda activate pyemap_env
 # include channels for dependencies, only needs to be done once
 $ conda config --add channels conda-forge --add channels salilab --add channels bioconda --add channels gayverjr
@@ -24,11 +25,14 @@ $ conda update --all
 $ conda install pyemap
 ```
 
-### Pip
-Pip installation will only install python dependencies, which is sufficient to run PyeMap analysis, but will be missing some features such as surface exposure and visualization.
+### Pip(all platforms)
+Pip installation will only install python dependencies, which is sufficient to run PyeMap analysis, but will be missing some features.
 ```
 pip install --extra-index-url https://testpypi.python.org/pypi pyemap
 ```
+For full functionality you will need to install [PyGraphviz](https://pygraphviz.github.io/), [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS), [MKDSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), and [Graphviz](https://graphviz.gitlab.io/), all of which can be downloaded free of charge from their owners, and are available on most platforms. Windows users should refer to our [documentation](https://pyemap.readthedocs.io/en/latest/install.html) for more information.
+
+
 # Bugs and feature requests
 Please report any bugs and make feature requests [here](https://github.com/gayverjr/pyemap/issues). For issues exclusive to the web version [eMap](https:emap.bu.edu), please send an email to <emap.bu@gmail.com>. We also greatly encourage users to contribute by making pull requests on [GitHub](https://github.com/gayverjr/pyemap)!
 
