@@ -2,9 +2,11 @@
   <img src="https://github.com/gayverjr/pyemap/blob/master/docs/logo/pyemap_logo.png">
 </div>
 
-[![Build Status](https://travis-ci.org/gayverjr/pyemap.svg?branch=master)](https://travis-ci.org/gayverjr/pyemap) [![codecov](https://codecov.io/gh/gayverjr/pyemap/branch/master/graph/badge.svg)](https://codecov.io/gh/gayverjr/pyemap/branch/master) [![Documentation Status](https://readthedocs.org/projects/pyemap/badge/?version=latest)](https://pyemap.readthedocs.io/en/latest/?badge=latest) [![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://github.com/gayverjr/pyemap/blob/master/LICENSE) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816)
+[![GitHub release](https://img.shields.io/github/release/gayverjr/pyemap.svg)](https://github.com/gayverjr/pyemap)[![Build Status](https://travis-ci.org/gayverjr/pyemap.svg?branch=master)](https://travis-ci.org/gayverjr/pyemap) [![codecov](https://codecov.io/gh/gayverjr/pyemap/branch/master/graph/badge.svg)](https://codecov.io/gh/gayverjr/pyemap/branch/master) [![Documentation Status](https://readthedocs.org/projects/pyemap/badge/?version=latest)](https://pyemap.readthedocs.io/en/latest/?badge=latest) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://github.com/gayverjr/pyemap/blob/master/LICENSE)
 
-PyeMap is a Python package aimed at automatic identification of electron and hole transfer pathways in proteins. 
+[![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816)
+
+PyeMap is a Python package aimed at automatic identification of electron and hole transfer pathways in proteins.
 It serves as the backend for the web application [eMap](https://emap.bu.edu/), and can also be used as a fully functional Python package.
 
 - **Documentation:** https://readthedocs.org/projects/pyemap/
@@ -29,7 +31,7 @@ $ conda install pyemap
 ### Pip
 Pip installation will only install python dependencies, and requires [Graphviz](https://graphviz.gitlab.io/) in order to work. This is sufficient to run PyeMap analysis and view graph images, but some features will be missing.
 ```
-pip install --extra-index-url https://testpypi.python.org/pypi pyemap
+pip install pyemap
 ```
 For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS), [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), and [wget](https://www.gnu.org/software/wget/), all of which can be downloaded free of charge from their owners, and are available on most platforms.
 
