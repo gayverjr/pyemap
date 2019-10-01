@@ -95,9 +95,9 @@ Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
 
 
 def pathways_model(dist, coef_alpha, exp_beta, r_offset):
-    '''Applies penalty function parameters and returns score.
+    """Applies penalty function parameters and returns score.
 
-        :math:`\epsilon =\\alpha \exp(-\\beta(R-R_{offset}))`
+        :math:`\\epsilon =\\alpha \\exp(-\\beta(R-R_{offset}))`
 
     Parameters
     ----------
@@ -109,8 +109,8 @@ def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     Returns
     -------
     mod_penalty: float
-
-    '''
+    
+    """
     penalty = coef_alpha * np.exp(-exp_beta * (dist - r_offset))
     mod_penalty = -np.log10(penalty)
     return mod_penalty
@@ -550,8 +550,8 @@ def finish_graph(G, surface_exposed_res, chain_list):
 
     """
     for goal in surface_exposed_res:
-        G.node[goal]['margin'] = '0.11'
-        G.node[goal]['shape'] = 'box'
+        G.nodes[goal]['margin'] = '0.11'
+        G.nodes[goal]['shape'] = 'box'
     # get rid of all disconnected nodes
     all_nodes = list(G.nodes())
     for node in all_nodes:
@@ -652,29 +652,29 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
     G = G_pathways
     G = nx.relabel_nodes(G, node_labels)
     for name_node in G.nodes():
-        G.node[name_node]['style'] = 'filled'
-        G.node[name_node]['fontname'] = 'Helvetica-Bold'
-        G.node[name_node]['fontsize'] = 32
-        G.node[name_node]['shape'] = "oval"
-        G.node[name_node]['margin'] = '0.04'
-        G.node[name_node]['fontcolor'] = "#000000"
-        G.node[name_node]['color'] = '#708090'
-        G.node[name_node]['penwidth'] = 2.0
+        G.nodes[name_node]['style'] = 'filled'
+        G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
+        G.nodes[name_node]['fontsize'] = 32
+        G.nodes[name_node]['shape'] = "oval"
+        G.nodes[name_node]['margin'] = '0.04'
+        G.nodes[name_node]['fontcolor'] = "#000000"
+        G.nodes[name_node]['color'] = '#708090'
+        G.nodes[name_node]['penwidth'] = 2.0
         try:
             val = int(name_node[1])
             if name_node not in eta_moieties:
                 if 'Y' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#96c8f0'
+                    G.nodes[name_node]['fillcolor'] = '#96c8f0'
                 elif 'W' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#f07878'
+                    G.nodes[name_node]['fillcolor'] = '#f07878'
                 elif 'F' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#f09664'
+                    G.nodes[name_node]['fillcolor'] = '#f09664'
                 elif 'H' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#c8f0c8'
+                    G.nodes[name_node]['fillcolor'] = '#c8f0c8'
             else:
-                G.node[name_node]['fillcolor'] = '#FFC0CB'
+                G.nodes[name_node]['fillcolor'] = '#FFC0CB'
         except ValueError:
-            G.node[name_node]['fillcolor'] = '#FFC0CB'
+            G.nodes[name_node]['fillcolor'] = '#FFC0CB'
     for edge in G.edges():
         name_node1, name_node2 = edge[0], edge[1]
         G[name_node1][name_node2]['color'] = '#778899'

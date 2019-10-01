@@ -29,10 +29,10 @@ And finally, install PyeMap::
 
 **Pip**
 
-Pip installation will only install python dependencies, and requires Graphviz_ in order to work. 
+Pip installation will only install python dependencies, and requires Graphviz_ in order to work.
 This is sufficient to run PyeMap analysis and view graph images, but some features will be missing::
 
-    $ pip install --extra-index-url https://testpypi.python.org/pypi pyemap
+    $ pip install pyemap
 
 For full functionality, install the following packages:
 
@@ -71,4 +71,4 @@ Then, download the latest Graphviz and compile from source::
    $ make
    $ make install
 
-And then add the executables to a directory on your systems’ path. 
+And then add the executables to a directory on your systems’ path.
