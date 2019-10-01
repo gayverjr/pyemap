@@ -23,43 +23,38 @@ used to compute the shortest pathways from a specified electron or hole donor to
 surface of the protein, or to a user-specified acceptor.
 
 
-PyeMap analysis happens in 3 steps. The first step is parsing a PDB or CIF file provided
+PyeMap analysis is organized into 3 steps. The first step is parsing a PDB or CIF file provided
 by the user or fetched from the RCSB_ database. The next step is constructing the
 graph theory model of the protein crystal structure. Finally, the shortest paths between a
 specified electron/hole source to the surface or to a specified electron/hole acceptor are calculated.
 
 .. _RCSB: http://www.rcsb.org/
 
-PyeMap is intended to be used as the backend for the web application
-eMap_, and as a standalone python package.
+PyeMap serves as the backend for the web application eMap_, 
+and can also be used as a fully functional Python package.
 
 .. _eMap: http://emap.bu.edu/
 
 Current Features
 ----------------
+* Identification of most probable electron/hole transfer pathways from a specified donor to the protein surface or a specified electron/hole acceptor
 * Accepts valid .pdb or .cif structures provided by the user or fetched from RCSB_ database
-* Tested on structures as large as 5350 residues (51599 atoms)
 * Automatic detection of non-protein aromatic moieties such as porphyrins, nucleobases, and other aromatic cofactors
 * Automatic detection of 60+ inorganic clusters such as iron-sulfur clusters and others
-* Automatic identification of surface exposed residues using residue depth or solvent accessibility criteria
-* Visualization of chemical structures and graphs
 * User specified custom fragments
+* Visualization of chemical structures and graphs
+* Automatic identification of surface exposed residues using residue depth or solvent accessibility criteria
 * Control over various parameters which determine connectivity of graph theory model
-* Identification of most probable electron/hole transfer pathways from a specified donor to the protein surface or a specified electron/hole acceptor
+* Tested on structures as large as 5350 residues (51599 atoms)
 
 
-Planned Features
+
+In Development
 ----------------
 * Tools for screening families of proteins for common electron/hole transfer pathways
-* Generalization to DNA, protein-DNA, and other relevant biomolecules
-* Improving the physical model of electron transfer by incorporating information on geometry-dependent electronic couplings and chemical-dependent energetics
+* Generalization to DNA, protein-DNA complexes etc.
+* Improving the physical model of electron transfer by incorporating information on geometry-dependent electronic couplings and site sensitive energetics
 
-Audience
---------
-The aim of this software is to efficiently identify possible electron hopping channels to
-be investigated further in quantitative and experimental studies. As such, our audience
-includes computational and experimental chemists, biologists, and physicists interested
-in gaining insight into potentially relevant electron/hole transfer pathways in proteins.
 
 .. toctree::
    :maxdepth: 1

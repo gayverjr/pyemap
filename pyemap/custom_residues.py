@@ -76,14 +76,6 @@ def find_conjugated_systems(atoms, res_names):
     -------
     custom_res_list: array-like
         List of customized :class:`Bio.PDB.Residue.Residue`
-
-    Notes
-    -----
-    A chemical graph is constructed from the atoms in this residue using O, P, N, C, and S atoms. In this graph, the
-    only edges that are included are those between atoms that considered to be pi-bonded (see is_pi_bonded). The
-    chemical graph is now a forest, and so the next step is collect each connected component subgraph. Only subgraphs
-    that contain cycles (aromatic) or are larger than 10 are considered (extended conjugated systems). For each subgraph,
-    the atoms are collected and a customized Residue object is constructured and named.
     """
     # first let's create the chemical graph structure
     # only these elements will be considered in our search
