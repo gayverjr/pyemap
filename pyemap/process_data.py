@@ -15,7 +15,6 @@ import networkx as nx
 import numpy as np
 from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
-from networkx.drawing.nx_agraph import to_agraph
 from scipy.spatial import distance_matrix
 import warnings
 from .data import *

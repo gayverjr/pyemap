@@ -1,7 +1,7 @@
 ==============================
 Tutorial
 ==============================
-This guide can help you start working with PyeMap.
+This tutorial can help you start working with PyeMap.
 
 Basic Usage
 ===========
@@ -28,7 +28,7 @@ transfer active moieties.
 
 Process
 -------
-Next, construct the graph theory model of the protein crystal structure using :func:`~pyemap.process_data.process`
+Next, construct the graph model of the protein crystal structure using :func:`~pyemap.process_data.process`
 
    >>> pyemap.process(my_emap)
    >>> my_emap.init_graph_to_Image().show()
@@ -87,7 +87,7 @@ attributes and functions.
 
 Dictionaries
 -------------
-Much of the data on residues is stored in various dictionaries, where the key is residue name is it appears in the graph image. For example,
+Much of the data on residues is stored in various dictionaries, where the key is residue name as it appears in the graph image. For example,
 to directly access the Biopython :class:`~Bio.PDB.Residue.Residue` object corresponding to the node W324(A) do:
 
    >>> residue_obj = my_emap.residues["W324(A)"]
