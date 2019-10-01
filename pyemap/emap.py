@@ -13,6 +13,7 @@ import tempfile
 from .data import *
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+import warnings
 
 
 class emap():
