@@ -550,7 +550,7 @@ def finish_graph(G, surface_exposed_res, chain_list):
 
     """
     for goal in surface_exposed_res:
-        G.node[goal]['margin'] = '0.11'
+        #G.node[goal]['margin'] = '0.11'
         G.node[goal]['shape'] = 'box'
     # get rid of all disconnected nodes
     all_nodes = list(G.nodes())
@@ -656,7 +656,7 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         G.node[name_node]['fontname'] = 'Helvetica-Bold'
         G.node[name_node]['fontsize'] = 32
         G.node[name_node]['shape'] = "oval"
-        G.node[name_node]['margin'] = '0.04'
+        #G.node[name_node]['margin'] = '0.04'
         G.node[name_node]['fontcolor'] = "#000000"
         G.node[name_node]['color'] = '#708090'
         G.node[name_node]['penwidth'] = 2.0
