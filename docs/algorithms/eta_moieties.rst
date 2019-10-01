@@ -39,7 +39,8 @@ non-protein ET active moiety, and can be selected for the analysis.
 
 The PyeMap repository contains a list of 66 inorganic clusters which are automatically identified by their 3 character residue names. All atoms
 in the residue are collected as part of the customized residue object, and a pre-rendered image is used for visualization of chemical structure.
-Otherwise, they can be used and interacted with just like any other residue.
+Otherwise, they can be used and interacted with just like any other residue. The list of clusters and pre-rendered images were obtained from the 
+Protein Data Bank in Europe (_PDBe).
 
 Visualization
 -------------
@@ -49,6 +50,7 @@ not available for clusters and user-specified residues.
 
 
 .. _NGL Viewer: http://nglviewer.org/ngl/api/
+.. _PDBe: https://www.ebi.ac.uk/pdbe/
 
 Source
 ------
