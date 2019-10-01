@@ -3,6 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. _contents:
+
 Overview of PyeMap
 =========================================================
 .. image:: https://travis-ci.org/gayverjr/pyemap.svg?branch=master
@@ -12,6 +14,7 @@ Overview of PyeMap
 
 - Website:  https://emap.bu.edu
 - News:     https://twitter.com/eMap_protein
+- GitHub:   https://github.com/gayverjr/pyemap
 
 PyeMap is a python package aimed at automatic identification of electron and hole transfer
 pathways in proteins. The analysis is based on a coarse-grained version of Beratan and
@@ -47,23 +50,22 @@ Current Features
 * Control over various parameters which determine connectivity of graph theory model
 * Identification of most probable electron/hole transfer pathways from a specified donor to the protein surface or a specified electron/hole acceptor
 
-
-Planned Features
+In Development
 ----------------
 * Tools for screening families of proteins for common electron/hole transfer pathways
 * Generalization to DNA, protein-DNA, and other relevant biomolecules
 * Improving the physical model of electron transfer by incorporating information on geometry-dependent electronic couplings and chemical-dependent energetics
 
-Audience
---------
-The aim of this software is to efficiently identify possible electron hopping channels to
-be investigated further in quantitative and experimental studies. As such, our audience
-includes computational and experimental chemists, biologists, and physicists interested
-in gaining insight into potentially relevant electron/hole transfer pathways in proteins.
+Documentation
+---------------
+
+.. only:: html
+
+    :Release: 1.0.0
+    :Date: |today|
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
 
    install
    tutorial/tutorial

@@ -10,7 +10,7 @@ PyeMap is a Python package aimed at automatic identification of electron and hol
 - **Website:** https://emap.bu.edu
 - **News:** https://twitter.com/eMap_protein
 # Installation
-For more detailed instructions, specifically on getting nicer looking graphs from graphviz please see the [documentation](https://readthedocs.org/projects/pyemap/).
+This is an abbreviated version of the instructions provided in our [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
 ### Conda (recommended):
 The conda recipe will install all dependencies necessary for full functionality.
 ```
@@ -30,7 +30,7 @@ Pip installation will only install python dependencies, which is sufficient to r
 pip install --extra-index-url https://testpypi.python.org/pypi pyemap
 ```
 # Bugs and feature requests
-Please report any bugs and make feature requests [here](https://github.com/gayverjr/pyemap/issues). For issues exlcusive to the web version [eMap](https:emap.bu.edu), please send an email to <emap.bu@gmail.com>. We also greatly encourage users to contribute by making pull requests on [GitHub](https://github.com/gayverjr/pyemap)!
+Please report any bugs and make feature requests [here](https://github.com/gayverjr/pyemap/issues). For issues exclusive to the web version [eMap](https:emap.bu.edu), please send an email to <emap.bu@gmail.com>. We also greatly encourage users to contribute by making pull requests on [GitHub](https://github.com/gayverjr/pyemap)!
 
 # License
 Released under the 3-Clause BSD license (see LICENSE).

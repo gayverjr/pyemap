@@ -1,9 +1,10 @@
 Installation
 =========================================================
+PyeMap requires Python 3.5, 3.6, or 3.7. Below, we present two installation recipes which work for Linux, OSX, and Windows platforms.
 
 .. rubric:: Conda (recommended)
 
-In order to set up the pre-requisites for PyeMap, you need to install the conda_ package manager. The easiest ways to get conda are
+The easiset way to install PyeMap is using the conda_ package manager. The easiest ways to get conda are
 through the Anaconda_ and Miniconda_ distributions.
 
 .. _conda: https://docs.conda.io/en/latest/
@@ -14,7 +15,7 @@ through the Anaconda_ and Miniconda_ distributions.
 
 Once you have a working copy of conda, create and activate a new virtual environment::
 
-    $ conda create -n pyemap_env python=3.7
+    $ conda create -n pyemap_env
     $ conda activate pyemap_env
 
 Now add conda channels in order to download dependencies::
@@ -33,6 +34,11 @@ Pip installation will only install python dependencies, which is sufficient to r
     $ pip install --extra-index-url https://testpypi.python.org/pypi pyemap
 
 For full functionality, you can download and install  MSMS_, DSSP_, and Graphviz_ separately.
+
+**For Windows Users**
+
+Both installation methods described above will work, but will not install MSMS_ and DSSP_, as Conda recipes for them are not currently available for Windows. 
+Both programs have Windows versions which can be downloaded free of charge from their respective owners. 
 
 .. rubric:: Graphviz
 
