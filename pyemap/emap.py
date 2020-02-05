@@ -1,19 +1,17 @@
-from .custom_residues import is_pi_bonded, dist
-import numpy as np
-from .data import *
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
+from .custom_residues import is_pi_bonded
+from .data import clusters
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
-from .shortest_paths import Branch, ShortestPath
 from .smiles import getSimpleSmiles, cleanup_bonding, remove_side_chains
 from collections import OrderedDict
 from PIL import Image
 import os
 from shutil import copyfile
 import tempfile
-from .data import *
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
-import warnings
 
 
 class emap():

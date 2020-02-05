@@ -3,8 +3,7 @@
 </div>
 
 [![GitHub release](https://img.shields.io/github/release/gayverjr/pyemap.svg)](https://github.com/gayverjr/pyemap)[![Build Status](https://travis-ci.org/gayverjr/pyemap.svg?branch=master)](https://travis-ci.org/gayverjr/pyemap) [![codecov](https://codecov.io/gh/gayverjr/pyemap/branch/master/graph/badge.svg)](https://codecov.io/gh/gayverjr/pyemap/branch/master) [![Documentation Status](https://readthedocs.org/projects/pyemap/badge/?version=latest)](https://pyemap.readthedocs.io/en/latest/?badge=latest) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://github.com/gayverjr/pyemap/blob/master/LICENSE)
-
-[![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816)
+[![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/gayverjr/pyemap.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/gayverjr/pyemap/context:python)
 
 PyeMap is a Python package aimed at automatic identification of electron and hole transfer pathways in proteins.
 It serves as the backend for the web application [eMap](https://emap.bu.edu/), and can also be used as a fully functional Python package.

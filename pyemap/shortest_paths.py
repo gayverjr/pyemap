@@ -1,6 +1,5 @@
-# This Python script is a part of
-# eMAP: online mapping of electron transfer channels in biomolecules
-# Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 """Finds shortest paths in graph given a source and optionally a target node.
 
 Defines implementations of yen's and dijkstra's algorithms for calculating the shortest path(s) from
@@ -12,7 +11,9 @@ the pathway.
 import itertools
 import string
 import networkx as nx
+from functools import total_ordering
 
+@total_ordering
 class ShortestPath(object):
     """Data structure used to store shortest paths.
 
@@ -58,9 +59,6 @@ class ShortestPath(object):
 
     def __eq__(self, other):
         return self.length == other.length
-
-    def __ne__(self, other):
-        return not (self == other)
 
     def __lt__(self, other):
         return self.length < other.length
@@ -248,7 +246,7 @@ def dijkstras_shortest_paths(G, start, targets):
         path = []
         try:
             path = nx.dijkstra_path(G, start, goal)
-        except:
+        except Exception as e:
             path = []
         if not path == []:
             sum = 0

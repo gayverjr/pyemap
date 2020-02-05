@@ -1,7 +1,9 @@
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 from heapq import heappop, heappush
 import networkx as nx
 import numpy as np
-from .data import *
+from .data import SB_means,SB_std_dev
 from collections import defaultdict
 
 
@@ -103,10 +105,9 @@ def is_part_of_cycle(node, res_graph):
 
 
 def is_close(node, node2, res_graph):
-    v1 = np.array(res_graph.nodes[node]["coords"])
-    v2 = np.array(res_graph.nodes[node2]["coords"])
     bond = str(res_graph.nodes[node]["element"].upper()) + str(res_graph.nodes[node2]["element"].upper())
-    dist = np.sqrt(np.sum((v1 - v2)**2))
+    dist = np.sqrt(np.sum((np.array(res_graph.nodes[node]["coords"]) -\
+     						np.array(res_graph.nodes[node2]["coords"]))**2))
     cutoff = SB_means.get(bond) + 3 * SB_std_dev.get(bond)
     return dist < cutoff
 
@@ -127,15 +128,12 @@ def cleanup_bonding(res_graph):
                 if node2 != node and node2 not in res_graph.neighbors(node) and len(list(
                         res_graph.neighbors(node2))) < 3:
                     if is_close(node, node2, res_graph):
-                        v1 = np.array(res_graph.nodes[node]["coords"])
-                        v2 = np.array(res_graph.nodes[node2]["coords"])
-                        dist = np.sqrt(np.sum((v1 - v2)**2))
+                        dist = np.sqrt(np.sum((np.array(res_graph.nodes[node]["coords"]) -\
+                         					   np.array(res_graph.nodes[node2]["coords"]))**2))
                         if dist < min_dist:
                             min_dist = dist
                             closest_neighbor = node2
             if closest_neighbor:
-                v1 = np.array(res_graph.nodes[node]["coords"])
-                v2 = np.array(res_graph.nodes[closest_neighbor]["coords"])
                 res_graph.add_edge(node, closest_neighbor)
 
 

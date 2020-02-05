@@ -1,6 +1,5 @@
-# This Python script is a part of
-# eMAP: online mapping of electron transfer channels in biomolecules
-# Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 """Processes parsed .pdb/.mmcif file, and generates a graph based on user selected options.
 
 Collects requested residues and constructs a distance matrix, from which the graph is generated. Edges are filtered out based
@@ -17,7 +16,7 @@ from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
 import warnings
-from .data import *
+from .data import res_name_to_char
 """str: module level directory path for writing to file"""
 
 TRP_sc = ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
@@ -134,7 +133,7 @@ def calculate_residue_depth(aromatic_residues, model):
     """
     try:
         surface = get_surface(model)
-    except:
+    except Exception as e:
         warnings.warn("Unable to calculate residue depth. Check that MSMS is installed.", RuntimeWarning,stacklevel=2)
         return []
     surface_exposed_res = []
@@ -660,8 +659,7 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         G.nodes[name_node]['fontcolor'] = "#000000"
         G.nodes[name_node]['color'] = '#708090'
         G.nodes[name_node]['penwidth'] = 2.0
-        try:
-            val = int(name_node[1])
+        if(name_node[1].isdigit()):
             if name_node not in eta_moieties:
                 if 'Y' == name_node[0]:
                     G.nodes[name_node]['fillcolor'] = '#96c8f0'
@@ -673,7 +671,7 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
                     G.nodes[name_node]['fillcolor'] = '#c8f0c8'
             else:
                 G.nodes[name_node]['fillcolor'] = '#FFC0CB'
-        except ValueError:
+        else:
             G.nodes[name_node]['fillcolor'] = '#FFC0CB'
     for edge in G.edges():
         name_node1, name_node2 = edge[0], edge[1]

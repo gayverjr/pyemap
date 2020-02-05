@@ -1,3 +1,5 @@
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 import numpy as np
 from .shortest_paths import yens_shortest_paths, dijkstras_shortest_paths
 
