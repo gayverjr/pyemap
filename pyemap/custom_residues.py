@@ -1,11 +1,10 @@
-# This Python script is a part of
 # PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
-# Copyright(C) 2019 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 """Functions for identifying electron transfer active moieties, and constructing customized Bio.PDB.Residue objects.
 """
 import networkx as nx
 import numpy as np
-from .data import *
+from .data import SB_means,SB_std_dev, clusters
 
 def is_pi_bonded(cur_atom, next_atom):
     """Determines whether two atoms are pi bonded based on experimental bond lengths.

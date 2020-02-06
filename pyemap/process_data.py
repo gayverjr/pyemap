@@ -1,6 +1,5 @@
-# This Python script is a part of
-# eMAP: online mapping of electron transfer channels in biomolecules
-# Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 """Processes parsed .pdb/.mmcif file, and generates a graph based on user selected options.
 
 Collects requested residues and constructs a distance matrix, from which the graph is generated. Edges are filtered out based
@@ -17,7 +16,7 @@ from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
 import warnings
-from .data import *
+from .data import res_name_to_char
 """str: module level directory path for writing to file"""
 
 TRP_sc = ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
@@ -95,9 +94,9 @@ Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
 
 
 def pathways_model(dist, coef_alpha, exp_beta, r_offset):
-    '''Applies penalty function parameters and returns score.
+    """Applies penalty function parameters and returns score.
 
-        :math:`\epsilon =\\alpha \exp(-\\beta(R-R_{offset}))`
+        :math:`\\epsilon =\\alpha \\exp(-\\beta(R-R_{offset}))`
 
     Parameters
     ----------
@@ -109,8 +108,8 @@ def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     Returns
     -------
     mod_penalty: float
-
-    '''
+    
+    """
     penalty = coef_alpha * np.exp(-exp_beta * (dist - r_offset))
     mod_penalty = -np.log10(penalty)
     return mod_penalty
@@ -134,7 +133,7 @@ def calculate_residue_depth(aromatic_residues, model):
     """
     try:
         surface = get_surface(model)
-    except:
+    except Exception as e:
         warnings.warn("Unable to calculate residue depth. Check that MSMS is installed.", RuntimeWarning,stacklevel=2)
         return []
     surface_exposed_res = []
@@ -550,8 +549,8 @@ def finish_graph(G, surface_exposed_res, chain_list):
 
     """
     for goal in surface_exposed_res:
-        G.node[goal]['margin'] = '0.11'
-        G.node[goal]['shape'] = 'box'
+        G.nodes[goal]['margin'] = '0.11'
+        G.nodes[goal]['shape'] = 'box'
     # get rid of all disconnected nodes
     all_nodes = list(G.nodes())
     for node in all_nodes:
@@ -652,29 +651,28 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
     G = G_pathways
     G = nx.relabel_nodes(G, node_labels)
     for name_node in G.nodes():
-        G.node[name_node]['style'] = 'filled'
-        G.node[name_node]['fontname'] = 'Helvetica-Bold'
-        G.node[name_node]['fontsize'] = 32
-        G.node[name_node]['shape'] = "oval"
-        G.node[name_node]['margin'] = '0.04'
-        G.node[name_node]['fontcolor'] = "#000000"
-        G.node[name_node]['color'] = '#708090'
-        G.node[name_node]['penwidth'] = 2.0
-        try:
-            val = int(name_node[1])
+        G.nodes[name_node]['style'] = 'filled'
+        G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
+        G.nodes[name_node]['fontsize'] = 32
+        G.nodes[name_node]['shape'] = "oval"
+        G.nodes[name_node]['margin'] = '0.04'
+        G.nodes[name_node]['fontcolor'] = "#000000"
+        G.nodes[name_node]['color'] = '#708090'
+        G.nodes[name_node]['penwidth'] = 2.0
+        if(name_node[1].isdigit()):
             if name_node not in eta_moieties:
                 if 'Y' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#96c8f0'
+                    G.nodes[name_node]['fillcolor'] = '#96c8f0'
                 elif 'W' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#f07878'
+                    G.nodes[name_node]['fillcolor'] = '#f07878'
                 elif 'F' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#f09664'
+                    G.nodes[name_node]['fillcolor'] = '#f09664'
                 elif 'H' == name_node[0]:
-                    G.node[name_node]['fillcolor'] = '#c8f0c8'
+                    G.nodes[name_node]['fillcolor'] = '#c8f0c8'
             else:
-                G.node[name_node]['fillcolor'] = '#FFC0CB'
-        except ValueError:
-            G.node[name_node]['fillcolor'] = '#FFC0CB'
+                G.nodes[name_node]['fillcolor'] = '#FFC0CB'
+        else:
+            G.nodes[name_node]['fillcolor'] = '#FFC0CB'
     for edge in G.edges():
         name_node1, name_node2 = edge[0], edge[1]
         G[name_node1][name_node2]['color'] = '#778899'

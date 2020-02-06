@@ -1,16 +1,15 @@
-# This Python script is a part of
 # PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
-# Copyright(C) 2019 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 """Parser used to parse PDB and MMCIF files. 
 
 Constructs an emap object containing parsed Bio.PDB.Structure and a list of customized Bio.PDB.Residue objects
 corresponding to automatically identified electron transfer moieties.
 """
 from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
-from .custom_residues import *
-from .data import *
+from .custom_residues import process_custom_residues
+from .data import res_name_to_char
+from .emap import emap
 import os
-from .emap import *
 
 def fetch_and_parse(filename, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.

@@ -1,3 +1,5 @@
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 import numpy as np
 from .shortest_paths import yens_shortest_paths, dijkstras_shortest_paths
 
@@ -14,15 +16,15 @@ def _finish_graph(G, original_shape_start, source):
         shape of source node
 
     """
-    G.node[source]['fillcolor'] = '#FFD700FF'
-    G.node[source]['penwidth'] = 6.0
-    G.node[source]['shape'] = original_shape_start
+    G.nodes[source]['fillcolor'] = '#FFD700FF'
+    G.nodes[source]['penwidth'] = 6.0
+    G.nodes[source]['shape'] = original_shape_start
     # if not is not involved in pathways, make it less opaque on the graph.
     # change font color to slate gray, and change transparency of edges
     for name_node in G.nodes():
-        if len(G.node[name_node]['fillcolor']) != 9:
-            G.node[name_node]['fillcolor'] += '40'
-            G.node[name_node]['fontcolor'] = '#708090'
+        if len(G.nodes[name_node]['fillcolor']) != 9:
+            G.nodes[name_node]['fillcolor'] += '40'
+            G.nodes[name_node]['fontcolor'] = '#708090'
     for edge in G.edges():
         name_node1, name_node2 = edge[0], edge[1]
         if G[name_node1][name_node2]['style'] == 'dashed':
@@ -53,14 +55,14 @@ def find_paths(emap, source, target=None, max_paths=10):
         d['weight'] = np.float64(d['weight'])
     # process source and target
     source = source.strip()
-    original_shape_start = G.node[source]['shape']
-    G.node[source]['shape'] = 'oval'
+    original_shape_start = G.nodes[source]['shape']
+    G.nodes[source]['shape'] = 'oval'
     if target:
         target = target.strip()
         branches = yens_shortest_paths(G, source, target, max_paths=max_paths)
         # color target node blue
-        G.node[target]['fillcolor'] = '#40e0d0FF'
-        G.node[target]['penwidth'] = 6.0
+        G.nodes[target]['fillcolor'] = '#40e0d0FF'
+        G.nodes[target]['penwidth'] = 6.0
     else:
         surface_exposed = emap.get_surface_exposed_residues()
         if source in surface_exposed:

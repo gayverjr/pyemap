@@ -1,18 +1,8 @@
-"""
-pyemap
-Implementation of eMap analysis in the form of a python package.
-"""
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 
 # Add imports here
-from .parser import *
+from .parser import fetch_and_parse,parse
 from .process_data import process
 from .pathway_analysis import find_paths
-from .emap import emap
-from .shortest_paths import Branch,ShortestPath
-# Handle versioneer
-from ._version import get_versions
-versions = get_versions()
-__version__ = versions['version']
-__git_revision__ = versions['full-revisionid']
-del get_versions, versions
 

@@ -1,6 +1,5 @@
-# This Python script is a part of
-# eMAP: online mapping of electron transfer channels in biomolecules
-# Copyright(C) 2017-2018 Ruslan Tazhigulov, James Gayvert, Melissa Wei, Ksenia Bravaya (Boston University, USA)
+# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
+# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 """Finds shortest paths in graph given a source and optionally a target node.
 
 Defines implementations of yen's and dijkstra's algorithms for calculating the shortest path(s) from
@@ -12,7 +11,9 @@ the pathway.
 import itertools
 import string
 import networkx as nx
+from functools import total_ordering
 
+@total_ordering
 class ShortestPath(object):
     """Data structure used to store shortest paths.
 
@@ -58,9 +59,6 @@ class ShortestPath(object):
 
     def __eq__(self, other):
         return self.length == other.length
-
-    def __ne__(self, other):
-        return not (self == other)
 
     def __lt__(self, other):
         return self.length < other.length
@@ -248,7 +246,7 @@ def dijkstras_shortest_paths(G, start, targets):
         path = []
         try:
             path = nx.dijkstra_path(G, start, goal)
-        except:
+        except Exception as e:
             path = []
         if not path == []:
             sum = 0
@@ -265,15 +263,15 @@ def dijkstras_shortest_paths(G, start, targets):
                 G[path[i]][path[i + 1]]['color'] = '#778899FF'
                 G[path[i]][path[i + 1]]['penwidth'] = 6.0
                 G[path[i]][path[i + 1]]['style'] = 'solid'
-                G.node[path[i]]['penwidth'] = 6.0
-                G.node[path[i + 1]]['penwidth'] = 6.0
+                G.nodes[path[i]]['penwidth'] = 6.0
+                G.nodes[path[i + 1]]['penwidth'] = 6.0
                 # make the nodes look opaque if they are connected to the source
-                if len(G.node[path[i]]['fillcolor']) != 9:
-                    G.node[path[i]]['fillcolor'] += 'FF'
-                    G.node[path[i]]['color'] = '#708090FF'
-                if len(G.node[path[i + 1]]['fillcolor']) != 9:
-                    G.node[path[i + 1]]['fillcolor'] += 'FF'
-                    G.node[path[i + 1]]['color'] = '#708090FF'
+                if len(G.nodes[path[i]]['fillcolor']) != 9:
+                    G.nodes[path[i]]['fillcolor'] += 'FF'
+                    G.nodes[path[i]]['color'] = '#708090FF'
+                if len(G.nodes[path[i + 1]]['fillcolor']) != 9:
+                    G.nodes[path[i + 1]]['fillcolor'] += 'FF'
+                    G.nodes[path[i + 1]]['color'] = '#708090FF'
             br = Branch(len(branches) + 1, pt.path[-1])
             branches.append(br)
             br.add_path(pt)
@@ -287,15 +285,15 @@ def dijkstras_shortest_paths(G, start, targets):
                     G[path[i]][path[i + 1]]['color'] = '#7788995F'
                 G[path[i]][path[i + 1]]['penwidth'] = 6.0
                 G[path[i]][path[i + 1]]['style'] = 'solid'
-                G.node[path[i]]['penwidth'] = 6.0
-                G.node[path[i + 1]]['penwidth'] = 6.0
+                G.nodes[path[i]]['penwidth'] = 6.0
+                G.nodes[path[i + 1]]['penwidth'] = 6.0
                 # make the nodes look opaque if they are connected to the source
-                if len(G.node[path[i]]['fillcolor']) != 9:
-                    G.node[path[i]]['fillcolor'] += '5F'
-                    G.node[path[i]]['color'] = '#7080905F'
-                if len(G.node[path[i + 1]]['fillcolor']) != 9:
-                    G.node[path[i + 1]]['fillcolor'] += '5F'
-                    G.node[path[i + 1]]['color'] = '#7080905F'
+                if len(G.nodes[path[i]]['fillcolor']) != 9:
+                    G.nodes[path[i]]['fillcolor'] += '5F'
+                    G.nodes[path[i]]['color'] = '#7080905F'
+                if len(G.nodes[path[i + 1]]['fillcolor']) != 9:
+                    G.nodes[path[i + 1]]['fillcolor'] += '5F'
+                    G.nodes[path[i + 1]]['color'] = '#7080905F'
     if len(shortestPaths) == 0:
         raise RuntimeError("No paths to the surface found.")
     return branches
@@ -355,31 +353,31 @@ def yens_shortest_paths(G, start, target, max_paths=10):
                 for j in range(len(path) - 1):
                     G[path[j]][path[j + 1]]['penwidth'] = 6.0
                     G[path[j]][path[j + 1]]['style'] = 'solid'
-                    G.node[path[j]]['penwidth'] = 6.0
-                    G.node[path[j + 1]]['penwidth'] = 6.0
+                    G.nodes[path[j]]['penwidth'] = 6.0
+                    G.nodes[path[j + 1]]['penwidth'] = 6.0
                     G[path[j]][path[j + 1]]['color'] = '#778899FF'
                     # make the nodes look opaque if they are connected to the source
-                    if len(G.node[path[j]]['fillcolor']) != 9:
-                        G.node[path[j]]['fillcolor'] += 'FF'
-                        G.node[path[j]]['color'] = '#708090FF'
-                    if len(G.node[path[j + 1]]['fillcolor']) != 9:
-                        G.node[path[j + 1]]['fillcolor'] += 'FF'
-                        G.node[path[j + 1]]['color'] = '#708090FF'
+                    if len(G.nodes[path[j]]['fillcolor']) != 9:
+                        G.nodes[path[j]]['fillcolor'] += 'FF'
+                        G.nodes[path[j]]['color'] = '#708090FF'
+                    if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
+                        G.nodes[path[j + 1]]['fillcolor'] += 'FF'
+                        G.nodes[path[j + 1]]['color'] = '#708090FF'
             else:
                 for j in range(len(path) - 1):
                     G[path[j]][path[j + 1]]['penwidth'] = 6.0
                     G[path[j]][path[j + 1]]['style'] = 'solid'
-                    G.node[path[j]]['penwidth'] = 6.0
-                    G.node[path[j + 1]]['penwidth'] = 6.0
+                    G.nodes[path[j]]['penwidth'] = 6.0
+                    G.nodes[path[j + 1]]['penwidth'] = 6.0
                     if G[path[j]][path[j + 1]]['color'] != '#778899FF':
                         G[path[j]][path[j + 1]]['color'] = '#7788997F'
                     # make the nodes look opaque if they are connected to the source
-                    if len(G.node[path[j]]['fillcolor']) != 9:
-                        G.node[path[j]]['fillcolor'] += '7F'
-                        G.node[path[j]]['color'] = '#7080907F'
-                    if len(G.node[path[j + 1]]['fillcolor']) != 9:
-                        G.node[path[j + 1]]['fillcolor'] += '7F'
-                        G.node[path[j + 1]]['color'] = '#7080907F'
+                    if len(G.nodes[path[j]]['fillcolor']) != 9:
+                        G.nodes[path[j]]['fillcolor'] += '7F'
+                        G.nodes[path[j]]['color'] = '#7080907F'
+                    if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
+                        G.nodes[path[j + 1]]['fillcolor'] += '7F'
+                        G.nodes[path[j + 1]]['color'] = '#7080907F'
             shortestPaths[i].set_id("1" + letters[i])
         br = Branch(1, shortestPaths[0].path[-1])
         for pt in shortestPaths:
