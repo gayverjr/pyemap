@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'PyeMap'
-copyright = ("2019, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya. Project structure based on the "
+copyright = ("2019-2020, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya. Project structure based on the "
              "Computational Molecular Science Python Cookiecutter version 1.0")
 author = 'James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya'
 
