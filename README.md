@@ -14,7 +14,7 @@ It serves as the backend for the web application [eMap](https://emap.bu.edu/), a
 - **News:** https://twitter.com/eMap_protein
 
 # Installation
-PyeMap officially supports Python versions 3.5 and later, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
+PyeMap officially supports Python versions 3.5, 3.6, and 3.7, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
 ### Conda (recommended):
 The conda recipe will install all dependencies necessary for full functionality.
 ```
