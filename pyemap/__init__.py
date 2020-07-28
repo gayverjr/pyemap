@@ -5,4 +5,6 @@
 from .parser import fetch_and_parse,parse
 from .process_data import process
 from .pathway_analysis import find_paths
+from .emap import emap
+from .shortest_paths import ShortestPath, Branch
 
