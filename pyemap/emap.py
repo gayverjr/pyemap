@@ -4,7 +4,7 @@ from .custom_residues import is_pi_bonded
 from .data import clusters
 import networkx as nx
 from networkx.drawing.nx_agraph import from_agraph, to_agraph
-from .smiles import getSimpleSmiles, cleanup_bonding, remove_side_chains
+from .structures import getSimpleSmarts, cleanup_bonding, remove_side_chains
 from collections import OrderedDict
 from PIL import Image
 import os
@@ -28,8 +28,8 @@ class emap():
         Non-protein eta moieties automatically identified at the parsing step.
     chain_list: list of str
         List of chains identified at the parsing step.
-    smiles: dict of str:str
-        List of smiles strings for non-protein eta moieties identified at the parsing step.
+    smarts: dict of str:str
+        List of SMARTS strings for non-protein eta moieties identified at the parsing step.
     residues: dict of str: :class:`Bio.PDB.Residue.Residue`
         Residues included in the graph after the process step.
     ngl_strings: dict of str:str
@@ -66,7 +66,7 @@ class emap():
         self.chains = chain_list
         self.eta_moieties = {}
         self.user_residues = {}
-        self.smiles = {}
+        self.smarts = {}
         self.paths = OrderedDict()
         self.paths_graph = []
         self.init_graph = []
@@ -159,7 +159,7 @@ class emap():
         return res_graph
 
     def _add_eta_moiety(self, residue):
-        '''Gets the smiles string for an automatically identified non-protein eta moiety,
+        '''Gets the SMARTS string for an automatically identified non-protein eta moiety,
         and adds the residue to the eta_moieties dictionary.
 
         Parameters
@@ -169,9 +169,9 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            smiles_str = getSimpleSmiles(res_graph)
-            residue.smiles = smiles_str
-            self.smiles[residue.resname] = smiles_str
+            smarts_str = getSimpleSmarts(res_graph)
+            residue.smarts = smarts_str
+            self.smarts[residue.resname] = smarts_str
         self.eta_moieties[residue.resname] = residue
 
     def _visualize_pathway(self, pathway, yens):
@@ -206,9 +206,9 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            smiles_str = getSimpleSmiles(res_graph)
-            residue.smiles = smiles_str
-            self.smiles[residue.node_label] = smiles_str
+            smarts_str = getSimpleSmarts(res_graph)
+            residue.Smarts = smarts_str
+            self.smarts[residue.node_label] = smarts_str
         residue.ngl_string = self._get_ngl_string(residue)
         self.residues[residue.node_label] = residue
         self.ngl_strings[residue.node_label] = residue.ngl_string
@@ -276,7 +276,7 @@ class emap():
                     target_name = resname + ".svg"
                 copyfile(cluster_img_name, target_name)
             else:
-                mol = Chem.MolFromSmarts(self.smiles[resname])
+                mol = Chem.MolFromSmarts(self.smarts[resname])
                 mol.UpdatePropertyCache()
                 if dest:
                     Draw.MolToFile(mol, dest, kekulize=False, size=size)
@@ -316,7 +316,7 @@ class emap():
                 img = renderPM.drawToPIL(drawing)
                 return img
             else:
-                mol = Chem.MolFromSmarts(self.smiles[resname])
+                mol = Chem.MolFromSmarts(self.smarts[resname])
                 mol.UpdatePropertyCache()
                 img = Draw.MolToImage(mol, kekulize=True, size=size)
                 return img

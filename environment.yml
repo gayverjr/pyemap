@@ -1,7 +1,6 @@
 name: pyemap
 channels:
    - conda-forge
-   - bioconda
    - salilab
 dependencies:
    - rdkit

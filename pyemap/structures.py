@@ -7,8 +7,8 @@ from .data import SB_means,SB_std_dev
 from collections import defaultdict
 
 
-def buildSmiles(graph, cur, prev):
-    '''DFS algorithm to generate smiles string.
+def buildSmarts(graph, cur, prev):
+    '''DFS algorithm to generate Smarts string.
 
     Parameters
     ----------
@@ -38,7 +38,7 @@ def buildSmiles(graph, cur, prev):
         neighbors.remove(prev)
     for neighbor in neighbors:
         if neighbor not in visited:
-            branches.append(buildSmiles(graph, neighbor, cur))
+            branches.append(buildSmarts(graph, neighbor, cur))
     for branch in branches[:-1]:
         seq += "(" + branch + ")"
     if len(branches) > 0:
@@ -47,7 +47,7 @@ def buildSmiles(graph, cur, prev):
 
 
 def getClosures(graph, cur, prev):
-    '''DFS algorithm to generate smiles string.
+    '''DFS algorithm to generate Smarts string.
 
     graph: :class:`networkx.Graph`
         Chemical graph
@@ -72,8 +72,8 @@ def getClosures(graph, cur, prev):
     ancestor.remove(cur)
 
 
-def getSimpleSmiles(graph):
-    """DFS algorithm to generate smiles string.
+def getSimpleSmarts(graph):
+    """DFS algorithm to generate Smarts string.
 
     Parameters
     ----------
@@ -94,7 +94,7 @@ def getSimpleSmiles(graph):
     closingClosures = defaultdict(list)
     digits = [str(x) for x in range(1, 10)]
     visited = set()
-    return buildSmiles(graph, root, None)
+    return buildSmarts(graph, root, None)
 
 
 def is_part_of_cycle(node, res_graph):

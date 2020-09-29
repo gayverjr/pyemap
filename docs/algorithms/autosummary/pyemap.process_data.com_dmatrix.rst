@@ -1,4 +1,4 @@
-pyemap.process\_data.com\_dmatrix
+﻿pyemap.process\_data.com\_dmatrix
 =================================
 
 .. currentmodule:: pyemap.process_data

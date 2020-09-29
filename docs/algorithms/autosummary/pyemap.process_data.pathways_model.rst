@@ -1,4 +1,4 @@
-pyemap.process\_data.pathways\_model
+﻿pyemap.process\_data.pathways\_model
 ====================================
 
 .. currentmodule:: pyemap.process_data

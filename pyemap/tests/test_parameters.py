@@ -76,7 +76,13 @@ class SingleChainParams(unittest.TestCase):
         for n, d in G.nodes(data=True):
             if d['shape'] == "box":
                 asa_ser.append(n)
-        assert rd_ser
+        import subprocess
+        try:
+            cmd = "msms"
+            output = subprocess.check_output(cmd, shell=True)
+            assert rd_ser
+        except:
+            pass
         assert asa_ser
         assert rd_ser != asa_ser
         

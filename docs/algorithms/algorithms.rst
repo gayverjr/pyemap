@@ -9,3 +9,4 @@ Algorithms
    graph_drawing
    surface_exposed
    shortest_paths
+   chemical_structures

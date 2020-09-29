@@ -40,12 +40,12 @@ non-protein ET active moiety, and can be selected for the analysis.
 The PyeMap repository contains a list of 66 inorganic clusters which are automatically identified by their 3 character residue names. All atoms
 in the residue are collected as part of the customized residue object, and a pre-rendered image is used for visualization of chemical structure.
 Otherwise, they can be used and interacted with just like any other residue. The list of clusters and pre-rendered images were obtained from the 
-Protein Data Bank in Europe (_PDBe).
+Protein Data Bank in Europe (PDBe_).
 
 Visualization
 -------------
 Chemical structures of residues(not including user-specified residues) can be visualized using the :func:`~pyemap.emap.residue_to_Image()`, :func:`~pyemap.emap.init_graph_to_Image()` functions.
-SMILES strings and `NGL Viewer`_ selection strings are also accessible through the :class:`~pyemap.emap` object. Note that SMILES strings are
+SMARTS strings and `NGL Viewer`_ selection strings are also accessible through the :class:`~pyemap.emap` object. Note that SMARTS strings are
 not available for clusters and user-specified residues.
 
 
@@ -59,4 +59,4 @@ Source
    :maxdepth: 1
 
    custom_residues
-   smiles
+   chemical_structures
