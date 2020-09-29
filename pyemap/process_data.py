@@ -133,16 +133,16 @@ def calculate_residue_depth(aromatic_residues, model):
     """
     try:
         surface = get_surface(model)
+        cutoff = 3.03
+        surface_exposed_res = []
+        for residue in aromatic_residues:
+            depth = residue_depth(residue, surface)
+        if (depth <= cutoff):
+            surface_exposed_res.append(residue.node_label)
+        return surface_exposed_res
     except Exception as e:
         warnings.warn("Unable to calculate residue depth. Check that MSMS is installed.", RuntimeWarning,stacklevel=2)
         return []
-    surface_exposed_res = []
-    cutoff = 3.03
-    for residue in aromatic_residues:
-        depth = residue_depth(residue, surface)
-        if (depth <= cutoff):
-            surface_exposed_res.append(residue.node_label)
-    return surface_exposed_res
 
 
 def calculate_asa(model, filename, node_list):

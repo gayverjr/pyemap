@@ -277,6 +277,7 @@ class emap():
                 copyfile(cluster_img_name, target_name)
             else:
                 mol = Chem.MolFromSmarts(self.smiles[resname])
+                mol.UpdatePropertyCache()
                 if dest:
                     Draw.MolToFile(mol, dest, kekulize=False, size=size)
                 else:
@@ -316,7 +317,8 @@ class emap():
                 return img
             else:
                 mol = Chem.MolFromSmarts(self.smiles[resname])
-                img = Draw.MolToImage(mol, kekulize=False, size=size)
+                mol.UpdatePropertyCache()
+                img = Draw.MolToImage(mol, kekulize=True, size=size)
                 return img
         else:
             raise KeyError("No record of any residue by that name.")
