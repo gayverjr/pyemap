@@ -145,7 +145,7 @@ def calculate_residue_depth(aromatic_residues, model):
     return surface_exposed_res
 
 
-def calculate_asa(model, filename, AROM_LIST, chain_list):
+def calculate_asa(model, filename, node_list):
     """Returns a list of surface exposed residues as determined by relative solvent accessibility.
 
     Only standard protein residues are currently supported. Non-protein and user specified custom residues cannot be
@@ -175,17 +175,12 @@ def calculate_asa(model, filename, AROM_LIST, chain_list):
     """
     cutoff = .05
     surface_exposed_res = []
-    letter_list = []
-    for res_name in AROM_LIST:
-        if res_name_to_char.get(res_name):
-            letter_list.append(res_name_to_char.get(res_name))
     try:
         dssp = DSSP(model, filename, acc_array="Wilke")
         keys = list(dssp.keys())
         for key in keys:
-            if key[0] in chain_list and dssp[key][3] >= cutoff and dssp[key][1] in letter_list:
-                goal_str = dssp[key][1] + \
-                    str(key[1][1]) + "(" + str(key[0]) + ")"
+            goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
+            if goal_str in node_list and dssp[key][3] >= cutoff:
                 surface_exposed_res.append(goal_str)
     except Exception as e:
         warnings.warn("Unable to calculate solvent accessibility. Check that DSSP is installed.", RuntimeWarning,stacklevel=2)
@@ -210,6 +205,32 @@ def dist(x, y):
     """
     return np.sqrt(np.sum((x - y)**2))
 
+def get_atom_list(res):
+    """ Recovers side chain atoms only of standard aromatic residues, returns all atoms for other residues.
+    
+    Parameters
+    -----------
+    res: :class:`Bio.PDB.Residue.Residue`
+        A BioPython residue object
+    
+    Returns
+    -------
+    atom_list: list of :class:`Bio.PDB.Atom.Atom`
+        List of atoms to be used in distance matrix calculation
+    """
+    atom_list = []
+    for atm in res.get_atoms():
+        if res.resname == "TRP" and atm.name in TRP_sc:
+            atom_list.append(atm)
+        elif res.resname == "TYR" and atm.name in TYR_sc:
+            atom_list.append(atm)
+        elif res.resname == "PHE" and atm.name in PHE_sc:
+            atom_list.append(atm)
+        elif res.resname == "HIS" and atm.name in HIS_sc:
+            atom_list.append(atm)
+        elif res.resname not in ["TRP","TYR","PHE","HIS"]:
+            atom_list.append(atm)
+    return atom_list
 
 def closest_atom_dmatrix(residues, coef_alpha, exp_beta, r_offset):
     """Constructs distance matrix based on closest atom distance.
@@ -236,11 +257,11 @@ def closest_atom_dmatrix(residues, coef_alpha, exp_beta, r_offset):
     # iterate over all residues
     for i in range(0, len(residues)):
         res = residues[i]
-        atm_list = list(res.get_atoms())
+        atm_list = list(get_atom_list(res))
         # iterate over all residues that follow
         for j in range(i + 1, len(residues)):
             res2 = residues[j]
-            atm_list_2 = list(res2.get_atoms())
+            atm_list_2 = list(get_atom_list(res2))
             bestDist = sys.maxsize
             # iterate over all atoms of my residue
             for k in range(0, len(atm_list)):
@@ -293,7 +314,7 @@ def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
     for i in range(len(residues)):
         res = residues[i]
         res.get_full_id()
-        atm_list = list(res.get_atoms())
+        atm_list = list(get_atom_list(res))
         x_wsum, y_wsum, z_wsum, mass_sum = 0.0, 0.0, 0.0, 0.0
         for j in range(len(atm_list)):
             cur_atom = atm_list[j]
@@ -323,7 +344,7 @@ def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
 
 
 def process_standard_residues(standard_residue_list):
-    """Generates customized Bio.PDB.Residue.Residue objects with only side chain atoms included.
+    """Generates customized Bio.PDB.Residue.Residue objects. Residues containing no side chain atoms will be removed.
 
     Parameters
     ----------
@@ -333,38 +354,53 @@ def process_standard_residues(standard_residue_list):
     Returns
     -------
     res_list: list of :class:`Bio.PDB.Residue.Residue`
-        Standard residues with only side chain atoms included.
 
     """
     res_list = []
     for i in range(0, len(standard_residue_list)):
-        # make copy of residue
-        standard_residue_list[i].get_full_id()
-        res = standard_residue_list[i].copy()
+        res = standard_residue_list[i]
         res_letter = res_name_to_char.get(res.resname)
         chain = res.full_id[2]
         resnum = res.full_id[3][1]
         res.node_label = res_letter + str(resnum) + "(" + chain + ")"
         atm_ids = []
         atm_names = []
+        valid = False
         for atm in res.get_atoms():
             atm_ids.append(atm.id)
             atm_names.append(atm.name)
-        # if not side chain atom, remove from residue
         for k in range(0, len(atm_ids)):
             if res.resname == "TRP":
-                if atm_names[k] not in TRP_sc:
-                    res.detach_child(atm_ids[k])
+                if atm_names[k] in TRP_sc:
+                    valid = True
             elif res.resname == "TYR":
-                if atm_names[k] not in TYR_sc:
-                    res.detach_child(atm_ids[k])
+                if atm_names[k] in TYR_sc:
+                    valid = True
+                    break
             elif res.resname == "PHE":
-                if atm_names[k] not in PHE_sc:
-                    res.detach_child(atm_ids[k])
+                if atm_names[k] in PHE_sc:
+                    valid = True
+                    break
             elif res.resname == "HIS":
-                if atm_names[k] not in HIS_sc:
-                    res.detach_child(atm_ids[k])
-        res_list.append(res)
+                if atm_names[k] in HIS_sc:
+                    valid = True
+                    break
+        if valid:
+            res_list.append(res)
+        else:
+            if res.resname == "TRP":
+                sca = str(TRP_sc)
+            elif res.resname == "TYR":
+                sca = str(TYR_sc)
+            elif res.resname == "PHE":
+                sca = str(PHE_sc)
+            elif res.resname == "HIS":
+                sca = str(HIS_sc)
+            side_chain_atms = sca
+            def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+                        return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
+            warnings.formatwarning = warning_on_one_line
+            warnings.warn("The record for residue " + res.node_label + " did not contain any of the following side chain atoms: " + side_chain_atms + " and therefore is not included in the graph.",RuntimeWarning,stacklevel=2)
     return res_list
 
 
@@ -463,6 +499,7 @@ def get_standard_residues(all_residues, chain_list, include_Trp, include_Tyr, in
         if res.resname in AROM_LIST and res.parent.id in chain_list:
             res.get_full_id()
             arom_res = res.copy()
+            arom_res.get_full_id()
             residue_list.append(arom_res)
     residue_list = process_standard_residues(residue_list)
     return residue_list, AROM_LIST
@@ -685,7 +722,7 @@ def process(emap,
             chains="All",
             eta_moieties="All",
             dist_def=0,
-            sdef=0,
+            sdef=1,
             trp=True,
             tyr=True,
             phe=False,
@@ -770,7 +807,7 @@ def process(emap,
         surface_exposed_res = calculate_residue_depth(aromatic_residues, model)
     else:
         pdb_file = emap.filename
-        surface_exposed_res = calculate_asa(model, pdb_file, AROM_LIST, chains)
+        surface_exposed_res = calculate_asa(model, pdb_file, node_labels.values())
     finish_graph(G, surface_exposed_res, chains)
     for res in aromatic_residues:
         emap._add_residue(res)

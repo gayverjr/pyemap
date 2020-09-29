@@ -228,13 +228,21 @@ class emap():
         select_string = ""
         atm_list = list(residue.get_atoms())
         first_atm = atm_list[0]
-        select_string += "(" + str(first_atm.original_id[3][1]) + " and :" + str(
-            first_atm.original_id[2]) + " and ." + first_atm.name + ")"
+        if first_atm.original_id:
+            id = first_atm.original_id
+        else:
+            id = first_atm.full_id
+        select_string += "(" + str(id[3][1]) + " and :" + str(
+            id[2]) + " and ." + first_atm.name + ")"
         for i in range(1, len(atm_list)):
             atm = atm_list[i]
+            if atm.original_id:
+                id = first_atm.original_id
+            else:
+                id = atm.full_id
             select_string += " or "
-            select_string += "(" + str(atm.original_id[3][1]) + " and :" + str(
-                atm.original_id[2]) + " and ." + atm.name + ")"
+            select_string += "(" + str(id[3][1]) + " and :" + str(
+                id[2]) + " and ." + atm.name + ")"
         return select_string
 
     def residue_to_file(self, resname, dest="", size=(200, 200)):
