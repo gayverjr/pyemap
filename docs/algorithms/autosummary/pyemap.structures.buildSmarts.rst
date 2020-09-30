@@ -1,4 +1,4 @@
-﻿pyemap.structures.buildSmarts
+pyemap.structures.buildSmarts
 =============================
 
 .. currentmodule:: pyemap.structures

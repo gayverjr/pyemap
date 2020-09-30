@@ -1,4 +1,4 @@
-﻿pyemap.process\_data.calculate\_residue\_depth
+pyemap.process\_data.calculate\_residue\_depth
 ==============================================
 
 .. currentmodule:: pyemap.process_data

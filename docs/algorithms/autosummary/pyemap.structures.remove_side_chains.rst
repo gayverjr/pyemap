@@ -1,4 +1,4 @@
-﻿pyemap.structures.remove\_side\_chains
+pyemap.structures.remove\_side\_chains
 ======================================
 
 .. currentmodule:: pyemap.structures

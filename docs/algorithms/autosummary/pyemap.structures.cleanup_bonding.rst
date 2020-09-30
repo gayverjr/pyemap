@@ -1,4 +1,4 @@
-﻿pyemap.structures.cleanup\_bonding
+pyemap.structures.cleanup\_bonding
 ==================================
 
 .. currentmodule:: pyemap.structures

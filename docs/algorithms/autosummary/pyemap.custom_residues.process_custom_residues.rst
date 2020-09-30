@@ -1,4 +1,4 @@
-﻿pyemap.custom\_residues.process\_custom\_residues
+pyemap.custom\_residues.process\_custom\_residues
 =================================================
 
 .. currentmodule:: pyemap.custom_residues

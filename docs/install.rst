@@ -20,7 +20,7 @@ Once you have a working copy of conda, create and activate a new virtual environ
 
 Now add conda channels in order to download dependencies::
 
-    $ conda config --add channels conda-forge --add channels salilab --add channels bioconda --add channels gayverjr
+    $ conda config --add channels conda-forge --add channels bioconda --add channels gayverjr
     $ conda update --all
 
 And finally, install PyeMap::
@@ -37,7 +37,7 @@ This is sufficient to run PyeMap analysis and view graph images, but some featur
 For full functionality, install the following packages:
 
     - RDKit_: visualization of chemical stuctures
-    - MSMS_: residue depth criterion for surface exposed residues
+    - MSMS_: residue depth criterion for surface exposed residues (not available on MacOS Catalina)
     - DSSP_: solvent accessibility criterion for surface exposed residues
     - wget_: fetching PDBs from RCSB_ database
 

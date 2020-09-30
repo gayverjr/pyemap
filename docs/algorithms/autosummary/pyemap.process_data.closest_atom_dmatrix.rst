@@ -1,4 +1,4 @@
-﻿pyemap.process\_data.closest\_atom\_dmatrix
+pyemap.process\_data.closest\_atom\_dmatrix
 ===========================================
 
 .. currentmodule:: pyemap.process_data

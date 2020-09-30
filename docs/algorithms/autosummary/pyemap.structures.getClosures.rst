@@ -1,4 +1,4 @@
-﻿pyemap.structures.getClosures
+pyemap.structures.getClosures
 =============================
 
 .. currentmodule:: pyemap.structures

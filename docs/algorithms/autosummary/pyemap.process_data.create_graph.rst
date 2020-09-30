@@ -1,4 +1,4 @@
-﻿pyemap.process\_data.create\_graph
+pyemap.process\_data.create\_graph
 ==================================
 
 .. currentmodule:: pyemap.process_data

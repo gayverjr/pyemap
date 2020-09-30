@@ -1,4 +1,4 @@
-﻿pyemap.shortest\_paths.dijkstras\_shortest\_paths
+pyemap.shortest\_paths.dijkstras\_shortest\_paths
 =================================================
 
 .. currentmodule:: pyemap.shortest_paths

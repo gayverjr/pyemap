@@ -1,4 +1,4 @@
-﻿pyemap.custom\_residues.find\_conjugated\_systems
+pyemap.custom\_residues.find\_conjugated\_systems
 =================================================
 
 .. currentmodule:: pyemap.custom_residues

@@ -1,4 +1,4 @@
-﻿pyemap.structures.getSimpleSmarts
+pyemap.structures.getSimpleSmarts
 =================================
 
 .. currentmodule:: pyemap.structures

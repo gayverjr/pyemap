@@ -14,6 +14,12 @@ within experimental single bond lengths and are only connected to 1 or 2 neighbo
 The second is :func:`~pyemap.structures.remove_side_chains()` which recursively removes non-aromatic side chains from aromatic moieties. Once we have 
 a proper chemical graph, a two pass depth first search algorithm is used to generate SMARTS_ strings for visualization.
 
+The SMARTS strings generated using this procedure are stored in the `smarts` dictionary of the
+:class:`~pyemap.emap` object. The keys are the node labels.
+
+    >>> print(my_emap.smarts["W400(A)"])
+    >>> c1cnc2c1cccc2
+
 .. _SMARTS: https://en.wikipedia.org/wiki/SMILES_arbitrary_target_specification
 
 .. autosummary::

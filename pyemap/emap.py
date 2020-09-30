@@ -24,23 +24,23 @@ class emap():
         Name of the crystal structure file being processed by PyeMap.
     structure: :class:`Bio.PDB.Structure.Structure`
         Macromolecular protein structure. Contains model which contains residues and atoms.
-    eta_moieties: dict of str: :class:`Bio.PDB.Residue.Residue`
+    eta_moieties: dict of node label(str): :class:`Bio.PDB.Residue.Residue`
         Non-protein eta moieties automatically identified at the parsing step.
     chain_list: list of str
         List of chains identified at the parsing step.
-    smarts: dict of str:str
+    smarts: dict of node label(str): smarts string(str)
         List of SMARTS strings for non-protein eta moieties identified at the parsing step.
-    residues: dict of str: :class:`Bio.PDB.Residue.Residue`
+    residues: dict of node label(str): :class:`Bio.PDB.Residue.Residue`
         Residues included in the graph after the process step.
-    ngl_strings: dict of str:str
+    ngl_strings: dict of nodel label(str):ngl_string(str)
         Formatted NGL viewer selection strings for residues included in the graph after the process step.
     user_residues: dict of str: :class:`Bio.PDB.Residue.Residue`
         Custom residues specified by the user.
     init_graph: :class:`networkx.Graph`
         Graph generated after the process step.
-    branches: dict of str: :class:`~pyemap.Branch`
+    branches: dict of branch id(int): :class:`~pyemap.Branch`
         Branches found by PyeMap analysis
-    paths: dict of str: :class:`~pyemap.ShortestPath`
+    paths: dict of path id(str): :class:`~pyemap.ShortestPath`
         Paths found by PyeMap sorted by lowest to highest score.
     paths_graph: :class:`networkx.Graph`
         Graph generated after the shortest paths step.
@@ -318,7 +318,7 @@ class emap():
             else:
                 mol = Chem.MolFromSmarts(self.smarts[resname])
                 mol.UpdatePropertyCache()
-                img = Draw.MolToImage(mol, kekulize=True, size=size)
+                img = Draw.MolToImage(mol, kekulize=False, size=size)
                 return img
         else:
             raise KeyError("No record of any residue by that name.")
