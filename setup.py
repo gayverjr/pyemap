@@ -28,7 +28,7 @@ setup(
     author_email='jrg444@gmail.com',
     description= DOCLINES[0],
     long_description="\n".join(DOCLINES[2:]),
-    version="1.0.1",
+    version="1.0.2",
     license='BSD-3-Clause',
 
     # Which Python importable modules should be included when your package is installed

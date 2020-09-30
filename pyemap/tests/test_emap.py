@@ -1,4 +1,5 @@
 import os
+from os import path
 import sys
 import unittest
 import warnings
@@ -26,7 +27,6 @@ def test_save_functions():
     #paths graph
     my_emap.paths_graph_to_Image()
     my_emap.paths_graph_to_file(dest=fout.name)
-    assert True
     #check that report does something
     assert my_emap.report() != None
     

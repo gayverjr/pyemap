@@ -33,10 +33,10 @@ Pip installation will only install python dependencies, and requires [Graphviz](
 ```
 pip install pyemap
 ```
-For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS), [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), and [wget](https://www.gnu.org/software/wget/), all of which can be downloaded free of charge from their owners, and are available on most platforms.
+For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina), [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), and [wget](https://www.gnu.org/software/wget/), all of which can be downloaded free of charge from their owners, and are available on most platforms.
 
 # Getting started
-Please see our [tutorial](https://pyemap.readthedocs.io/en/latest/tutorial/tutorial.html) on how to use PyeMap.
+Please see our [tutorial](https://pyemap.readthedocs.io/en/latest/tutorial/tutorial.html) on how to use PyeMap. This tutorial is also available as a Jupyter notebook in the examples directory.
 
 # Bugs and feature requests
 Please report any bugs and make feature requests [here](https://github.com/gayverjr/pyemap/issues). For issues exclusive to the web version [eMap](https:emap.bu.edu), please send an email to <emap.bu@gmail.com>. We also greatly encourage users to contribute by making pull requests on [GitHub](https://github.com/gayverjr/pyemap)!

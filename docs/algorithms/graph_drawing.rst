@@ -37,15 +37,18 @@ edge weights. When using default hopping parameters (α = 1.0,
 
 Distance thresholds and penalty function parameters can be modified at the process step. 
 
-Visualization
---------------
+Visualization and further analysis
+-----------------------------------
 The graph can be interacted with and written to file using the :class:`~pyemap.emap` object. The graph is visualized using PyGraphviz_ and 
-Graphviz_.
+Graphviz_. The graph is stored as a :class:`networkx.Graph` object in the `init_graph` and `paths_graph` attributes of the :class:`~pyemap.emap` object.
 
 .. _PyGraphviz: https://pygraphviz.github.io/
 .. _Graphviz: http://www.graphviz.org/
 .. _NetworkX: https://networkx.github.io/
 
+	>>> G = my_emap.init_graph
+	>>> print(G.edges[('W17(A)', 'W45(A)')]['distance'])
+	>>> 12.783579099370808
 
 Source
 -------

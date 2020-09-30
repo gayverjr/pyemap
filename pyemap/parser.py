@@ -32,15 +32,13 @@ def fetch_and_parse(filename, dest="", quiet=False):
         dest = os.getcwd()
     if not quiet:
         print("Fetching file " + filename + " from RSCB Database...")
-    cmd = ('wget --no-check-certificate --quiet --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/' +
-        filename + ".pdb").format(dest)
-    os.system(cmd)
-    if os.path.exists(dest + "/" + filename + ".pdb"):
-        if not quiet:
-            print("Success!")
-        return parse(dest + "/" + filename + ".pdb", quiet)
-    else:
-        raise Exception("Couldn't find entry matching PDB ID:" + str(filename))
+    cmd = ('wget -nc --no-check-certificate --quiet --read-timeout=1 -t 1 -P {0} https://files.rcsb.org/download/' +
+    filename + ".pdb").format(dest)
+    import subprocess
+    subprocess.check_output(cmd, shell=True)
+    if not quiet:
+        print("Success!")
+    return parse(dest + "/" + filename + ".pdb", quiet)
 
 def parse(filename, quiet=False):
     '''Parses pdb file and returns emap object.

@@ -3,8 +3,8 @@
 from .custom_residues import is_pi_bonded
 from .data import clusters
 import networkx as nx
-from networkx.drawing.nx_agraph import from_agraph, to_agraph
-from .smiles import getSimpleSmiles, cleanup_bonding, remove_side_chains
+from networkx.drawing.nx_agraph import to_agraph
+from .structures import getSimpleSmarts, cleanup_bonding, remove_side_chains
 from collections import OrderedDict
 from PIL import Image
 import os
@@ -24,23 +24,23 @@ class emap():
         Name of the crystal structure file being processed by PyeMap.
     structure: :class:`Bio.PDB.Structure.Structure`
         Macromolecular protein structure. Contains model which contains residues and atoms.
-    eta_moieties: dict of str: :class:`Bio.PDB.Residue.Residue`
+    eta_moieties: dict of node label(str): :class:`Bio.PDB.Residue.Residue`
         Non-protein eta moieties automatically identified at the parsing step.
     chain_list: list of str
         List of chains identified at the parsing step.
-    smiles: dict of str:str
-        List of smiles strings for non-protein eta moieties identified at the parsing step.
-    residues: dict of str: :class:`Bio.PDB.Residue.Residue`
+    smarts: dict of node label(str): smarts string(str)
+        List of SMARTS strings for non-protein eta moieties identified at the parsing step.
+    residues: dict of node label(str): :class:`Bio.PDB.Residue.Residue`
         Residues included in the graph after the process step.
-    ngl_strings: dict of str:str
+    ngl_strings: dict of nodel label(str):ngl_string(str)
         Formatted NGL viewer selection strings for residues included in the graph after the process step.
     user_residues: dict of str: :class:`Bio.PDB.Residue.Residue`
         Custom residues specified by the user.
     init_graph: :class:`networkx.Graph`
         Graph generated after the process step.
-    branches: dict of str: :class:`~pyemap.Branch`
+    branches: dict of branch id(int): :class:`~pyemap.Branch`
         Branches found by PyeMap analysis
-    paths: dict of str: :class:`~pyemap.ShortestPath`
+    paths: dict of path id(str): :class:`~pyemap.ShortestPath`
         Paths found by PyeMap sorted by lowest to highest score.
     paths_graph: :class:`networkx.Graph`
         Graph generated after the shortest paths step.
@@ -66,7 +66,7 @@ class emap():
         self.chains = chain_list
         self.eta_moieties = {}
         self.user_residues = {}
-        self.smiles = {}
+        self.smarts = {}
         self.paths = OrderedDict()
         self.paths_graph = []
         self.init_graph = []
@@ -159,7 +159,7 @@ class emap():
         return res_graph
 
     def _add_eta_moiety(self, residue):
-        '''Gets the smiles string for an automatically identified non-protein eta moiety,
+        '''Gets the SMARTS string for an automatically identified non-protein eta moiety,
         and adds the residue to the eta_moieties dictionary.
 
         Parameters
@@ -169,9 +169,9 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            smiles_str = getSimpleSmiles(res_graph)
-            residue.smiles = smiles_str
-            self.smiles[residue.resname] = smiles_str
+            smarts_str = getSimpleSmarts(res_graph)
+            residue.smarts = smarts_str
+            self.smarts[residue.resname] = smarts_str
         self.eta_moieties[residue.resname] = residue
 
     def _visualize_pathway(self, pathway, yens):
@@ -206,9 +206,9 @@ class emap():
         '''
         if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            smiles_str = getSimpleSmiles(res_graph)
-            residue.smiles = smiles_str
-            self.smiles[residue.node_label] = smiles_str
+            smarts_str = getSimpleSmarts(res_graph)
+            residue.Smarts = smarts_str
+            self.smarts[residue.node_label] = smarts_str
         residue.ngl_string = self._get_ngl_string(residue)
         self.residues[residue.node_label] = residue
         self.ngl_strings[residue.node_label] = residue.ngl_string
@@ -228,13 +228,21 @@ class emap():
         select_string = ""
         atm_list = list(residue.get_atoms())
         first_atm = atm_list[0]
-        select_string += "(" + str(first_atm.original_id[3][1]) + " and :" + str(
-            first_atm.original_id[2]) + " and ." + first_atm.name + ")"
+        if first_atm.original_id:
+            id = first_atm.original_id
+        else:
+            id = first_atm.full_id
+        select_string += "(" + str(id[3][1]) + " and :" + str(
+            id[2]) + " and ." + first_atm.name + ")"
         for i in range(1, len(atm_list)):
             atm = atm_list[i]
+            if atm.original_id:
+                id = first_atm.original_id
+            else:
+                id = atm.full_id
             select_string += " or "
-            select_string += "(" + str(atm.original_id[3][1]) + " and :" + str(
-                atm.original_id[2]) + " and ." + atm.name + ")"
+            select_string += "(" + str(id[3][1]) + " and :" + str(
+                id[2]) + " and ." + atm.name + ")"
         return select_string
 
     def residue_to_file(self, resname, dest="", size=(200, 200)):
@@ -268,7 +276,8 @@ class emap():
                     target_name = resname + ".svg"
                 copyfile(cluster_img_name, target_name)
             else:
-                mol = Chem.MolFromSmarts(self.smiles[resname])
+                mol = Chem.MolFromSmarts(self.smarts[resname])
+                mol.UpdatePropertyCache()
                 if dest:
                     Draw.MolToFile(mol, dest, kekulize=False, size=size)
                 else:
@@ -307,11 +316,46 @@ class emap():
                 img = renderPM.drawToPIL(drawing)
                 return img
             else:
-                mol = Chem.MolFromSmarts(self.smiles[resname])
+                mol = Chem.MolFromSmarts(self.smarts[resname])
+                mol.UpdatePropertyCache()
                 img = Draw.MolToImage(mol, kekulize=False, size=size)
                 return img
         else:
             raise KeyError("No record of any residue by that name.")
+
+    def _graph_to_file(self, G, dest=""):
+        '''Saves image of graph generated by process step to file.
+
+        Parameters
+        ----------
+        dest: str
+            Destination for writing to file.
+        '''
+        if G:
+            agraph = to_agraph(G)
+            agraph.graph_attr.update(
+                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            if agraph.number_of_nodes() <= 200:
+                try:
+                    agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                except Exception as e:
+                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
+            else:
+                try:
+                    agraph.layout(prog='dot')
+                except Exception as e:
+                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
+            if dest:
+                svg_fn = dest + '.svg'
+                png_fn = dest + '.png'
+                agraph.draw(svg_fn)
+                agraph.draw(png_fn)
+            else:
+                png_fn = self.filename[:-4] + "_graph.png"
+                agraph.draw(png_fn)
+        else:
+            raise RuntimeError("Nothing to draw.")
+
 
     def init_graph_to_file(self, dest=""):
         '''Saves image of graph generated by process step to file.
@@ -321,30 +365,7 @@ class emap():
         dest: str
             Destination for writing to file.
         '''
-        if self.init_graph:
-            agraph = to_agraph(self.init_graph)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            if agraph.number_of_nodes() <= 200:
-                try:
-                    agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-                except Exception as e:
-                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            else:
-                try:
-                    agraph.layout(prog='dot')
-                except Exception as e:
-                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            if dest:
-                svg_fn = dest + '.svg'
-                png_fn = dest + '.png'
-                agraph.draw(svg_fn)
-                agraph.draw(png_fn)
-            else:
-                png_fn = self.filename[:-4] + "_graph.png"
-                agraph.draw(png_fn)
-        else:
-            raise RuntimeError("Nothing to draw.")
+        return self._graph_to_file(self.init_graph,dest)
 
     def paths_graph_to_file(self, dest=""):
         '''Saves image of graph generated by pathways step to file.
@@ -354,30 +375,7 @@ class emap():
         dest:str
             Destination for writing to file.
         '''
-        if self.paths_graph:
-            agraph = to_agraph(self.paths_graph)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            if agraph.number_of_nodes() <= 200:
-                try:
-                    agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-                except Exception as e:
-                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            else:
-                try:
-                    agraph.layout(prog='dot')
-                except Exception as e:
-                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            if dest:
-                svg_fn = dest + '.svg'
-                png_fn = dest + '.png'
-                agraph.draw(svg_fn)
-                agraph.draw(png_fn)
-            else:
-                png_fn = self.filename[:-4] + "_graph.png"
-                agraph.draw(png_fn)
-        else:
-            raise RuntimeError("Nothing to draw.")
+        return self._graph_to_file(self.paths_graph,dest)
 
     def get_surface_exposed_residues(self):
         '''Returns list of surface exposed residues.
@@ -428,16 +426,16 @@ class emap():
         else:
             raise RuntimeError("Nothing to report.")
 
-    def init_graph_to_Image(self):
+    def _graph_to_Image(self, G):
         '''Returns PIL image of graph
 
         Returns
         --------
         img: :class:`PIL.Image.Image`
         '''
-        if self.init_graph:
+        if G:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
-            agraph = to_agraph(self.init_graph)
+            agraph = to_agraph(G)
             agraph.graph_attr.update(
                 ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             try:
@@ -452,6 +450,16 @@ class emap():
             return img
         else:
             raise RuntimeError("Nothing to draw.")
+
+
+    def init_graph_to_Image(self):
+        '''Returns PIL image of initial graph
+
+        Returns
+        --------
+        img: :class:`PIL.Image.Image`
+        '''
+        return self._graph_to_Image(self.init_graph)
 
     def paths_graph_to_Image(self):
         '''Returns PIL image of pathways graph
@@ -460,20 +468,4 @@ class emap():
         --------
         img: :class:`PIL.Image.Image`
         '''
-        if self.paths_graph:
-            fout = tempfile.NamedTemporaryFile(suffix=".png")
-            agraph = to_agraph(self.paths_graph)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
-            try:
-                agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
-            except Exception as e:
-                raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            if agraph.number_of_nodes() <= 200:
-                agraph.draw(fout.name, prog='neato')
-            else:
-                agraph.draw(fout.name, prog='dot')
-            img = Image.open(fout.name)
-            return img
-        else:
-            raise RuntimeError("Nothing to draw.")
+        return self._graph_to_Image(self.paths_graph)
