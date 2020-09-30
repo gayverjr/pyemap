@@ -9,7 +9,7 @@ to/from an acceptor/donor inside the protein. Therefore, identification of surfa
 residues is a key step for prediction of relevant electron/hole transfer pathways. 
 Users can select one of two parameters to classify residues as buried/exposed: 
 residue depth and relative solvent accessibility. In the graph images, buried residues will appear as ovals, 
-while exposed residues will appear as rectangles.
+while exposed residues will appear as rectangles. 
 
 Residue depth
 -------------
@@ -29,6 +29,9 @@ the threshold for classifying residues as buried/exposed is:
 which is the threshold proposed by Tan and coworkers [Tan2009]_. Residues
 3.03 Å and shallower will be classified as exposed in the final graph;
 those deeper will be classified as buried.
+
+Please note that MSMS is not available on Mac OS Catalina, and therefore 
+residue depth cannot be used on that platform.
 
 Relative Solvent Accessibility
 -------------------------------

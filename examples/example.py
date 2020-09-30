@@ -6,6 +6,7 @@ my_emap = pyemap.fetch_and_parse("1u3d")
 my_emap.residue_to_Image("FAD510(A)-2").show()
 # process file
 pyemap.process(my_emap)
+G = my_emap.init_graph
 my_emap.init_graph_to_Image().show()
 # find paths
 pyemap.find_paths(my_emap,"FAD510(A)-2")
