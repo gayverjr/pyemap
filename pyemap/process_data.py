@@ -137,8 +137,8 @@ def calculate_residue_depth(aromatic_residues, model):
         surface_exposed_res = []
         for residue in aromatic_residues:
             depth = residue_depth(residue, surface)
-        if (depth <= cutoff):
-            surface_exposed_res.append(residue.node_label)
+            if (depth <= cutoff):
+                surface_exposed_res.append(residue.node_label)
         return surface_exposed_res
     except Exception as e:
         warnings.warn("Unable to calculate residue depth. Check that MSMS is installed. Please note that MSMS is not compatible with MacOS Catalina.", RuntimeWarning,stacklevel=2)
