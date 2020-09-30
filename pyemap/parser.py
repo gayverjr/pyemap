@@ -35,7 +35,7 @@ def fetch_and_parse(filename, dest="", quiet=False):
     cmd = ('wget -nc --no-check-certificate --quiet --read-timeout=1 -t 1 -P {0} https://files.rcsb.org/download/' +
     filename + ".pdb").format(dest)
     import subprocess
-    output = subprocess.check_output(cmd, shell=True)
+    subprocess.check_output(cmd, shell=True)
     if not quiet:
         print("Success!")
     return parse(dest + "/" + filename + ".pdb", quiet)
