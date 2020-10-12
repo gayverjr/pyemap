@@ -4,7 +4,7 @@ from .custom_residues import is_pi_bonded
 from .data import clusters
 import networkx as nx
 from networkx.drawing.nx_agraph import to_agraph
-from .structures import getSimpleSmarts, cleanup_bonding, remove_side_chains
+from .structures import getSimpleSmarts
 from collections import OrderedDict
 from PIL import Image
 import os
@@ -153,9 +153,6 @@ class emap():
                         res_graph.nodes[i]["coords"] = atoms[i].coord
                         res_graph.nodes[k]["element"] = atoms[k].element
                         res_graph.nodes[k]["coords"] = atoms[k].coord
-        if nx.cycle_basis(res_graph):
-            cleanup_bonding(res_graph)
-            remove_side_chains(res_graph)
         return res_graph
 
     def _add_eta_moiety(self, residue):
