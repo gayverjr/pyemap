@@ -5,6 +5,7 @@
 import networkx as nx
 import numpy as np
 from .data import SB_means,SB_std_dev, clusters
+from .structures import cleanup_bonding, remove_side_chains
 
 def is_pi_bonded(cur_atom, next_atom):
     """Determines whether two atoms are pi bonded based on experimental bond lengths.
@@ -89,13 +90,17 @@ def find_conjugated_systems(atoms, res_names):
                     cust_graph.nodes[i]["coords"] = atoms[i].coord
                     cust_graph.nodes[k]["element"] = atoms[k].element
                     cust_graph.nodes[k]["coords"] = atoms[k].coord
-
     # now we have a forest, let's get each individual tree (only take cycles or bigger than 10)
     subgraphs = []
     all_subgraphs = (cust_graph.subgraph(c)
                      for c in nx.connected_components(cust_graph))
-    for graph in all_subgraphs:
-        if nx.cycle_basis(graph) or len(graph.nodes()) >= 10:
+    for sub_g in all_subgraphs:
+        graph = sub_g.copy()
+        if nx.cycle_basis(graph):
+            cleanup_bonding(graph)
+            remove_side_chains(graph)
+            subgraphs.append(graph)
+        elif len(graph.nodes()) >= 10:
             subgraphs.append(graph)
     custom_res_list = []
     count = 1
@@ -105,6 +110,7 @@ def find_conjugated_systems(atoms, res_names):
         res_name = str(atoms[0].parent.get_resname()) + str(
             atoms[0].get_full_id()[3][1]) + "(" + str(
                 atoms[0].get_full_id()[2]) + ")"
+        res_name = res_name.strip()
         if len(subgraphs) > 1:
             res_name += '-' + str(count)
             while res_name in res_names:
