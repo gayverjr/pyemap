@@ -50,7 +50,7 @@ setup(
     				  'networkx',
     				  'biopython',
     			      'scipy',
-    				  'pillow',
+    				  'pillow==7.2.0',
                       'reportlab',
                       'pygraphviz',
                       'svglib']
