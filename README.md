@@ -14,19 +14,21 @@ It serves as the backend for the web application [eMap](https://emap.bu.edu/), a
 - **News:** https://twitter.com/eMap_protein
 
 # Installation
-PyeMap officially supports Python versions 3.5, 3.6, and 3.7, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
+PyeMap officially supports Python versions 3.6, 3.7, and 3.8, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
 ### Conda (recommended):
-The conda recipe will install all dependencies necessary for full functionality.
 ```
 # create new virtual environment
 $ conda create -n pyemap_env python=3.7
 $ conda activate pyemap_env
 # include channels for dependencies, only needs to be done once
-$ conda config --add channels conda-forge --add channels salilab --add channels bioconda --add channels gayverjr
+$ conda config --add channels conda-forge --add channels gayverjr
 $ conda update --all
 # install pyemap
 $ conda install pyemap
 ```
+
+Our conda recipe does not include [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina), or [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), 
+which are used for classifying residues as buried or surface exposed. Please install these packages separately if you need that functionality.
 
 ### Pip
 Pip installation will only install python dependencies, and requires [Graphviz](https://graphviz.gitlab.io/) in order to work. This is sufficient to run PyeMap analysis and view graph images, but some features will be missing.
