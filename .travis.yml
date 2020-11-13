@@ -37,7 +37,7 @@ install:
     # Activate the test environment
   - conda activate test
   - conda install -c conda-forge pygraphviz rdkit svglib
-  - conda install numpy scipy biopython networkx pillow
+  - conda install numpy scipy biopython networkx pillow=7.2.0
   - conda install -c bioconda msms 
   - conda install -c salilab dssp
     # Build and install package
