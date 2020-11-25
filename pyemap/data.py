@@ -52,6 +52,11 @@ radii = {
     '.': 1.80
 }
 
+TRP_sc = ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
+TYR_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
+PHE_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
+HIS_sc = ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2']
+
 SB_means = {
     'CC': 1.54,
     'CN': 1.49,
