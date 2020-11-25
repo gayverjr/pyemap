@@ -36,7 +36,8 @@ install:
   - python devtools/scripts/create_conda_env.py -n=test -p=$PYTHON_VER devtools/conda-envs/test_env.yaml
     # Activate the test environment
   - conda activate test
-  - conda install -c conda-forge pygraphviz rdkit svglib
+  - conda install -c conda-forge pygraphviz svglib
+  - conda install -c rdkit rdkit
   - conda install numpy scipy biopython networkx pillow=7.2.0
   - conda install -c bioconda msms 
   - conda install -c salilab dssp
