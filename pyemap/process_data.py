@@ -16,14 +16,7 @@ from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
 import warnings
-from .data import res_name_to_char
-"""str: module level directory path for writing to file"""
-
-TRP_sc = ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
-TYR_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
-PHE_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
-HIS_sc = ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2']
-"""module level lists of side chain atoms for respective residues"""
+from .data import res_name_to_char, TRP_sc, TYR_sc, PHE_sc, HIS_sc
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
 
