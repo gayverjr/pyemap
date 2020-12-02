@@ -12,6 +12,7 @@ from shutil import copyfile
 import tempfile
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+from .process_data import get_atom_list
 
 
 class emap():
@@ -61,6 +62,7 @@ class emap():
             Chains identified by the parser
         '''
         self.filename = filename
+        self.pdb_id = filename[-8:-4]
         self.structure = structure
         self.residues = {}
         self.chains = chain_list
@@ -141,7 +143,7 @@ class emap():
         self.branches = OrderedDict()
 
     def _get_residue_graph(self, residue):
-        atoms = list(residue.get_atoms())
+        atoms = get_atom_list(residue)
         arom_atoms = ['O', 'P', 'N', 'C', 'S']
         res_graph = nx.Graph()
         for i in range(len(atoms)):

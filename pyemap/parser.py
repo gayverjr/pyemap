@@ -11,12 +11,12 @@ from .data import res_name_to_char
 from .emap import emap
 import os
 
-def fetch_and_parse(filename, dest="", quiet=False):
+def fetch_and_parse(pdb_id, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
 
     Parameters
     ----------
-    filename: str
+    pdb_id: str
         RCSB PDB ID
     dest: str, optional
         Full path to where file should be saved
@@ -31,14 +31,14 @@ def fetch_and_parse(filename, dest="", quiet=False):
     if not dest:
         dest = os.getcwd()
     if not quiet:
-        print("Fetching file " + filename + " from RSCB Database...")
+        print("Fetching file " + pdb_id + " from RSCB Database...")
     cmd = ('wget -nc --no-check-certificate --quiet --read-timeout=1 -t 1 -P {0} https://files.rcsb.org/download/' +
-    filename + ".pdb").format(dest)
+    pdb_id + ".pdb").format(dest)
     import subprocess
     subprocess.check_output(cmd, shell=True)
     if not quiet:
         print("Success!")
-    return parse(dest + "/" + filename + ".pdb", quiet)
+    return parse(dest + "/" + pdb_id + ".pdb", quiet)
 
 def parse(filename, quiet=False):
     '''Parses pdb file and returns emap object.
