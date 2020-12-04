@@ -34,18 +34,18 @@ class protein_group():
             edge_thresholds = [8,12]
         self.edge_thresholds = edge_thresholds
     
-    def _set_node_labels(self,node_labels,surface_exposed):
+    def _set_node_labels(self,node_labels,categories,surface_exposed):
         if node_labels == None:
             self.res_to_num_label = { "W": 2, "Y": 3, "H": 4, "F": 5}
             self.num_label_to_res = { 2:"W", 3:"Y", 4:"H", 5:"F"}
         else:
             self.res_to_num_label = node_labels
-            self.num_label_to_res = {}
-            for key,value in self.res_to_num_label.items():
-                self.num_label_to_res[value] = key
-            print(self.res_to_num_label)
-            print(self.num_label_to_res)
-            self.num_label_to_res[len(self.num_label_to_res)+2] = "NP"
+            self.num_label_to_res = { 2:"W", 3:"Y", 4:"H", 5:"F"}
+            num_label = 5
+            for category in categories:
+                num_label+=1
+                self.num_label_to_res[num_label]=category
+            self.num_label_to_res[num_label+1] = "NP"
 
     def get_edge_label(self,G,edge):
         dist = G.edges[edge]['distance']
@@ -58,11 +58,14 @@ class protein_group():
         return label
 
     def get_numerical_node_label(self,u):
-        res_name = strip_res_number(u)
-        if res_name in self.res_to_num_label:
-            return self.res_to_num_label[res_name]
+        if u in self.res_to_num_label:
+            result = self.res_to_num_label[u]
+        elif strip_res_number(u) in ["W","Y","H","F"]:
+            res_name = strip_res_number(u)
+            result = self.res_to_num_label[res_name]
         else:
-            return(len(self.num_label_to_res)+1)
+            result = len(self.num_label_to_res)+1
+        return result
 
     def __init__(self,title,temp_dir=""):
         self.title = title
@@ -96,10 +99,11 @@ class protein_group():
         print("Processing:" + emap_name)
         process(my_emap,dist_def=1)
 
-    def generate_graph_db(self,node_labels=None,edge_thresholds=None,surface_exposed=False):
-        self._set_node_labels(node_labels,surface_exposed)
+    def generate_graph_db(self,node_labels=None,categories=None,edge_thresholds=None,surface_exposed=False):
+        self._set_node_labels(node_labels,categories,surface_exposed)
         self._set_edge_labels(edge_thresholds)
         f = open(os.path.join(self.temp_dir,'graphdatabase.txt'), "w")
+        print(os.path.join(self.temp_dir,'graphdatabase.txt'))
         for i,key in enumerate(self.emaps):
             G = self.emaps[key].init_graph
             f.write("t # "+str(i)+"\n")
@@ -139,15 +143,12 @@ class protein_group():
                 line_idx+=1
                 start_idx = line_idx-1
                 G = nx.Graph()
-                contains_FAD = False
                 line = lines[line_idx]
                 while "---" not in line:
                     line = lines[line_idx]
                     if len(line.split())>1 and line.split()[0]=="v":
                         node_idx = int(line.split()[1])
                         node_label = int(line.split()[2])
-                        if node_label == 6:
-                            contains_FAD = True
                         G.add_node(node_idx)
                         G.nodes[node_idx]['label']= self.num_label_to_res[node_label]
                     if len(line.split())>1 and line.split()[0]=="e":
@@ -155,7 +156,7 @@ class protein_group():
                         idx2 = int(line.split()[2])
                         edge_label = int(line.split()[3])
                         G.add_edge(idx1,idx2,label=edge_label)
-                    if contains_FAD and "where" in line:
+                    if "where" in line: 
                         for i in range(start_idx,line_idx+1):
                             f.write(lines[i])
                         f.write("----------\n")

@@ -347,11 +347,11 @@ class emap():
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
-                agraph.draw(svg_fn)
-                agraph.draw(png_fn)
+                agraph.draw(svg_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
+                agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
             else:
                 png_fn = self.filename[:-4] + "_graph.png"
-                agraph.draw(png_fn)
+                agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
         else:
             raise RuntimeError("Nothing to draw.")
 
@@ -435,10 +435,9 @@ class emap():
         if G:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(G)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             try:
-                agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
+                agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
             except Exception as e:
                 raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             if agraph.number_of_nodes() <= 200:
