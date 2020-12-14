@@ -21,12 +21,20 @@ def edge_match(edge1,edge2):
     return edge1['label'] == edge2['label']
 
 class Subgraph():
-    def __init__(self,subgraph,id,occurences):
+    def __init__(self,subgraph,graph_id,occurences):
         self.G = subgraph
         self.occurences = occurences
-        self.id = id
+        self.node_rep = self.gen_node_rep()
         self.support = len(occurences)
+        #self.id = id
+        self.id = str(graph_id) + "_"+str(self.node_rep) + "_" + str(self.support)
 
+    def gen_node_rep(self):
+        node_rep = ""
+        for node,node_data in self.G.nodes(data=True):
+            node_rep = ''.join([node_rep, node_data['label']])
+        return node_rep
+        
 class protein_group():
 
     def _set_edge_labels(self,edge_thresholds):
@@ -133,6 +141,7 @@ class protein_group():
     def prune_gspan(self):
         buff = open(os.path.join(self.temp_dir,'gspan_results.out'), "r")
         f = open(os.path.join(self.temp_dir,'pruned_results.out'), "w")
+        subgraphs = []
         buff.seek(0)
         lines = buff.readlines()
         line_idx = 0
@@ -162,11 +171,18 @@ class protein_group():
                         f.write("----------\n")
                         where_list = line[7:-2].strip('][').split(', ')
                         where_list = list(np.array(where_list,dtype=int))
-                        occurences = [list(self.emaps.keys())[i] for i in range(0,len(self.emaps))]
-                        self.subgraphs[graph_id] = Subgraph(G,graph_id,occurences)
+                        emap_list = list(self.emaps.keys())
+                        occurences = []
+                        for where_idx in where_list:
+                            occurences.append(emap_list[where_idx])
+                        subgraphs.append(Subgraph(G,graph_id,occurences))
+                        #self.subgraphs[sg.id] = sg
                     line_idx+=1
             line_idx+=1
         buff.close()
+        subgraphs.sort(key=lambda x: x.support, reverse=True)
+        for sg in subgraphs:
+            self.subgraphs[sg.id] = sg
 
     def generate_candidate_subgraph(self,graph):
         G = nx.Graph()
