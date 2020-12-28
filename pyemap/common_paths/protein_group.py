@@ -6,6 +6,7 @@ from collections import OrderedDict
 import networkx as nx
 from .find_subgraph import find_sg
 import matplotlib.pyplot as plt
+import time
 
 
 def strip_res_number(u):
@@ -24,6 +25,7 @@ class Subgraph():
     def __init__(self,subgraph,graph_id,occurences):
         self.G = subgraph
         self.occurences = occurences
+        self.specific_graphs = []
         self.node_rep = self.gen_node_rep()
         self.support = len(occurences)
         #self.id = id
@@ -34,6 +36,21 @@ class Subgraph():
         for node,node_data in self.G.nodes(data=True):
             node_rep = ''.join([node_rep, node_data['label']])
         return node_rep
+    
+    def contains_edge(self,node1_label,node2_label,edge_label):
+        for u,v,data in self.G.edges(data=True):
+            if node1_label == u and node2_label == v and data['label']==edge_label:
+                return True
+            if node2_label ==u and node1_label==v and data['label']==edge_label:
+                return True
+        return False
+    
+    def contains_node(self,node_label):
+        for node in self.G.nodes:
+            if self.G.nodes[node]['label'] == node_label:
+                return True
+        return False
+
         
 class protein_group():
 
@@ -44,8 +61,8 @@ class protein_group():
     
     def _set_node_labels(self,node_labels,categories,surface_exposed):
         if node_labels == None:
-            self.res_to_num_label = { "W": 2, "Y": 3, "H": 4, "F": 5}
-            self.num_label_to_res = { 2:"W", 3:"Y", 4:"H", 5:"F"}
+            self.res_to_num_label = {"W":2, "Y": 3, "H": 4, "F": 5, "NP":6}
+            self.num_label_to_res = {2:"W", 3:"Y", 4:"H", 5:"F", 6:"NP"}
         else:
             self.res_to_num_label = node_labels
             self.num_label_to_res = { 2:"W", 3:"Y", 4:"H", 5:"F"}
@@ -54,6 +71,8 @@ class protein_group():
                 num_label+=1
                 self.num_label_to_res[num_label]=category
             self.num_label_to_res[num_label+1] = "NP"
+            self.res_to_num_label["NP"] = num_label+1
+
 
     def get_edge_label(self,G,edge):
         dist = G.edges[edge]['distance']
@@ -99,7 +118,7 @@ class protein_group():
         if emap_id in subgraph.occurences:
             G = self.subgraphs[graph_id].G
             src = G.nodes[0]
-            sgs = self.find_sg(self.emaps[emap_id].init_graph,G,src)
+            sgs = self.find_sg(self.emaps[emap_id].init_graph,subgraph,src)
         return sgs
 
     def process_emap(self,emap_name,eta_moieties="All",custom_str=""):
@@ -122,6 +141,7 @@ class protein_group():
         f.write("t # -1")
 
     def run_gspan(self,support=10,lower_bound=4):
+        print("starting gspan-mining")
         import sys
         # change standard output temporarily
         old_stdout = sys.stdout
@@ -136,6 +156,7 @@ class protein_group():
         # give us our old standard output back
         sys.stdout = old_stdout
         f.close()
+        print("Finished gspan-mining")
         self.prune_gspan()
 
     def prune_gspan(self):
@@ -176,17 +197,25 @@ class protein_group():
                         for where_idx in where_list:
                             occurences.append(emap_list[where_idx])
                         subgraphs.append(Subgraph(G,graph_id,occurences))
-                        #self.subgraphs[sg.id] = sg
                     line_idx+=1
             line_idx+=1
         buff.close()
         subgraphs.sort(key=lambda x: x.support, reverse=True)
+        print(str(len(subgraphs))+" subgraphs found.")
         for sg in subgraphs:
             self.subgraphs[sg.id] = sg
+            print(sg.id)
+            start_time = time.time()
+            occurences = sg.occurences
+            for emap_id in occurences:
+                specific_subgraphs = self.find_subgraph(sg.id,emap_id)
+                self.subgraphs[sg.id].specific_graphs.append(specific_subgraphs)
+            print(self.subgraphs[sg.id].specific_graphs)
+            print("--- %s seconds ---" % (time.time() - start_time))
+            
 
     def generate_candidate_subgraph(self,graph):
         G = nx.Graph()
-        has_FAD= False
         for i,node in enumerate(graph.nodes):
             G.add_node(i)
             num_label = self.get_numerical_node_label(node)
@@ -198,60 +227,119 @@ class protein_group():
             G.add_edge(node1_idx,node2_idx,label=edge_label)
         return G
 
-    def get_candidates(self,G,source):
+
+    def find_least_common_node(self,G,subgraph):
+        l1 = list(self.num_label_to_res.keys())
+        l2 = []
+        for itm in l1:
+            l2.append(0)
+        for node in G.nodes:
+            num_label = self.get_numerical_node_label(node)
+            idx = l1.index(num_label)
+            l2[idx]+=1
+        sort_idx = np.argsort(l2)
+        l1 = np.array(l1)[sort_idx]
+        l2 = np.array(l2)[sort_idx]
+        for i in range(0,len(l2)):
+            if l2[i]>0 and subgraph.contains_node(self.num_label_to_res[l1[i]]):
+                return l1[i]
+
+
+    def get_candidates(self,subgraph,G):
         # returns networkx node
+        lcn = self.find_least_common_node(G,subgraph)
         candidates = []
         for node in G.nodes:
-            if strip_res_number(node)==source['label']:
+            if self.get_numerical_node_label(node)==lcn:
                 candidates.append(node)
         return candidates
 
-#non-recursive
-    def dfs_nr(self,full_graph,target_subgraph,src):
+    def brute_force_full(self,full_graph,subgraph,src):
+        my_emap = self.emaps["1u3d"]
+        target_subgraph = subgraph.G
         found_subgraphs = []
         target_num_nodes = len(list(target_subgraph.nodes))
         target_num_edges = len(list(target_subgraph.edges))
         G = nx.Graph()
-        G.add_node(src,shape=full_graph.nodes[src]['shape'])
+        G.add_node(src,shape=full_graph.nodes[src]['shape'],label=str(src))
         graph_stack = []
-        stack = []
-        stack.append(src)
         graph_stack.append(G)
-        while(len(stack)):
-            prev_node = stack.pop()
+        while(len(graph_stack)):
             G = graph_stack.pop()
-            for cur_node in full_graph.neighbors(prev_node):
-                if not G.has_edge(prev_node,cur_node):
-                    cur_G = G.copy()
-                    edge = (prev_node,cur_node)
-                    edge_label = self.get_edge_label(full_graph,edge)
-                    cur_G.add_node(cur_node)
-                    cur_G.add_edge(prev_node,cur_node,label=edge_label,distance=full_graph.edges[edge]['distance'])
-                    cur_num_nodes = len(list(cur_G.nodes))
-                    cur_num_edges = len(list(cur_G.edges))
-                    if target_num_nodes == cur_num_nodes and target_num_edges == cur_num_edges:
-                        test_graph = self.generate_candidate_subgraph(cur_G)
-                        if nx.is_isomorphic(test_graph,target_subgraph,edge_match=edge_match,node_match=node_match):
-                            found_subgraphs.append(cur_G)
-                    elif target_num_nodes > cur_num_nodes:
-                        stack.append(cur_node)
-                        graph_stack.append(cur_G)
+            for prev_node in G.nodes:
+                for cur_node in full_graph.neighbors(prev_node):
+                    if not G.has_edge(prev_node,cur_node):# and not self.is_possible_edge(full_graph,subgraph,prev_node,cur_node):
+                        cur_G = G.copy()
+                        edge = (prev_node,cur_node)
+                        edge_label = self.get_edge_label(full_graph,edge)
+                        cur_G.add_node(cur_node,label=str(cur_node))
+                        cur_G.add_edge(prev_node,cur_node,label=edge_label,distance=full_graph.edges[edge]['distance'])
+                        cur_num_nodes = len(list(cur_G.nodes))
+                        cur_num_edges = len(list(cur_G.edges))
+                        if target_num_nodes == cur_num_nodes and target_num_edges == cur_num_edges:
+                            test_graph = self.generate_candidate_subgraph(cur_G)
+                            if nx.is_isomorphic(test_graph,target_subgraph,edge_match=edge_match,node_match=node_match):
+                                found_subgraphs.append(cur_G)
+                        elif target_num_nodes > cur_num_nodes and target_num_edges > cur_num_edges:
+                            graph_stack.append(cur_G)      
         return found_subgraphs
+
+    def brute_force_partial(self,full_graph,subgraph,src):
+        target_subgraph = subgraph.G
+        target_num_nodes = len(list(target_subgraph.nodes))
+        target_num_edges = len(list(target_subgraph.edges))
+        G = nx.Graph()
+        G.add_node(src,shape=full_graph.nodes[src]['shape'],label=str(src))
+        graph_stack = []
+        graph_stack.append(G)
+        while(len(graph_stack)):
+            G = graph_stack.pop()
+            for prev_node in G.nodes:
+                for cur_node in full_graph.neighbors(prev_node):
+                    if not G.has_edge(prev_node,cur_node):# and not self.is_possible_edge(full_graph,subgraph,prev_node,cur_node):
+                        cur_G = G.copy()
+                        edge = (prev_node,cur_node)
+                        edge_label = self.get_edge_label(full_graph,edge)
+                        cur_G.add_node(cur_node,label=str(cur_node))
+                        cur_G.add_edge(prev_node,cur_node,label=edge_label,distance=full_graph.edges[edge]['distance'])
+                        cur_num_nodes = len(list(cur_G.nodes))
+                        cur_num_edges = len(list(cur_G.edges))
+                        if target_num_nodes == cur_num_nodes and target_num_edges == cur_num_edges:
+                            test_graph = self.generate_candidate_subgraph(cur_G)
+                            if nx.is_isomorphic(test_graph,target_subgraph,edge_match=edge_match,node_match=node_match):
+                                return cur_G
+                        elif target_num_nodes > cur_num_nodes and target_num_edges > cur_num_edges:
+                            graph_stack.append(cur_G)      
+        return None
 
     def find_sg(self,graph,subgraph,source):
         # graph is a networkx object generated by emap
         # subgraph is networkx object with node labels in the same format as our gspan stuff
         # source is a numerical label of the starting node
         # residue_map is a dict mapping node labels to residue types
-        source_candidates = self.get_candidates(graph,source)
-        sgs = []
+        source_candidates = self.get_candidates(subgraph,graph)
+        unique_subgraphs = []
         for src in source_candidates:
-            sgs += self.dfs_nr(graph,subgraph,src)
-        return sgs
+            sg =  self.brute_force_partial(graph,subgraph,src)
+            if sg:
+                return sg
+            if sg and is_unique_subgraph(sg,unique_subgraphs):
+                unique_subgraphs.append(sg) 
+        return unique_subgraphs
 
+    def is_possible_edge(self,full_graph,subgraph,prev_node,cur_node):
+        edge_label = self.get_edge_label(full_graph,(prev_node,cur_node))
+        node1_label = self.get_numerical_node_label(prev_node)
+        node2_label = self.get_numerical_node_label(cur_node)
+        return subgraph.contains_edge(node1_label,node2_label,edge_label)
 
-
-
+def is_unique_subgraph(sg,unique_subgraphs):
+    if not unique_subgraphs:
+        return True
+    for unique_sg in unique_subgraphs:
+        if nx.is_isomorphic(sg,unique_sg,edge_match=edge_match,node_match=node_match):
+            return False
+    return True
 
 
 
