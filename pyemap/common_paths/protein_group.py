@@ -4,8 +4,8 @@ import os
 from ..process_data import process
 from collections import OrderedDict
 import networkx as nx
-from .find_subgraph import find_sg
 import matplotlib.pyplot as plt
+from networkx.algorithms import isomorphism
 import time
 
 
@@ -16,10 +16,21 @@ def strip_res_number(u):
             return u[:i]
 
 def node_match(node1,node2):
-    return node1['label'] == node2['label']
+    return node1['num_label'] == node2['num_label']
+
+def node_match2(node1,node2):
+        return node1['label'] == node2['label']
+
+def edge_match2(edge1,edge2):
+    return True
     
 def edge_match(edge1,edge2):
-    return edge1['label'] == edge2['label']
+    #print("Edge Comparison:")
+    #print(edge1['num_label'])
+    #print(edge2['label'])
+    #print(edge1['num_label'] == edge2['label'])
+    #return True
+    return edge1['num_label'] == edge2['num_label']
 
 class Subgraph():
     def __init__(self,subgraph,graph_id,occurences):
@@ -39,15 +50,15 @@ class Subgraph():
     
     def contains_edge(self,node1_label,node2_label,edge_label):
         for u,v,data in self.G.edges(data=True):
-            if node1_label == u and node2_label == v and data['label']==edge_label:
+            if node1_label == self.G.nodes[u]['num_label'] and node2_label == self.G.nodes[v]['num_label'] and data['num_label']==edge_label:
                 return True
-            if node2_label ==u and node1_label==v and data['label']==edge_label:
+            if node1_label == self.G.nodes[v]['num_label'] and node2_label == self.G.nodes[u]['num_label'] and data['num_label']==edge_label:
                 return True
         return False
     
     def contains_node(self,node_label):
         for node in self.G.nodes:
-            if self.G.nodes[node]['label'] == node_label:
+            if self.G.nodes[node]['num_label'] == node_label:
                 return True
         return False
 
@@ -56,7 +67,7 @@ class protein_group():
 
     def _set_edge_labels(self,edge_thresholds):
         if edge_thresholds == None:
-            edge_thresholds = [8,12]
+            edge_thresholds = [8.0,12.0]
         self.edge_thresholds = edge_thresholds
     
     def _set_node_labels(self,node_labels,categories,surface_exposed):
@@ -115,10 +126,9 @@ class protein_group():
     def find_subgraph(self,graph_id,emap_id):
         graph_id = str(graph_id)
         subgraph = self.subgraphs[graph_id]
+        sgs = []
         if emap_id in subgraph.occurences:
-            G = self.subgraphs[graph_id].G
-            src = G.nodes[0]
-            sgs = self.find_sg(self.emaps[emap_id].init_graph,subgraph,src)
+            sgs = self.find_sg2(self.emaps[emap_id].init_graph,subgraph,emap_id)
         return sgs
 
     def process_emap(self,emap_name,eta_moieties="All",custom_str=""):
@@ -181,11 +191,13 @@ class protein_group():
                         node_label = int(line.split()[2])
                         G.add_node(node_idx)
                         G.nodes[node_idx]['label']= self.num_label_to_res[node_label]
+                        G.nodes[node_idx]['num_label'] = node_label
                     if len(line.split())>1 and line.split()[0]=="e":
                         idx1 = int(line.split()[1])
                         idx2 = int(line.split()[2])
                         edge_label = int(line.split()[3])
                         G.add_edge(idx1,idx2,label=edge_label)
+                        G.edges[(idx1,idx2)]['num_label']= edge_label
                     if "where" in line: 
                         for i in range(start_idx,line_idx+1):
                             f.write(lines[i])
@@ -204,14 +216,13 @@ class protein_group():
         print(str(len(subgraphs))+" subgraphs found.")
         for sg in subgraphs:
             self.subgraphs[sg.id] = sg
-            print(sg.id)
-            start_time = time.time()
             occurences = sg.occurences
+            print(sg.id)
             for emap_id in occurences:
+                print(emap_id)
                 specific_subgraphs = self.find_subgraph(sg.id,emap_id)
+                print(specific_subgraphs)
                 self.subgraphs[sg.id].specific_graphs.append(specific_subgraphs)
-            print(self.subgraphs[sg.id].specific_graphs)
-            print("--- %s seconds ---" % (time.time() - start_time))
             
 
     def generate_candidate_subgraph(self,graph):
@@ -220,11 +231,13 @@ class protein_group():
             G.add_node(i)
             num_label = self.get_numerical_node_label(node)
             G.nodes[i]['label']= self.num_label_to_res[num_label]
+            G.nodes[i]['num_label'] = num_label
         for i,edge in enumerate(graph.edges):
             node1_idx = list(graph.nodes()).index(edge[0])
             node2_idx = list(graph.nodes()).index(edge[1])
             edge_label = graph.edges[edge]['label']
             G.add_edge(node1_idx,node2_idx,label=edge_label)
+            G.edges[(node1_idx,node2_idx)]['num_label'] = edge_label
         return G
 
 
@@ -241,7 +254,7 @@ class protein_group():
         l1 = np.array(l1)[sort_idx]
         l2 = np.array(l2)[sort_idx]
         for i in range(0,len(l2)):
-            if l2[i]>0 and subgraph.contains_node(self.num_label_to_res[l1[i]]):
+            if l2[i]>0 and subgraph.contains_node(l1[i]):
                 return l1[i]
 
 
@@ -307,25 +320,83 @@ class protein_group():
                         if target_num_nodes == cur_num_nodes and target_num_edges == cur_num_edges:
                             test_graph = self.generate_candidate_subgraph(cur_G)
                             if nx.is_isomorphic(test_graph,target_subgraph,edge_match=edge_match,node_match=node_match):
-                                return cur_G
+                                return [cur_G]
                         elif target_num_nodes > cur_num_nodes and target_num_edges > cur_num_edges:
                             graph_stack.append(cur_G)      
-        return None
+        return []
 
-    def find_sg(self,graph,subgraph,source):
+
+    def trim_search_space(self,subgraph,graph):
+        graph_copy = graph.copy()
+        for edge in graph.edges:
+            if not self.is_possible_edge(graph,subgraph,edge[0],edge[1]):
+                graph_copy.remove_edge(edge[0],edge[1])
+        remove_vertices = []
+        for node in graph_copy.nodes:
+            if graph_copy.degree[node] == 0:
+                remove_vertices.append(node)
+        for node in remove_vertices:
+            graph_copy.remove_node(node)
+        return graph_copy
+
+
+    def find_sg(self,graph,subgraph):
         # graph is a networkx object generated by emap
         # subgraph is networkx object with node labels in the same format as our gspan stuff
-        # source is a numerical label of the starting node
         # residue_map is a dict mapping node labels to residue types
-        source_candidates = self.get_candidates(subgraph,graph)
+        my_emap = self.emaps["1u3d"]
+        trimmed_graph = self.trim_search_space(subgraph,graph)
+        source_candidates = self.get_candidates(subgraph,trimmed_graph)
+        print(source_candidates)
         unique_subgraphs = []
         for src in source_candidates:
-            sg =  self.brute_force_partial(graph,subgraph,src)
-            if sg:
-                return sg
-            if sg and is_unique_subgraph(sg,unique_subgraphs):
-                unique_subgraphs.append(sg) 
+            sgs =  self.brute_force_partial(trimmed_graph,subgraph,src)
+            if sgs:
+                for sg in sgs:
+                    if sg and is_unique_subgraph(sg,unique_subgraphs):
+                        unique_subgraphs.append(sg)
         return unique_subgraphs
+    
+
+    def generate_specific_subgraph(self,mapping,graph,subgraph):
+        my_emap = self.emaps["1u3d"]
+        mapping = dict((v, k) for k, v in mapping.items())
+        specific_graph = subgraph.copy()
+        specific_graph = nx.relabel_nodes(specific_graph,mapping)
+        for node in specific_graph.nodes():
+            for key in graph.nodes[node]:
+                specific_graph.nodes[node]['shape'] = graph.nodes[node]['shape']
+                specific_graph.nodes[node]['label'] = graph.nodes[node]['label']
+                specific_graph.nodes[node]['num_label'] = self.get_numerical_node_label(node)
+        for edge in specific_graph.edges():
+            for key in graph.edges[edge]:
+                specific_graph.edges[edge][key] = graph.edges[edge][key]
+            specific_graph.edges[edge]['num_label'] = self.get_edge_label(specific_graph,edge) 
+        if nx.is_isomorphic(subgraph,specific_graph,edge_match=edge_match,node_match=node_match):  
+            return specific_graph
+        else:
+            return None
+
+
+    def find_sg2(self,graph,subgraph,emap_id):
+        #graph = self.trim_search_space(subgraph,graph)
+        for node in graph.nodes:
+            num_label = self.get_numerical_node_label(node)
+            graph.nodes[node]['num_label'] = num_label
+            graph.nodes[node]['label'] = str(node)
+        for node in subgraph.G.nodes():
+            node_label = subgraph.G.nodes[node]['label']
+            num_label = self.res_to_num_label[node_label]
+            subgraph.G.nodes[node]['num_label'] = num_label
+        GM = isomorphism.GraphMatcher(graph, subgraph.G)
+        subgraph_isos = GM.subgraph_monomorphisms_iter()
+        sgs = []
+        for mapping in subgraph_isos:
+            sg = self.generate_specific_subgraph(mapping,graph,subgraph.G)
+            if sg and is_unique_subgraph(sg,sgs):
+                sgs.append(sg)
+        return sgs      
+
 
     def is_possible_edge(self,full_graph,subgraph,prev_node,cur_node):
         edge_label = self.get_edge_label(full_graph,(prev_node,cur_node))
@@ -337,7 +408,7 @@ def is_unique_subgraph(sg,unique_subgraphs):
     if not unique_subgraphs:
         return True
     for unique_sg in unique_subgraphs:
-        if nx.is_isomorphic(sg,unique_sg,edge_match=edge_match,node_match=node_match):
+        if nx.is_isomorphic(sg,unique_sg,edge_match=edge_match,node_match=node_match2):
             return False
     return True
 
