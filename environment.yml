@@ -1,7 +1,6 @@
 name: pyemap
 channels:
    - conda-forge
-   - salilab
 dependencies:
    - rdkit
    - pygraphviz
@@ -10,6 +9,4 @@ dependencies:
    - biopython
    - pillow
    - networkx 
-   - msms
-   - dssp
    - svglib
