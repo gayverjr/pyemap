@@ -5,6 +5,7 @@ import unittest
 import warnings
 import pyemap
 import tempfile
+from sys import platform
 
 def test_save_functions():
     my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/4DJA.pdb")) 
@@ -17,8 +18,10 @@ def test_save_functions():
     my_emap.residue_to_Image("FAD601(A)-1")
     my_emap.residue_to_file("FAD601(A)-1",dest=fout.name)
     '''
-    #after file is processed
-    pyemap.process(my_emap)
+    if platform == "linux":
+        pyemap.process(my_emap,sdef=0)
+    elif platform == "darwin":
+        pyemap.process(my_emap)
     #standard residue
     ''' commented out for now until we can find a solution with newer RDKit
     my_emap.residue_to_Image("Y443(A)")

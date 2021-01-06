@@ -5,8 +5,8 @@
 
 Overview of PyeMap
 =========================================================
-.. image:: https://travis-ci.org/gayverjr/pyemap.svg?branch=master
-   :target: https://travis-ci.org/gayverjr/pyemap
+.. image:: https://github.com/gayverjr/pyemap/workflows/ubuntu/badge.svg
+   :target: https://github.com/gayverjr/pyemap/actions
 .. image:: https://codecov.io/gh/gayverjr/pyemap/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/gayverjr/pyemap/branch/master
 
