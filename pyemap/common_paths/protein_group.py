@@ -7,6 +7,15 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from networkx.algorithms import isomorphism
 import time
+from fpdf import FPDF
+
+
+
+  
+# save the pdf with name .pdf 
+  
+# imagelist is the list with all image filenames
+
 
 
 def strip_res_number(u):
@@ -29,12 +38,57 @@ class Subgraph():
         self.support = len(occurences)
         #self.id = id
         self.id = str(graph_id) + "_"+str(self.node_rep) + "_" + str(self.support)
+ 
+    def generate_generic_report(self):
+        full_str = ""
+        full_str+= "ID:" + str(self.id) + "\n"
+        full_str+= "Support:" + str(self.support) + "\n"
+        full_str+= "Nodes:\n"
+        for node in self.G.nodes:
+            full_str+= self.G.nodes[node]['label']+","
+            full_str+= "\nEdges:\n"
+        for edge in self.G.edges:
+            node1_label = self.G.nodes[edge[0]]['label']
+            node2_label = self.G.nodes[edge[1]]['label']
+            full_str+="Node1:"+str(node1_label)+", Node2:"+str(node2_label)+": Edge label:" + str(self.G.edges[edge]['num_label']) +"\n"
+        return full_str 
+
+
+    def specific_subgraph_example(self):
+        full_str = ""
+       # print(len(self.occurences))
+        for i in range(len(self.occurences)):
+            full_str+="\n"  
+           # print(i)
+            full_str+= str(self.occurences[i]) +"\n" #first pdb id
+    # grab all specific graphs for first pdb
+            specific_graphs_for_first_pdb = self.specific_graphs[i]
+
+    # Important: this G is different than the self.G in the above example,
+    #  which is the generic version
+    #  this guy is the networkx graph for the specific instance of the subgraph found in a pdb
+    #  which contains all the info about the nodes in the specific pdb
+            #print(len(specific_graphs_for_first_pdb))
+            for j in range (len(specific_graphs_for_first_pdb)):
+                
+
+                G = specific_graphs_for_first_pdb[j] #first specific graph
+                for edge in G.edges:
+                    node1_label = G.nodes[edge[0]]['label']
+                    node2_label = G.nodes[edge[1]]['label']
+                    full_str+="Node1:"+str(node1_label)+", Node2:"+str(node2_label)+": Distance:" + str(G.edges[edge]['distance']) + "\n"
+            
+        return full_str
+
+
+        
 
     def gen_node_rep(self):
         node_rep = ""
         for node,node_data in self.G.nodes(data=True):
             node_rep = ''.join([node_rep, node_data['label']])
         return node_rep
+        print(node_rep)
     
     def visualize_subgraph_in_ngl(self,emap,idx):
         colors = {"F": "orange", "Y": "blue", "W": "red", "H": "green"}
@@ -57,13 +111,24 @@ class Subgraph():
                 labeled_atoms.append(next(emap.residues[res].get_atoms()).name)
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts,labeled_atoms,color_list,selection_strs
-   
+
+
+    
+
+
+
 class protein_group():
 
     def _set_edge_labels(self,edge_thresholds):
         if edge_thresholds == None:
             edge_thresholds = [8.0,12.0]
         self.edge_thresholds = edge_thresholds
+
+
+
+        
+
+       
     
     def _set_node_labels(self,node_labels,categories,surface_exposed):
         if node_labels == None:
@@ -79,6 +144,7 @@ class protein_group():
             self.num_label_to_res[num_label+1] = "NP"
             self.res_to_num_label["NP"] = num_label+1
 
+
     def get_edge_label(self,G,edge):
         dist = G.edges[edge]['distance']
         label = 2
@@ -88,6 +154,8 @@ class protein_group():
             else:
                 label+=1
         return label
+        
+
 
     def get_numerical_node_label(self,u):
         if u in self.res_to_num_label:
@@ -99,6 +167,7 @@ class protein_group():
             result = len(self.num_label_to_res)+1
         return result
 
+
     def __init__(self,title,temp_dir=""):
         self.title = title
         self.emaps = OrderedDict()
@@ -106,6 +175,8 @@ class protein_group():
         self.raw_gspan_output = StringIO()
         self.temp_dir = temp_dir
         self.subgraphs = {}
+
+
     
     def add_emap(self,emap_obj):
         if emap_obj.pdb_id not in self.emaps:
@@ -114,6 +185,7 @@ class protein_group():
         else:
             print("Duplicate!")
 
+
     def find_subgraph(self,graph_id,emap_id):
         graph_id = str(graph_id)
         subgraph = self.subgraphs[graph_id]
@@ -121,6 +193,7 @@ class protein_group():
         if emap_id in subgraph.occurences:
             sgs = self.find_subgraph_in_pdb(self.emaps[emap_id].init_graph,subgraph,emap_id)
         return sgs
+
 
     def generate_graph_db(self,node_labels=None,categories=None,edge_thresholds=None,surface_exposed=False):
         self._set_node_labels(node_labels,categories,surface_exposed)
@@ -150,7 +223,9 @@ class protein_group():
         # give us our old standard output back
         sys.stdout = old_stdout
         f.close()
+        
         self.generate_subgraphs()
+        
 
     def generate_subgraphs(self):
         buff = open(os.path.join(self.temp_dir,'gspan_results.out'), "r")
@@ -202,6 +277,7 @@ class protein_group():
             for emap_id in occurences:
                 specific_subgraphs = self.find_subgraph(sg.id,emap_id)
                 self.subgraphs[sg.id].specific_graphs.append(specific_subgraphs)
+
             
 
     def generate_specific_subgraph(self,mapping,graph,subgraph):
@@ -218,6 +294,7 @@ class protein_group():
                 specific_graph.edges[edge][key] = graph.edges[edge][key]
             specific_graph.edges[edge]['num_label'] = self.get_edge_label(specific_graph,edge) 
         return specific_graph
+
 
 
     def find_subgraph_in_pdb(self,graph,subgraph,emap_id):
@@ -237,7 +314,13 @@ class protein_group():
         for mapping in subgraph_isos:
             sg = self.generate_specific_subgraph(mapping,graph,subgraph.G)
             sgs.append(sg)
-        return sgs      
+        return sgs     
+
+    
+    
+    
+        
+     
 
 
 
