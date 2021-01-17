@@ -56,11 +56,18 @@ class Subgraph():
 
     def specific_subgraph_example(self):
         full_str = ""
+        a_str=""
        # print(len(self.occurences))
+        a_str+= "Support=" + str(len(self.occurences))
+        a_str+="\n"
         for i in range(len(self.occurences)):
             full_str+="\n"  
+            
            # print(i)
             full_str+= str(self.occurences[i]) +"\n" #first pdb id
+            a_str+="\n"
+            a_str+= "PDB ID: " + str(self.occurences[i]) + "\n" 
+            
     # grab all specific graphs for first pdb
             specific_graphs_for_first_pdb = self.specific_graphs[i]
 
@@ -70,15 +77,32 @@ class Subgraph():
     #  which contains all the info about the nodes in the specific pdb
             #print(len(specific_graphs_for_first_pdb))
             for j in range (len(specific_graphs_for_first_pdb)):
-                
-
+                full_str+="\n"
+                a_str+="\n"
+                a_str+= "Adjacency List: "
+                a_str+= "PDB Specific Subgraph " + str(j) +"\n"
                 G = specific_graphs_for_first_pdb[j] #first specific graph
                 for edge in G.edges:
                     node1_label = G.nodes[edge[0]]['label']
                     node2_label = G.nodes[edge[1]]['label']
+            
+                for node in G.nodes:
+                    main_node=(G.nodes[node]['label'])
+          
+                    neighborhood=(list(G.neighbors(node)))
+                    a_str+=main_node +"[ "
+                    for l in range(0,len(neighborhood)):
+                        if l==len(neighborhood) -1:
+                            a_str+= neighborhood[l] + ":" + str(round((G.edges[(node, neighborhood[l])]['distance']),4))
+                        else:
+                            a_str+= neighborhood[l] + ":" + str(round((G.edges[(node, neighborhood[l])]['distance']),4)) +","
+                        a_str+="]"  + "\n"  
+
+
+
                     full_str+="Node1:"+str(node1_label)+", Node2:"+str(node2_label)+": Distance:" + str(G.edges[edge]['distance']) + "\n"
             
-        return full_str
+        return  a_str
 
 
         

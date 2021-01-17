@@ -22,15 +22,18 @@ pg.run_gspan(support=5,lower_bound=6)
 
 #pg.subgraphs is a dictionary
 # grab subgraph with ID 0_WWWWWY_5
-k=0
+
 report= open("full_report.txt", "w")
 for graph_id in pg.subgraphs:
-    report.write("subgraph" +"_" +str(k))
+    report.write("\n")
+    report.write("subgraph " + pg.subgraphs[graph_id].id)
+    report.write("\n")
     my_sg = pg.subgraphs[graph_id]
-    k+=1
+
 
 
  #   print("generic example")
   #  print(my_sg.generate_generic_report())
    # print("specific example")
     report.write(my_sg.specific_subgraph_example())
+
