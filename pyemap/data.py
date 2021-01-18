@@ -52,10 +52,30 @@ radii = {
     '.': 1.80
 }
 
-TRP_sc = ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
-TYR_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
-PHE_sc = ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
-HIS_sc = ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2']
+# pulled from: https://cdn.rcsb.org/wwpdb/docs/documentation/file-format/PDB_format_1992.pdf page 27
+side_chain_atoms = {
+"ALA": ['CB'],
+"CYS": ['CB','SG'],
+"ASP": ['CB','CG','OD1','OD2'],
+"GLU": ['CB','CG','CD','OE1','OE2'],
+"PHE": ['CB','CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2'],
+"GLY": [],
+"HIS": ['CB','CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2'],
+"ILE": ['CB','CG1','CD1','CG2'],
+"LYS": ['CB','CG','CD','CE','NZ'],
+"LEU": ['CB','CG','CD1','CD2'],
+"MET": ['CB','CG','SD','CE'],
+"ASN": ['CB','CG','OD1','AD1','AD2','ND2'],
+"PRO": ['N','CA','CD','CG','CB'],
+"GLN": ['CB','CG','CD','OE1','AE1','NE2','AE2'],
+"ARG": ['CB','CG','CD','NE','CZ','NH1','NH2'],
+"SER": ['CB','OG'],
+"THR": ['CB','OG1','CG2'],
+"VAL": ['CB','CG1','CG2'],
+"TRP": ['CB','CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
+"TYR": ['CB','CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
+}
+
 
 SB_means = {
     'CC': 1.54,

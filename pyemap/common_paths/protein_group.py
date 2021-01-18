@@ -59,6 +59,21 @@ class Subgraph():
         return label_texts,labeled_atoms,color_list,selection_strs
    
 class protein_group():
+    
+    # chains and eta_moieties should be dictionaries
+    def process_emaps(self,chains=None,eta_moieties=None,**kwargs):
+        if not chains:
+            chains = {}
+            for pdb_id in self.emaps:
+                chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
+        for pdb_id in self.emaps:
+            cur_emap = self.emaps[pdb_id]
+            cur_chains = chains[pdb_id]
+            if eta_moieties:
+                cur_eta_moieties = eta_moieties[pdb_id]
+            else:
+                cur_eta_moieties = []
+            process(cur_emap,chains=cur_chains,eta_moieties=cur_eta_moieties,**kwargs)
 
     def _set_edge_labels(self,edge_thresholds):
         if edge_thresholds == None:
