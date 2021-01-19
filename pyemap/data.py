@@ -77,6 +77,17 @@ side_chain_atoms = {
 }
 
 
+TRP_sc = ['CB','CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
+TYR_sc = ['CB','CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
+PHE_sc = ['CB','CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
+HIS_sc = ['CB','CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2']
+
+for key in side_chain_atoms:
+    l1 = side_chain_atoms[key]
+    if l1:
+        l1.remove('CB')
+    side_chain_atoms[key] = l1
+
 SB_means = {
     'CC': 1.54,
     'CN': 1.49,
