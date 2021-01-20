@@ -29,11 +29,14 @@ for graph_id in pg.subgraphs:
     report.write("subgraph " + pg.subgraphs[graph_id].id)
     report.write("\n")
     my_sg = pg.subgraphs[graph_id]
-
-
-
- #   print("generic example")
-  #  print(my_sg.generate_generic_report())
-   # print("specific example")
     report.write(my_sg.specific_subgraph_example())
+
+
+report= open("summary_report.txt", "w")
+for graph_id in pg.subgraphs:
+    report.write("\n")
+    report.write("subgraph " + pg.subgraphs[graph_id].id)
+    report.write("\n")
+    my_sg = pg.subgraphs[graph_id]
+    report.write(my_sg.generate_generic_report())
 

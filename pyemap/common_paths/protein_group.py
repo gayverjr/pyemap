@@ -41,17 +41,35 @@ class Subgraph():
  
     def generate_generic_report(self):
         full_str = ""
-        full_str+= "ID:" + str(self.id) + "\n"
-        full_str+= "Support:" + str(self.support) + "\n"
-        full_str+= "Nodes:\n"
+        a_str=""
+       # print(len(self.occurences))
+        
+        a_str+="Generic Adjacency List: \n"
         for node in self.G.nodes:
-            full_str+= self.G.nodes[node]['label']+","
-            full_str+= "\nEdges:\n"
-        for edge in self.G.edges:
-            node1_label = self.G.nodes[edge[0]]['label']
-            node2_label = self.G.nodes[edge[1]]['label']
-            full_str+="Node1:"+str(node1_label)+", Node2:"+str(node2_label)+": Edge label:" + str(self.G.edges[edge]['num_label']) +"\n"
-        return full_str 
+                main_node=(self.G.nodes[node]['label'])
+                neighborhood=(list(self.G.neighbors(node)))
+                a_str+=main_node + str(node)+ "["
+                for l in range(0,len(neighborhood)):
+                    if l>0:
+                        a_str+= ","  + str(neighborhood[l]) 
+                    if l==0:
+                        a_str+= str(neighborhood[l]) 
+                a_str+="]"  + "\n"  
+        a_str+="\n"
+        a_str+= "Support=" + str(len(self.occurences))
+        a_str+="\n"
+
+        for i in range(len(self.occurences)):
+            full_str+="\n"  
+            
+           # print(i)
+            full_str+= str(self.occurences[i]) +"\n" #first pdb id
+            a_str+= "PDB ID: " + str(self.occurences[i]) + "\n" 
+            
+    # grab all specific graphs for first pdb
+            
+        return  a_str
+
 
 
     def specific_subgraph_example(self):
@@ -62,20 +80,13 @@ class Subgraph():
         a_str+="\n"
         for i in range(len(self.occurences)):
             full_str+="\n"  
-            
-           # print(i)
+
             full_str+= str(self.occurences[i]) +"\n" #first pdb id
             a_str+="\n"
             a_str+= "PDB ID: " + str(self.occurences[i]) + "\n" 
             
     # grab all specific graphs for first pdb
             specific_graphs_for_first_pdb = self.specific_graphs[i]
-
-    # Important: this G is different than the self.G in the above example,
-    #  which is the generic version
-    #  this guy is the networkx graph for the specific instance of the subgraph found in a pdb
-    #  which contains all the info about the nodes in the specific pdb
-            #print(len(specific_graphs_for_first_pdb))
             for j in range (len(specific_graphs_for_first_pdb)):
                 full_str+="\n"
                 a_str+="\n"
@@ -92,11 +103,8 @@ class Subgraph():
                     neighborhood=(list(G.neighbors(node)))
                     a_str+=main_node +"[ "
                     for l in range(0,len(neighborhood)):
-                        if l==len(neighborhood) -1:
-                            a_str+= neighborhood[l] + ":" + str(round((G.edges[(node, neighborhood[l])]['distance']),4))
-                        else:
-                            a_str+= neighborhood[l] + ":" + str(round((G.edges[(node, neighborhood[l])]['distance']),4)) +","
-                        a_str+="]"  + "\n"  
+                        a_str+= neighborhood[l] + ":" + str(round((G.edges[(node, neighborhood[l])]['distance']),4))+","
+                    a_str+="]"  + "\n"  
 
 
 
