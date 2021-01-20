@@ -17,6 +17,7 @@ from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
 import warnings
 from .data import res_name_to_char, side_chain_atoms
+import time
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
 

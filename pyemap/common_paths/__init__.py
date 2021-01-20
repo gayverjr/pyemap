@@ -1,1 +1,1 @@
-from .protein_group import protein_group
+from .protein_group import PDBGroup

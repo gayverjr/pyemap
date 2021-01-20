@@ -25,6 +25,8 @@ res_name_to_char = {
     "NME": "<",
 }
 
+char_to_res_name = {v: k for k, v in res_name_to_char.items()}
+
 radii = {
     'H': 1.20,
     'N': 1.55,
