@@ -194,8 +194,8 @@ class PDBGroup():
             self.num_label_to_res = {2: "W", 3: "Y", 4: "H", 5: "F", 6: "NP"}
         else:
             self.res_to_num_label = node_labels
-            self.num_label_to_res = {2: "W", 3: "Y", 4: "H", 5: "F"}
-            num_label = 5
+            self.num_label_to_res = {v: k for k, v in self.res_to_num_label.items()}
+            num_label = len(self.res_to_num_label)+1
             for category in categories:
                 num_label += 1
                 self.num_label_to_res[num_label] = category

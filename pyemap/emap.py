@@ -203,7 +203,7 @@ class emap():
     def _add_residue(self, residue):
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
         '''
-        if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
+        if not residue.resname[:3] in clusters and "CUST" not in residue.resname and residue.resname[:3] in ["PHE","HIS","TYR","TRP"]:
             res_graph = self._get_residue_graph(residue)
             smarts_str = getSimpleSmarts(res_graph)
             residue.Smarts = smarts_str
