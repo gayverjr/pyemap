@@ -7,6 +7,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from networkx.algorithms import isomorphism
 import time
+import datetime
 from ..data import char_to_res_name
 
 
@@ -33,62 +34,42 @@ class FrequentSubgraph():
         self.support_number = len(support)
         self.id = str(graph_number) + "_" + str(self.node_rep) + "_" + str(self.support_number)
 
-    def generate_generic_report(self):
+    def general_report(self):
         full_str = ""
-        a_str=""
-        a_str+="Generic Adjacency List: \n"
-        for node in self.G.nodes:
-            main_node=(self.G.nodes[node]['label'])
-            neighborhood=(list(self.G.neighbors(node)))
-            a_str+=main_node + str(node)+ "["
-            for l in range(0,len(neighborhood)):
-                if l>0:
-                    a_str+= ","  + str(neighborhood[l])
-                    if l==0:
-                        a_str+= str(neighborhood[l])
-                a_str+="]"  + "\n"
-        a_str+="\n"
-        a_str+= "Support=" + str(len(self.occurences))
-        a_str+="\n"
-        for i in range(len(self.occurences)):
-            full_str+="\n"
-            # print(i)
-            full_str+= str(self.occurences[i]) +"\n" #first pdb id
-            a_str+= "PDB ID: " + str(self.occurences[i]) + "\n"
-        # grab all specific graphs for first pdb
-        return  a_str
+        full_str+= "ID:" + str(self.id) + "\n"
+        full_str+= "Support:" + str(self.support_number) + "\n"
+        full_str+= "Where:" + str(self.support) + "\n"
+        full_str+= "Adjacency list:\n"
+        G = self.generic_subgraph
+        for node in G.nodes:
+            full_str+= G.nodes[node]['label'] + str(node) + ":["
+            for neighbor in G.neighbors(node):
+                full_str+= G.nodes[neighbor]['label'] + str(neighbor) + "(" + str(G.edges[(node,neighbor)]['num_label']) + "), "
+            full_str=full_str[:-2]
+            full_str+="]\n"
+        return full_str
 
-    def specific_subgraph_example(self):
+    def full_report(self):
         full_str = ""
-        a_str=""
-        # print(len(self.occurences))
-        a_str+= "Support=" + str(len(self.occurences))
-        a_str+="\n"
-        for i in range(len(self.occurences)):
-            full_str+="\n"
-            full_str+= str(self.occurences[i]) +"\n" #first pdb id
-            a_str+="\n"
-            a_str+= "PDB ID: " + str(self.occurences[i]) + "\n"
-            # grab all specific graphs for first pdb
-            specific_graphs_for_first_pdb = self.specific_graphs[i]
-            for j in range (len(specific_graphs_for_first_pdb)):
-                full_str+="\n"
-                a_str+="\n"
-                a_str+= "Adjacency List: "
-                a_str+= "PDB Specific Subgraph " + str(j) +"\n"
-                G = specific_graphs_for_first_pdb[j] #first specific graph
-                for edge in G.edges:
-                    node1_label = G.nodes[edge[0]]['label']
-                    node2_label = G.nodes[edge[1]]['label']
-                for node in G.nodes:
-                    main_node=(G.nodes[node]['label'])
-                    neighborhood=(list(G.neighbors(node)))
-                    a_str+=main_node +"[ "
-                    for l in range(0,len(neighborhood)):
-                        a_str+= neighborhood[l] + ":" + str(round((G.edges[(node, neighborhood[l])]['distance']),4))+","
-                    a_str+="]"  + "\n"
-                    full_str+="Node1:"+str(node1_label)+", Node2:"+str(node2_label)+": Distance:" + str(G.edges[edge]['distance']) + "\n"
-            return  a_str
+        for pdb_id in self.support:
+            full_str+=self.report_for_pdb(pdb_id)+"\n\n"
+        return full_str
+
+    def report_for_pdb(self,pdb_id):
+        full_str = ""
+        sgs = self.specific_subgraphs[pdb_id]
+        full_str+= "PDB:" + pdb_id + "\n"
+        full_str+= "Occurences:" + str(len(sgs)) + "\n"
+        for i,G in enumerate(sgs):
+            full_str+="Subgraph " + str(i+1) + " adjacency list:\n"
+            for node in G.nodes:
+                full_str+= G.nodes[node]['label'] + ":["
+                for neighbor in G.neighbors(node):
+                    dist = '{0:.2f}'.format(G.edges[(node,neighbor)]['distance'])
+                    full_str+= G.nodes[neighbor]['label'] + "(" + str(dist) + "), "
+                full_str=full_str[:-2]
+                full_str+="]\n"
+        return full_str
 
     def gen_node_rep(self):
         node_rep = ""
@@ -128,7 +109,16 @@ class PDBGroup():
         self.res_to_num_label = {}
         self.num_label_to_res = {}
         self.edge_thresholds = []
+        self.parameters = {}
+        self.included_eta_moieties = {}
+        self.included_chains = {}
 
+    def _clean_subgraphs(self):
+        self.frequent_subgraphs = {}
+        self.res_to_num_label = {}
+        self.num_label_to_res = {}
+        self.edge_thresholds = []
+    
     # chains and eta_moieties should be dictionaries
     def process_emaps(self, chains=None, eta_moieties=None, **kwargs):
         if not chains:
@@ -141,6 +131,57 @@ class PDBGroup():
             else:
                 cur_eta_moieties = []
             process(self.emaps[pdb_id], chains=chains[pdb_id], eta_moieties=cur_eta_moieties, **kwargs)
+        self.parameters = kwargs
+        self.included_chains = chains
+        self.included_eta_moieties = eta_moieties
+
+    def report_header(self):
+        full_str=""
+        full_str+= "Generated:\n" + str(datetime.datetime.now()) + "\n"
+        full_str+="Parameters:\n"
+        if not self.parameters:
+            full_str+="Custom.\n"
+        else:
+            full_str+=str(self.parameters)
+            full_str+="\n"
+        full_str+="Chains:\n"
+        if not self.included_chains:
+            full_str+="Custom.\n"
+        else:
+            full_str+=str(self.included_chains)
+            full_str+="\n"
+        full_str+="Included non protein moieties:\n"
+        if not self.included_eta_moieties:
+            full_str+="Custom.\n"
+        else:
+            full_str+=str(self.included_eta_moieties)
+            full_str+="\n"
+        full_str+="Edge thresholds:\n"+str(self.edge_thresholds)+"\n"
+        full_str+="Node categories:\n"+str(self.res_to_num_label) + "\n"
+        return full_str
+    
+    def general_report(self,dest=None):
+        full_str="Overview of all subgraphs:\n"
+        full_str+=self.report_header()
+        full_str+="\nSubgraphs found:\n\n"
+        for fsg in self.frequent_subgraphs:
+            full_str+=self.frequent_subgraphs[fsg].general_report()+"\n"
+        if dest:
+            fi = open(dest, "w")
+            fi.write(full_str)
+            fi.close()
+        return full_str
+
+    def subgraph_report(self,sg_id,dest=None):
+        sg = self.frequent_subgraphs[sg_id]
+        full_str="Full report for subgraph:" + str(sg_id) + "\n"
+        full_str+=self.report_header() + "\n"
+        full_str+= sg.full_report()
+        if dest:
+            fi = open(dest, "w")
+            fi.write(full_str)
+            fi.close()
+        return full_str
 
     def _set_edge_labels(self, edge_thresholds):
         if edge_thresholds == None:
@@ -189,12 +230,7 @@ class PDBGroup():
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
     def generate_graph_database(self, node_labels=None, categories=None, edge_thresholds=None):
-        # remove all old data
-        self.frequent_subgraphs = {}
-        self.res_to_num_label = {}
-        self.num_label_to_res = {}
-        self.edge_thresholds = []
-        #-------------------------
+        self._clean_subgraphs()
         self._set_node_labels(node_labels, categories)
         self._set_edge_labels(edge_thresholds)
         f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
