@@ -33,6 +33,63 @@ class FrequentSubgraph():
         self.support_number = len(support)
         self.id = str(graph_number) + "_" + str(self.node_rep) + "_" + str(self.support_number)
 
+    def generate_generic_report(self):
+        full_str = ""
+        a_str=""
+        a_str+="Generic Adjacency List: \n"
+        for node in self.G.nodes:
+            main_node=(self.G.nodes[node]['label'])
+            neighborhood=(list(self.G.neighbors(node)))
+            a_str+=main_node + str(node)+ "["
+            for l in range(0,len(neighborhood)):
+                if l>0:
+                    a_str+= ","  + str(neighborhood[l])
+                    if l==0:
+                        a_str+= str(neighborhood[l])
+                a_str+="]"  + "\n"
+        a_str+="\n"
+        a_str+= "Support=" + str(len(self.occurences))
+        a_str+="\n"
+        for i in range(len(self.occurences)):
+            full_str+="\n"
+            # print(i)
+            full_str+= str(self.occurences[i]) +"\n" #first pdb id
+            a_str+= "PDB ID: " + str(self.occurences[i]) + "\n"
+        # grab all specific graphs for first pdb
+        return  a_str
+
+    def specific_subgraph_example(self):
+        full_str = ""
+        a_str=""
+        # print(len(self.occurences))
+        a_str+= "Support=" + str(len(self.occurences))
+        a_str+="\n"
+        for i in range(len(self.occurences)):
+            full_str+="\n"
+            full_str+= str(self.occurences[i]) +"\n" #first pdb id
+            a_str+="\n"
+            a_str+= "PDB ID: " + str(self.occurences[i]) + "\n"
+            # grab all specific graphs for first pdb
+            specific_graphs_for_first_pdb = self.specific_graphs[i]
+            for j in range (len(specific_graphs_for_first_pdb)):
+                full_str+="\n"
+                a_str+="\n"
+                a_str+= "Adjacency List: "
+                a_str+= "PDB Specific Subgraph " + str(j) +"\n"
+                G = specific_graphs_for_first_pdb[j] #first specific graph
+                for edge in G.edges:
+                    node1_label = G.nodes[edge[0]]['label']
+                    node2_label = G.nodes[edge[1]]['label']
+                for node in G.nodes:
+                    main_node=(G.nodes[node]['label'])
+                    neighborhood=(list(G.neighbors(node)))
+                    a_str+=main_node +"[ "
+                    for l in range(0,len(neighborhood)):
+                        a_str+= neighborhood[l] + ":" + str(round((G.edges[(node, neighborhood[l])]['distance']),4))+","
+                    a_str+="]"  + "\n"
+                    full_str+="Node1:"+str(node1_label)+", Node2:"+str(node2_label)+": Distance:" + str(G.edges[edge]['distance']) + "\n"
+            return  a_str
+
     def gen_node_rep(self):
         node_rep = ""
         for node, node_data in self.generic_subgraph.nodes(data=True):
