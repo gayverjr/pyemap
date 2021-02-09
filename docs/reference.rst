@@ -8,5 +8,6 @@ Developer Reference
    analysis/analysis
    data_structures/data_structures
    algorithms/algorithms
+   common_paths/common_paths
 
 
