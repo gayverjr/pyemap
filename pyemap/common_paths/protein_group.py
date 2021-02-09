@@ -4,7 +4,6 @@ import os
 from ..process_data import process
 from collections import OrderedDict
 import networkx as nx
-import matplotlib.pyplot as plt
 from networkx.algorithms import isomorphism
 import time
 import datetime
