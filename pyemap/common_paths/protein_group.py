@@ -7,7 +7,8 @@ import networkx as nx
 from networkx.algorithms import isomorphism
 import time
 import datetime
-from ..data import char_to_res_name
+from ..data import char_to_res_name,res_name_to_char
+import re
 
 
 def strip_res_number(u):
@@ -15,6 +16,19 @@ def strip_res_number(u):
         if u[i].isdigit():
             return u[:i]
 
+def strip_res_num_and_chain(u):
+    for i in range(0, len(u)):
+        if u[i]=="_":
+            u = u[:i]
+            break
+    start_idx = -1
+    end_idx = -1
+    for i in range(0, len(u)):
+        if start_idx==-1 and u[i].isdigit():
+            start_idx=i
+        if end_idx==-1 and u[i]==")":
+            end_idx = i
+    return u[:start_idx] + u[end_idx+1:]
 
 def node_match(node1, node2):
     return node1['num_label'] == node2['num_label']
@@ -150,7 +164,7 @@ class PDBGroup():
     ----------
     title: str
         Title of PDB group 
-    emaps: dict of str: and :class:`~pyemap.emap`
+    emaps: dict of str: :class:`~pyemap.emap`
         Dict of PDBs being analyzed by PyeMap. The keys are PDB IDs, meaning that only one :class:`~pyemap.emap` object per PDB ID is allowed.
     temp_dir: str
         Path where temporary files are to be stored   
@@ -178,15 +192,23 @@ class PDBGroup():
         self.parameters = {}
         self.included_eta_moieties = {}
         self.included_chains = {}
+        self.included_standard_residues = []
 
     def _clean_subgraphs(self):
         self.frequent_subgraphs = {}
         self.res_to_num_label = {}
         self.num_label_to_res = {}
         self.edge_thresholds = []
-    
+
+    def _reset_process(self):
+        self.parameters = {}
+        self.included_eta_moieties = {}
+        self.included_chains = {}
+        self.included_standard_residues = []
+        self._clean_subgraphs()
+
     # chains and eta_moieties should be dictionaries
-    def process_emaps(self, chains=None, eta_moieties=None, **kwargs):
+    def process_emaps(self, chains=None, eta_moieties=None, include_residues=["TYR", "TRP"], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 
         
         For a list of accepted kwargs, see the documentation for :func:`~pyemap.process_data.process`.
@@ -207,6 +229,7 @@ class PDBGroup():
         >>> my_pg.process_emaps(chains=chains,eta_moieties=eta_moieties)
 
         '''
+        self._reset_process()
         if not chains:
             chains = {}
             for pdb_id in self.emaps:
@@ -216,10 +239,11 @@ class PDBGroup():
                 cur_eta_moieties = eta_moieties[pdb_id]
             else:
                 cur_eta_moieties = []
-            process(self.emaps[pdb_id], chains=chains[pdb_id], eta_moieties=cur_eta_moieties, **kwargs)
+            process(self.emaps[pdb_id], chains=chains[pdb_id], eta_moieties=cur_eta_moieties, include_residues=include_residues, **kwargs)
         self.parameters = kwargs
         self.included_chains = chains
         self.included_eta_moieties = eta_moieties
+        self.included_standard_residues = include_residues
 
     def report_header(self):
         full_str=""
@@ -243,7 +267,8 @@ class PDBGroup():
             full_str+=str(self.included_eta_moieties)
             full_str+="\n"
         full_str+="Edge thresholds:\n"+str(self.edge_thresholds)+"\n"
-        full_str+="Node categories:\n"+str(self.res_to_num_label) + "\n"
+        full_str+="Node labels:\n"+str(self.res_to_num_label) + "\n"
+        full_str+="Node categories:\n" + str(self.num_label_to_res) + "\n"
         return full_str
     
     def general_report(self,dest=None):
@@ -296,16 +321,24 @@ class PDBGroup():
         self.edge_thresholds = edge_thresholds
 
     def _set_node_labels(self, node_labels, categories):
-        if node_labels == None:
-            self.res_to_num_label = {"W": 2, "Y": 3, "H": 4, "F": 5}
-            self.num_label_to_res = {2: "W", 3: "Y", 4: "H", 5: "F"}
+        self.res_to_num_label={}
+        self.num_label_to_res={}
+        if "X" in node_labels or "X" in categories.values():
+            raise KeyError("X is reserved for unknown residue type. Do not use X as a key.")
+        if not node_labels:
+            num_label = 2
+            for res in self.included_standard_residues:
+                self.res_to_num_label[res_name_to_char[res]] = num_label
+                self.num_label_to_res[num_label] = res_name_to_char[res]
+                num_label+=1
+            self.num_label_to_res[num_label] = "X"
+            self.res_to_num_label["X"] = num_label
         else:
             self.res_to_num_label = node_labels
-            self.num_label_to_res = {v: k for k, v in self.res_to_num_label.items()}
-            for key,val in categories.items():
-                self.num_label_to_res[val] = key
-        self.num_label_to_res[len(self.num_label_to_res)+2] = "NP"
-        self.res_to_num_label["NP"] = len(self.num_label_to_res)+1
+            self.num_label_to_res = categories
+            num_label = len(self.num_label_to_res) + 2
+            self.num_label_to_res[num_label] = "X"
+            self.res_to_num_label["X"] = num_label
 
     def _get_edge_label(self, G, edge):
         dist = G.edges[edge]['distance']
@@ -317,15 +350,15 @@ class PDBGroup():
                 label += 1
         return label
 
-    def _get_numerical_node_label(self, u):
-        if u in self.res_to_num_label:
-            result = self.res_to_num_label[u]
-        elif strip_res_number(u) in char_to_res_name:
+    def _get_numerical_node_label(self, u, pdb_id):
+        if strip_res_number(u) in char_to_res_name:
             res_name = strip_res_number(u)
             result = self.res_to_num_label[res_name]
+        elif (pdb_id+"_"+str(u)) in self.res_to_num_label:
+            res_label = pdb_id+"_"+str(u)
+            result = self.res_to_num_label[res_label]
         else:
-            result = len(self.num_label_to_res) + 1
-        #print(u+":"+str(result))
+            result = self.res_to_num_label["X"]
         return result
 
     def add_emap(self, emap_obj):
@@ -342,31 +375,33 @@ class PDBGroup():
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
+    
     def generate_graph_database(self, node_labels=None, categories=None, edge_thresholds=None):
         ''' Generates graph database for analysis by GSpan using specified node labels, node categories, and edge thresholds.
 
         Parameters
-        -----------
+        ----------
             node_labels: dict of str:int, optional
-                Dict which maps residue labels to their numerical label for usage in the gSpan algorithm
-            categories: dict of str:int, optional
-                Dict which maps residue categories to their numerical label for usage in the gSpan algorithm
+                Dict which maps residue labels to their numerical label for usage in the gSpan algorithm. Labels for non-standard
+                residues should be preceded with the 4 character PDB ID followed by an underscore (e.g. 1u3d_FAD510(A)-2)
+            categories: dict of int:str, optional
+                Dict which maps numerical label to node category (which will appear in generic representation of frequent subgraph)
             edge_thresholds: list of float, optional
                 List of edge thresholds which are used to categorize edges for usage in the gSpan algorithm
         
         Examples
         ---------
         >>> # labels for each type of residue included in analysis, including eta moieties grouped as a category
-        >>> node_labels = {'W': 2, 'Y': 3, 'FAD510(A)-2': 4, 'FAD501(A)-2': 4, 'FAD900(A)-2': 4, 'FAD1498(A)-2': 4}
-        >>> # specify Flavin category, given the numerical label 4
-        >>> categories = {'FLA': 4}
+        >>> node_labels = {'1u3d_FAD510(A)-2': 2, '1u3c_FAD510(A)-2': 2, '6PU0_FAD501(A)-2': 2, 
+                           '4I6G_FAD900(A)-2': 2, '2J4D_FAD1498(A)-2': 2, '1u3d_ANP511(A)': 3, 
+                           'W': 4, 'Y': 5}
+        >>> categories = {2: 'Fla', 3: 'Ade', 4: 'W', 5: 'Y'}
         >>> # edge length thresholds for categorizing edges
         >>> edge_thesholds = [8.0, 12.0]
-        >>> my_pg = pyemap.common_paths.PDBGroup()
-        >>> # add and process pdbs ....
         >>> my_pg.generate_graph_database(node_labels=node_labels,categories=categories,edge_thresholds=edge_thresholds)
 
         '''
+        #TODO: check for if node labels make sense
         self._clean_subgraphs()
         self._set_node_labels(node_labels, categories)
         self._set_edge_labels(edge_thresholds)
@@ -375,7 +410,7 @@ class PDBGroup():
             G = self.emaps[key].init_graph
             f.write("t # " + str(i) + "\n")
             for i, node in enumerate(G.nodes):
-                f.write("v " + str(i) + " " + str(self._get_numerical_node_label(node)) + "\n")
+                f.write("v " + str(i) + " " + str(self._get_numerical_node_label(node,key)) + "\n")
             for i, edge in enumerate(G.edges):
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
                         str(self._get_edge_label(G, edge)) + "\n")
@@ -468,7 +503,7 @@ class PDBGroup():
             return []
         protein_graph = self.emaps[pdb_id].init_graph
         for node in protein_graph.nodes:
-            protein_graph.nodes[node]['num_label'] = self._get_numerical_node_label(node)
+            protein_graph.nodes[node]['num_label'] = self._get_numerical_node_label(node,pdb_id)
         for edge in protein_graph.edges:
             protein_graph.edges[edge]['num_label'] = self._get_edge_label(protein_graph, edge)
         GM = isomorphism.GraphMatcher(protein_graph, generic_subgraph, node_match=node_match, edge_match=edge_match)

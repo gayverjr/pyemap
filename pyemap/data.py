@@ -57,28 +57,28 @@ radii = {
 # pulled from: https://cdn.rcsb.org/wwpdb/docs/documentation/file-format/PDB_format_1992.pdf page 27
 side_chain_atoms = {
 "ALA": ['CB'],
-"CYS": ['CB','SG'],
-"ASP": ['CB','CG','OD1','OD2'],
-"GLU": ['CB','CG','CD','OE1','OE2'],
-"PHE": ['CB','CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2'],
-"GLY": [],
-"HIS": ['CB','CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2'],
-"ILE": ['CB','CG1','CD1','CG2'],
-"LYS": ['CB','CG','CD','CE','NZ'],
-"LEU": ['CB','CG','CD1','CD2'],
-"MET": ['CB','CG','SD','CE'],
-"ASN": ['CB','CG','OD1','AD1','AD2','ND2'],
+"CYS": ['SG'],
+"ASP": ['CG','OD1','OD2'],
+"GLU": ['CG','CD','OE1','OE2'],
+"PHE": ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2'],
+"GLY": ['CA'],
+"HIS": ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2'],
+"ILE": ['CG1','CD1','CG2'],
+"LYS": ['CG','CD','CE','NZ'],
+"LEU": ['CG','CD1','CD2'],
+"MET": ['CG','SD','CE'],
+"ASN": ['CG','OD1','AD1','AD2','ND2'],
 "PRO": ['N','CA','CD','CG','CB'],
-"GLN": ['CB','CG','CD','OE1','AE1','NE2','AE2'],
-"ARG": ['CB','CG','CD','NE','CZ','NH1','NH2'],
-"SER": ['CB','OG'],
-"THR": ['CB','OG1','CG2'],
-"VAL": ['CB','CG1','CG2'],
-"TRP": ['CB','CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
-"TYR": ['CB','CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
+"GLN": ['CG','CD','OE1','AE1','NE2','AE2'],
+"ARG": ['CG','CD','NE','CZ','NH1','NH2'],
+"SER": ['OG'],
+"THR": ['OG1','CG2'],
+"VAL": ['CG1','CG2'],
+"TRP": ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
+"TYR": ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
 }
 
-
+'''
 TRP_sc = ['CB','CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
 TYR_sc = ['CB','CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
 PHE_sc = ['CB','CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
@@ -86,9 +86,11 @@ HIS_sc = ['CB','CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2']
 
 for key in side_chain_atoms:
     l1 = side_chain_atoms[key]
-    if l1:
-        l1.remove('CB')
+    if not key=="ALA":
+        if l1:
+            l1.remove('CB')
     side_chain_atoms[key] = l1
+'''
 
 SB_means = {
     'CC': 1.54,
