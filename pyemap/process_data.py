@@ -609,7 +609,7 @@ def filter_edges(G, G_pathways, distance_cutoff, percent_edges, num_st_dev_edges
             G_pathways.remove_edge(node1, node2)
 
 
-def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges,
+def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, aligned_residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
                  eta_moieties):
     """Constructs the graph from the distance matrix and node labels.
 
@@ -619,6 +619,10 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         Distance matrix of aromatic residues.
     node_label: list of str
         Labels for residues in the graph.
+    residue_numbers:
+        res numbers
+    aligned_residue_numbers:
+        res numbers from sequence alignment
     distance_cutoff,percent_edges,num_st_dev_edges: float
         Parameters that determine which edges are kept.
     eta_moieties: list of str
@@ -654,6 +658,9 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         G.nodes[name_node]['fontcolor'] = "#000000"
         G.nodes[name_node]['color'] = '#708090'
         G.nodes[name_node]['penwidth'] = 2.0
+        G.nodes[name_node]["resnum"] = residue_numbers[name_node]
+        if name_node in aligned_residue_numbers:
+            G.nodes[name_node]['aligned_resnum'] = aligned_residue_numbers[name_node]
         if (name_node[1].isdigit()):
             if name_node not in eta_moieties:
                 if 'Y' == name_node[0]:
@@ -677,8 +684,8 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
 
 
 def process(emap,
-            chains="All",
-            eta_moieties="All",
+            chains=None,
+            eta_moieties=None,
             dist_def=0,
             sdef=1,
             include_residues=["TYR", "TRP"],
@@ -724,9 +731,14 @@ def process(emap,
 
     """
     emap._reset_process()
-    if eta_moieties == "All":
-        eta_moieties = emap.eta_moieties.keys()
-    if chains == "All":
+    if chains == None:
+        chains = [emap.chains[0]]
+    if eta_moieties == None:
+        eta_moieties = []
+        for resname,moiety in emap.eta_moieties.items():
+            if moiety.get_full_id()[2] in chains:
+                eta_moieties.append(resname)
+    if chains == None:
         chains = emap.chains
     for i, res in enumerate(include_residues):
         if res.upper() in res_name_to_char:
@@ -750,21 +762,27 @@ def process(emap,
         emap.user_residues[res.resname] = res
     aromatic_residues += user_residues
     node_labels = {}
+    residue_numbers = {}
+    aligned_residue_numbers = {}
     for i in range(0, len(aromatic_residues)):
         node_labels[i] = aromatic_residues[i].node_label
+        residue_numbers[aromatic_residues[i].node_label] = aromatic_residues[i].full_id[3][1]
+        if hasattr(aromatic_residues[i],'aligned_residue_number'):
+            aligned_residue_numbers[aromatic_residues[i].node_label] = aromatic_residues[i].aligned_residue_number
     if int(dist_def) == 0:
         dmatrix, pathways_matrix = com_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
     else:
         dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
-    G = create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent_edges, num_st_dev_edges,
+    G = create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, aligned_residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
                      emap.eta_moieties.keys())
+    G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise RuntimeError("Not enough edges to construct a graph.")
     # define surface exposed residues
     if sdef and int(sdef) == 0:
         surface_exposed_res = calculate_residue_depth(aromatic_residues, model, rd_thresh)
     elif sdef and int(sdef) == 1:
-        pdb_file = emap.filename
+        pdb_file = emap.file_path
         surface_exposed_res = calculate_asa(model, pdb_file, node_labels.values(), asa_thresh)
     else:
         surface_exposed_res = []

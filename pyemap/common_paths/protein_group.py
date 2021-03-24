@@ -9,6 +9,16 @@ import time
 import datetime
 from ..data import char_to_res_name,res_name_to_char
 import re
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.Align.Applications import MuscleCommandline
+from Bio.SeqRecord import SeqRecord
+from Bio.SeqUtils import seq1
+from Bio.SVDSuperimposer import SVDSuperimposer
+from Bio import AlignIO
+from Bio.PDB.StructureAlignment import StructureAlignment
+from pandas import DataFrame
+from numpy import linalg as LA
 
 
 def strip_res_number(u):
@@ -93,20 +103,48 @@ class FrequentSubgraph():
             full_str+="]\n"
         return full_str
 
-    def full_report(self):
+    def full_report(self,emaps):
         ''' Generates full report for all PDBs supported by this frequent subgraph.
         '''
         full_str = ""
         for pdb_id in self.support:
-            full_str+=self._report_for_pdb(pdb_id)+"\n\n"
+            full_str+=self._report_for_pdb(pdb_id,emaps)+"\n\n"
         return full_str
 
-    def _report_for_pdb(self,pdb_id):
+    def _report_for_graph(self,G):
         full_str = ""
+        full_str+= str(G.graph["pdb_id"]) + "\n"
+        if hasattr(G.graph,'eigval'):
+            full_str+= "Eigenvalue:" + str(G.graph['eigval']) + "\n"
+        full_str+="Nodes\n"
+        for node in G.nodes:
+            full_str+=G.nodes[node]['label']
+            full_str+= " Position in alignment:" + str(G.nodes[node]['aligned_resnum'])
+            full_str+="\n"
+        full_str+="Adjacency list:\n"
+        for node in G.nodes:
+            full_str+= G.nodes[node]['label'] + ":["
+            for neighbor in G.neighbors(node):
+                dist = '{0:.2f}'.format(G.edges[(node,neighbor)]['distance'])
+                full_str+= G.nodes[neighbor]['label'] + "(" + str(dist) + "), "
+            full_str=full_str[:-2]
+            full_str+="]\n"
+        return full_str
+
+    def _report_for_pdb(self,pdb_id,emaps):
+        full_str = ""
+        emap = emaps[pdb_id]
         sgs = self.specific_subgraphs[pdb_id]
         full_str+= "PDB:" + pdb_id + "\n"
         full_str+= "Occurences:" + str(len(sgs)) + "\n"
         for i,G in enumerate(sgs):
+            full_str+="Nodes\n"
+            for node in G.nodes:
+                full_str+=G.nodes[node]['label']
+                res = emap.residues[node]
+                if 'aligned_resnum' in G.nodes[node]:
+                    full_str+= " Position in alignment:" + str(res.aligned_residue_number)
+                full_str+="\n"
             full_str+="Subgraph " + str(i+1) + " adjacency list:\n"
             for node in G.nodes:
                 full_str+= G.nodes[node]['label'] + ":["
@@ -153,6 +191,61 @@ class FrequentSubgraph():
                 labeled_atoms.append(next(emap.residues[res].get_atoms()).name)
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
+    
+    def clustering(self):
+        all_graphs = []
+        for pdb_id in self.support:
+            all_graphs += self.specific_subgraphs[pdb_id]
+        dims = (len(all_graphs),len(all_graphs))
+        D = np.zeros(dims)
+        A = np.zeros(dims)
+        for i in range(0,len(all_graphs)):
+            for j in range(i+1,len(all_graphs)):
+                G1 = all_graphs[i]
+                G2 = all_graphs[j]
+                distance = 0
+                mismatches = 0
+                for k,node1 in enumerate(G1.nodes):
+                    if strip_res_number(node1) in char_to_res_name:
+                        node2 = list(G2.nodes())[k]
+                        distance+= np.absolute(G1.nodes[node1]['aligned_resnum'] - G2.nodes[node2]['aligned_resnum'])
+                if distance<10:
+                    A[i][j] = 1/(distance+1)
+                    A[j][i] = 1/(distance+1)
+                else:
+                    A[i][j] = 0.01
+                    A[j][i] = 0.01   
+            D[i][i] = np.sum(A[i])
+        L = D - A
+        eigv,eigvc=LA.eig(L)
+        eigv = np.real(eigv)
+        eigvc = np.real(eigvc)
+        idx = eigv.argsort()
+        eigv = eigv[idx]
+        eigvc = eigvc[:,idx] 
+        eigvc2 = eigvc[:,1]
+        eigenvector_sorted = {}
+        for i,val in enumerate(eigvc2):
+            all_graphs[i].graph['eigval'] = val
+            rounded_val = np.round(val,decimals=4)
+            if rounded_val not in eigenvector_sorted:
+                eigenvector_sorted[rounded_val] = [all_graphs[i]]
+            else:
+                graphs = eigenvector_sorted[rounded_val]
+                graphs.append(all_graphs[i])
+                eigenvector_sorted[rounded_val] =  graphs
+        tuples = []
+        for key,val in eigenvector_sorted.items():
+            tuples.append((key,val))
+        tuples.sort(key=lambda x: len(x[1]), reverse=True)
+        eigenvector_sorted = {}
+        for key,val in tuples:
+            eigenvector_sorted[key] = val
+        self.eigenvector_sorted = eigenvector_sorted
+
+                            
+                        
+
 
 
 class PDBGroup():
@@ -193,6 +286,8 @@ class PDBGroup():
         self.included_eta_moieties = {}
         self.included_chains = {}
         self.included_standard_residues = []
+        self.sequences = {}
+        self.aligned_sequences = {}
 
     def _clean_subgraphs(self):
         self.frequent_subgraphs = {}
@@ -205,7 +300,93 @@ class PDBGroup():
         self.included_eta_moieties = {}
         self.included_chains = {}
         self.included_standard_residues = []
+        self.sequences = {}
+        self.aligned_sequences = {}
         self._clean_subgraphs()
+
+    def _align_structures(self):
+        ref_atoms = []
+        ref_pdb = None
+        for pdb_id,emap in self.emaps.items():
+            cur_atoms = list(emap.structure[0].get_atoms())
+            if len(cur_atoms) > len(ref_atoms):
+                ref_atoms = cur_atoms
+                ref_pdb = pdb_id
+        ref_coords = []
+        for atm in ref_atoms:
+            ref_coords.append(atm.coord)
+        ref_coords = np.array(ref_coords)
+        for pdb_id,emap in self.emaps.items():
+            if not pdb_id == ref_pdb:
+                cur_coords = []
+                cur_atoms = list(emap.structure[0].get_atoms())
+                for atm in cur_atoms:
+                    cur_coords.append(atm.coord)
+                cur_coords = np.array(cur_coords)
+                sup = SVDSuperimposer()
+                sup.set(ref_coords, cur_coords)
+                sup.run()
+                rotated_coords = sup.get_transformed()
+                for i,atm in enumerate(emap.structure[0].get_atoms()):
+                    atm.aligned_coord = rotated_coords[i]
+
+        
+    def _align_sequences(self,chains):
+        records = []
+        valid_ids = []
+        for pdb_id,chain_list in chains.items():
+            for chain in chain_list:
+                valid_ids.append(pdb_id+":"+chain)
+        for pdb_id,emap in self.emaps.items():
+            seqIO = SeqIO.parse(emap.file_path, 'pdb-atom')
+            for record in seqIO:
+                if ":" not in record.id: 
+                    record.id = pdb_id + ":" + record.id
+                if record.id in valid_ids:
+                    seqrec = SeqRecord(record.seq)
+                    seqrec.id = record.id
+                    seqrec.description = record.id
+                    self.sequences[record.id] = record.seq
+                    records.append(seqrec)
+        SeqIO.write(records, self.temp_dir+"/data.fasta", "fasta")
+        inp = self.temp_dir+"/data.fasta"
+        out =  self.temp_dir+"/data_aligned.fasta"
+        log = self.temp_dir + "/log.txt"
+        muscle_cline = MuscleCommandline(input=inp,
+                                 out=out,
+                                 log=log)
+        muscle_cline()
+        seqIO = SeqIO.parse(out,"fasta")
+        for record in seqIO:
+            self.aligned_sequences[record.id] = record.seq
+        # now lets save the updated sequence numbers
+        for pdb_id,emap in self.emaps.items():
+            model = emap.structure[0]
+            for chain in model:
+                if pdb_id+":"+chain.id in self.aligned_sequences:
+                    seq_map={}
+                    aligned_seq = self.aligned_sequences[pdb_id+":"+chain.id]
+                    original_seq = self.sequences[pdb_id+":"+chain.id]
+                    original_idx = 0
+                    aligned_idx = 0
+                    num_gaps = 0
+                    for res in aligned_seq:
+                        if not res=="-":
+                            residue_obj = list(chain.get_residues())[original_idx]
+                            seq_map[residue_obj.id[1]] = aligned_idx
+                            original_idx+=1
+                        else:
+                            num_gaps+=1
+                        aligned_idx+=1
+                    for res in chain:
+                        if res.id[1] in seq_map:
+                            res.aligned_residue_number = seq_map[res.id[1]]
+                    for resname,res in emap.eta_moieties.items():
+                        if res.get_full_id()[2] == chain.id:
+                            res.aligned_residue_number = res.id[1] + num_gaps
+
+        
+
 
     # chains and eta_moieties should be dictionaries
     def process_emaps(self, chains=None, eta_moieties=None, include_residues=["TYR", "TRP"], **kwargs):
@@ -230,15 +411,16 @@ class PDBGroup():
 
         '''
         self._reset_process()
-        if not chains:
+        if chains==None:
             chains = {}
             for pdb_id in self.emaps:
                 chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
+        self._align_sequences(chains)
         for pdb_id in self.emaps:
-            if eta_moieties:
+            if not eta_moieties==None:
                 cur_eta_moieties = eta_moieties[pdb_id]
             else:
-                cur_eta_moieties = []
+                cur_eta_moieties = None
             process(self.emaps[pdb_id], chains=chains[pdb_id], eta_moieties=cur_eta_moieties, include_residues=include_residues, **kwargs)
         self.parameters = kwargs
         self.included_chains = chains
@@ -308,7 +490,7 @@ class PDBGroup():
         sg = self.frequent_subgraphs[sg_id]
         full_str="Full report for subgraph:" + str(sg_id) + "\n"
         full_str+=self.report_header() + "\n"
-        full_str+= sg.full_report()
+        full_str+= sg.full_report(self.emaps)
         if dest:
             fi = open(dest, "w")
             fi.write(full_str)
@@ -323,7 +505,7 @@ class PDBGroup():
     def _set_node_labels(self, node_labels, categories):
         self.res_to_num_label={}
         self.num_label_to_res={}
-        if "X" in node_labels or "X" in categories.values():
+        if categories is not None and ("X" in node_labels or "X" in categories.values()):
             raise KeyError("X is reserved for unknown residue type. Do not use X as a key.")
         if not node_labels:
             num_label = 2
@@ -416,7 +598,7 @@ class PDBGroup():
                         str(self._get_edge_label(G, edge)) + "\n")
         f.write("t # -1")
 
-    def run_gspan(self, support=10, lower_bound=4):
+    def run_gspan(self, support, lower_bound=4):
         ''' Runs gSpan algorithm to mine for frequent subgraphs, and then identifies each occurence of each frequent subgraph in each PDB which supports it.
         
         Parameters
@@ -440,6 +622,7 @@ class PDBGroup():
         sys.stdout = old_stdout
         f.close()
         self._generate_frequent_subgraphs()
+
 
     def _generate_frequent_subgraphs(self):
         buff = open(os.path.join(self.temp_dir, 'gspan_results.out'), "r")
@@ -489,13 +672,32 @@ class PDBGroup():
         mapping = dict((v, k) for k, v in mapping.items())
         specific_subgraph = generic_subgraph.copy()
         specific_subgraph = nx.relabel_nodes(specific_subgraph, mapping)
+        nodes = []
         for node in specific_subgraph.nodes():
             specific_subgraph.nodes[node]['shape'] = protein_graph.nodes[node]['shape']
             specific_subgraph.nodes[node]['label'] = str(node)
+            specific_subgraph.nodes[node]['resnum'] = protein_graph.nodes[node]['resnum']
+            specific_subgraph.nodes[node]['aligned_resnum'] = protein_graph.nodes[node]['aligned_resnum']
+            nodes.append((node,specific_subgraph.nodes[node]['resnum']))
         for edge in specific_subgraph.edges():
             for key in protein_graph.edges[edge]:
                 specific_subgraph.edges[edge][key] = protein_graph.edges[edge][key]
-        return specific_subgraph
+        # now the sorted version
+        nodes.sort(key=lambda x: x[1])
+        nodes_only = []
+        for node,resnum in nodes:
+            nodes_only.append(node)
+        sorted_G = nx.Graph()
+        sorted_G.add_nodes_from(nodes_only)
+        sorted_G.add_edges_from(specific_subgraph.edges(data=True))
+        for node in sorted_G.nodes:
+            sorted_G.nodes[node]['shape'] = protein_graph.nodes[node]['shape']
+            sorted_G.nodes[node]['label'] = str(node)
+            sorted_G.nodes[node]['resnum'] = protein_graph.nodes[node]['resnum']
+            sorted_G.graph['pdb_id'] = protein_graph.graph['pdb_id']
+            sorted_G.nodes[node]['aligned_resnum'] = protein_graph.nodes[node]['aligned_resnum']
+        return sorted_G
+        #return specific_subgraph
 
     def _find_subgraph_in_pdb(self, subgraph, pdb_id):
         generic_subgraph = subgraph.generic_subgraph

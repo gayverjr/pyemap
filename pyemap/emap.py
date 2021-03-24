@@ -21,7 +21,7 @@ class emap():
 
     Attributes
     ----------
-    filename: str
+    file_path: str
         Name of the crystal structure file being processed by PyeMap.
     structure: :class:`Bio.PDB.Structure.Structure`
         Macromolecular protein structure. Contains model which contains residues and atoms.
@@ -47,12 +47,12 @@ class emap():
         Graph generated after the shortest paths step.
     '''
 
-    def __init__(self, filename, structure, eta_moieties, chain_list):
+    def __init__(self, file_path, structure, eta_moieties, chain_list):
         '''Initializes emap object.
 
         Parameters
         ----------
-        filename: str
+        file_path: str
             Name of file
         structure: :class:`Bio.PDB.Structure.Structure`
             Macromolecular protein structure
@@ -61,8 +61,8 @@ class emap():
         chain_list: list of str
             Chains identified by the parser
         '''
-        self.filename = filename
-        self.pdb_id = filename[-8:-4]
+        self.file_path = file_path
+        self.pdb_id = file_path[-8:-4].upper()
         self.structure = structure
         self.residues = {}
         self.chains = chain_list
@@ -350,7 +350,7 @@ class emap():
                 agraph.draw(svg_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
                 agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
             else:
-                png_fn = self.filename[:-4] + "_graph.png"
+                png_fn = self.file_path[:-4] + "_graph.png"
                 agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
         else:
             raise RuntimeError("Nothing to draw.")
