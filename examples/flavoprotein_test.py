@@ -18,26 +18,8 @@ for i in range(0,len(pdb_ids)):
     pg.add_emap(emap_obj)
 
 pg.process_emaps(dist_def=1,sdef=None)
-pg.generate_graph_database(edge_thresholds=[8.5,12.0])
+pg.generate_graph_database()
 pg.run_gspan(int(0.5*len(pdb_ids)),lower_bound=4)
 
-print(pg.frequent_subgraphs.keys())
-
-
-my_sg = pg.frequent_subgraphs['7_WWWX_18']
-id = my_sg.id
-my_sg.clustering()
-
-
-my_emap = pg.emaps["1U3D"]
-
-for key in my_sg.eigenvector_sorted:
-    print(str(key)+ " group:")
-    graphs = my_sg.eigenvector_sorted[key]
-    print(str(len(graphs))+ " members")
-    for graph in graphs:
-        print(my_sg._report_for_graph(graph))
-        #img = my_emap._graph_to_Image(graph)
-        #img.show()
-
+print(pg.subgraph_report('0_WWWX_18'))
 

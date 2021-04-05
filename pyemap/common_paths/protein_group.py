@@ -20,6 +20,7 @@ from Bio.PDB.StructureAlignment import StructureAlignment
 from pandas import DataFrame
 from numpy import linalg as LA
 import string
+import matplotlib.pyplot as plt
 
 
 def strip_res_number(u):
@@ -279,6 +280,7 @@ class PDBGroup():
         self.res_to_num_label = {}
         self.num_label_to_res = {}
         self.edge_thresholds = []
+        self.sep_buried_exposed = False
 
     def _reset_process(self):
         self.parameters = {}
@@ -412,6 +414,7 @@ class PDBGroup():
                 cur_eta_moieties = eta_moieties[pdb_id]
             else:
                 cur_eta_moieties = None
+                print("Processing:" + str(pdb_id))
             process(self.emaps[pdb_id], chains=chains[pdb_id], eta_moieties=cur_eta_moieties, include_residues=include_residues, **kwargs)
         self.parameters = kwargs
         self.included_chains = chains
@@ -488,10 +491,16 @@ class PDBGroup():
             fi.close()
         return full_str
 
-    def _set_edge_labels(self, edge_thresholds):
-        if edge_thresholds == None:
-            edge_thresholds = [8.0, 12.0]
-        self.edge_thresholds = edge_thresholds
+    def _set_edge_labels(self):
+        all_edge_weights = []
+        for id,emap in self.emaps.items():
+            G = emap.init_graph
+            for edge in G.edges:
+                all_edge_weights.append(G.edges[edge]['weight'])
+        mean = np.mean(all_edge_weights)
+        std_dev = np.std(all_edge_weights)
+        self.edge_thresholds = [mean+std_dev,mean+3*std_dev]
+        print(self.edge_thresholds)
 
     def _set_node_labels(self, node_labels, categories):
         self.res_to_num_label={}
@@ -512,6 +521,12 @@ class PDBGroup():
             num_label = len(self.num_label_to_res) + 2
             self.num_label_to_res[num_label] = "X"
             self.res_to_num_label["X"] = num_label
+        if self.sep_buried_exposed:
+            num_label_to_res = self.num_label_to_res.copy()
+            num_categories = len(self.num_label_to_res)
+            for num_label,res_label in num_label_to_res.items():
+                self.num_label_to_res[num_label+num_categories] = res_label+"_exp"
+                self.res_to_num_label[res_label+"_exp"] = num_label+num_categories
 
     def _get_edge_label(self, G, edge):
         dist = G.edges[edge]['distance']
@@ -523,15 +538,23 @@ class PDBGroup():
                 label += 1
         return label
 
+    # _exp denotes surface exposed residue
     def _get_numerical_node_label(self, u, pdb_id):
         if strip_res_number(u) in char_to_res_name:
             res_name = strip_res_number(u)
+            if self.sep_buried_exposed and self.emaps[pdb_id].init_graph.nodes[u]['shape'] == 'box':
+                res_name+="_exp"
             result = self.res_to_num_label[res_name]
         elif (pdb_id+"_"+str(u)) in self.res_to_num_label:
             res_label = pdb_id+"_"+str(u)
+            if self.sep_buried_exposed and self.emaps[pdb_id].init_graph.nodes[u]['shape'] == 'box':
+                res_label+="_exp"
             result = self.res_to_num_label[res_label]
         else:
-            result = self.res_to_num_label["X"]
+            if self.sep_buried_exposed and self.emaps[pdb_id].init_graph.nodes[u]['shape'] == 'box':
+                result = self.res_to_num_label["X_exp"]
+            else:
+                result = self.res_to_num_label["X"]
         return result
 
     def add_emap(self, emap_obj):
@@ -549,7 +572,7 @@ class PDBGroup():
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
     
-    def generate_graph_database(self, node_labels=None, categories=None, edge_thresholds=None):
+    def generate_graph_database(self, node_labels=None, categories=None, sep_buried_exposed=False):
         ''' Generates graph database for analysis by GSpan using specified node labels, node categories, and edge thresholds.
 
         Parameters
@@ -559,8 +582,6 @@ class PDBGroup():
                 residues should be preceded with the 4 character PDB ID followed by an underscore (e.g. 1u3d_FAD510(A)-2)
             categories: dict of int:str, optional
                 Dict which maps numerical label to node category (which will appear in generic representation of frequent subgraph)
-            edge_thresholds: list of float, optional
-                List of edge thresholds which are used to categorize edges for usage in the gSpan algorithm
         
         Examples
         ---------
@@ -570,14 +591,13 @@ class PDBGroup():
                            'W': 4, 'Y': 5}
         >>> categories = {2: 'Fla', 3: 'Ade', 4: 'W', 5: 'Y'}
         >>> # edge length thresholds for categorizing edges
-        >>> edge_thesholds = [8.0, 12.0]
-        >>> my_pg.generate_graph_database(node_labels=node_labels,categories=categories,edge_thresholds=edge_thresholds)
+        >>> my_pg.generate_graph_database(node_labels=node_labels,categories=categories)
 
         '''
-        #TODO: check for if node labels make sense
         self._clean_subgraphs()
+        self.sep_buried_exposed = sep_buried_exposed
         self._set_node_labels(node_labels, categories)
-        self._set_edge_labels(edge_thresholds)
+        self._set_edge_labels()
         f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
         for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph
@@ -588,6 +608,7 @@ class PDBGroup():
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
                         str(self._get_edge_label(G, edge)) + "\n")
         f.write("t # -1")
+        f.close()
 
     def run_gspan(self, support, lower_bound=4):
         ''' Runs gSpan algorithm to mine for frequent subgraphs, and then identifies each occurence of each frequent subgraph in each PDB which supports it.
@@ -657,7 +678,7 @@ class PDBGroup():
         for sg in subgraphs:
             specific_subgraphs = []
             for pdb_id in sg.support:
-                specific_subgraphs+=self._find_subgraph_in_pdb(sg, pdb_id)
+                specific_subgraphs+=self._find_subgraph_in_pdb(sg.generic_subgraph, pdb_id)
             sg.clustering(specific_subgraphs)
             self.frequent_subgraphs[sg.id] = sg
 
@@ -691,12 +712,8 @@ class PDBGroup():
             sorted_G.graph['pdb_id'] = protein_graph.graph['pdb_id']
             sorted_G.nodes[node]['aligned_resnum'] = protein_graph.nodes[node]['aligned_resnum']
         return sorted_G
-        #return specific_subgraph
 
-    def _find_subgraph_in_pdb(self, subgraph, pdb_id):
-        generic_subgraph = subgraph.generic_subgraph
-        if pdb_id not in subgraph.support:
-            return []
+    def _find_subgraph_in_pdb(self, generic_subgraph, pdb_id):
         protein_graph = self.emaps[pdb_id].init_graph
         for node in protein_graph.nodes:
             protein_graph.nodes[node]['num_label'] = self._get_numerical_node_label(node,pdb_id)
@@ -709,3 +726,28 @@ class PDBGroup():
             sg = self._generate_specific_subgraph(mapping, protein_graph, generic_subgraph)
             sgs.append(sg)
         return sgs
+
+    def find_subgraph(self,graph_specification):
+        G = nx.Graph()
+        prev = None
+        for node_idx,node in enumerate(list(graph_specification)):
+            G.add_node(node_idx)
+            G.nodes[node_idx]['label'] = node 
+            G.nodes[node_idx]['num_label'] = self.res_to_num_label[node]
+            if node_idx>0:
+                G.add_edge(node_idx-1,node_idx,label=2,num_label=2)
+        specific_subgraphs = []
+        support = []
+        for pdb_id in self.emaps:
+            specific_subgraphs_for_pdb=self._find_subgraph_in_pdb(G, pdb_id)
+            if len(specific_subgraphs_for_pdb)>0:
+                specific_subgraphs+=specific_subgraphs_for_pdb
+                support.append(pdb_id)
+        fs = FrequentSubgraph(G, 1, support)
+        fs.clustering(specific_subgraphs)
+        self.frequent_subgraphs[fs.id] = fs
+
+
+
+
+
