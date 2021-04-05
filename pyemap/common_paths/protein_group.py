@@ -14,9 +14,9 @@ from Bio.Seq import Seq
 from Bio.Align.Applications import MuscleCommandline
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqUtils import seq1
-from Bio.SVDSuperimposer import SVDSuperimposer
+#from Bio.SVDSuperimposer import SVDSuperimposer
+from Bio.PDB import Superimposer
 from Bio import AlignIO
-from Bio.PDB.StructureAlignment import StructureAlignment
 from pandas import DataFrame
 from numpy import linalg as LA
 import string
@@ -290,33 +290,6 @@ class PDBGroup():
         self.sequences = {}
         self.aligned_sequences = {}
         self._clean_subgraphs()
-
-    def _align_structures(self):
-        ref_atoms = []
-        ref_pdb = None
-        for pdb_id,emap in self.emaps.items():
-            cur_atoms = list(emap.structure[0].get_atoms())
-            if len(cur_atoms) > len(ref_atoms):
-                ref_atoms = cur_atoms
-                ref_pdb = pdb_id
-        ref_coords = []
-        for atm in ref_atoms:
-            ref_coords.append(atm.coord)
-        ref_coords = np.array(ref_coords)
-        for pdb_id,emap in self.emaps.items():
-            if not pdb_id == ref_pdb:
-                cur_coords = []
-                cur_atoms = list(emap.structure[0].get_atoms())
-                for atm in cur_atoms:
-                    cur_coords.append(atm.coord)
-                cur_coords = np.array(cur_coords)
-                sup = SVDSuperimposer()
-                sup.set(ref_coords, cur_coords)
-                sup.run()
-                rotated_coords = sup.get_transformed()
-                for i,atm in enumerate(emap.structure[0].get_atoms()):
-                    atm.aligned_coord = rotated_coords[i]
-
         
     def _align_sequences(self,chains):
         records = []
@@ -746,6 +719,31 @@ class PDBGroup():
         fs = FrequentSubgraph(G, 1, support)
         fs.clustering(specific_subgraphs)
         self.frequent_subgraphs[fs.id] = fs
+
+    def subgraphs_rmsd(self,subgraph_id,sg1,sg2):
+        my_sg = self.frequent_subgraphs[subgraph_id]
+        sg1 = my_sg.specific_subgraphs[sg1]
+        sg2 = my_sg.specific_subgraphs[sg2]
+        emap1 = self.emaps[sg1.graph['pdb_id']]
+        emap2 = self.emaps[sg2.graph['pdb_id']]
+        atoms1 = []
+        atoms2 = []
+        for node in sg1.nodes:
+            res = emap1.residues[node]
+            for atm in res.get_atoms():
+                if 'CA' in atm.id:
+                    atoms1.append(atm)
+        for node in sg2.nodes:
+            res = emap2.residues[node]
+            for atm in res.get_atoms():
+                if 'CA' in atm.id:
+                    atoms2.append(atm)
+        si = Superimposer()
+        si.set_atoms(atoms1, atoms2)
+        return si.rms
+        #print(f"RMSD between structures: {si.rms:4.2f}")
+
+
 
 
 
