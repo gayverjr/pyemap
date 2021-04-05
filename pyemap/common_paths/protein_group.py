@@ -251,7 +251,7 @@ class PDBGroup():
         Dict of frequent subgraphs found by GSpan. Keys are the unique IDs of the :class:`~pyemap.common_paths.FrequentSubgraph` objects.
 
     '''
-    def __init__(self, title, temp_dir=""):
+    def __init__(self, title, temp_dir="."):
         ''' Initializes PDBGroup object
         
         Parameters

@@ -4,7 +4,7 @@ from pyemap.common_paths.protein_group import FrequentSubgraph
 import time
 
 
-f = open("cryptochromes.txt")
+f = open("flavoproteins.txt")
 lines = f.readlines()
 f.close()
 pdb_ids = []
@@ -12,7 +12,7 @@ for line in lines:
     l = line.strip()
     pdb_ids += l.split(',')
 
-pg = PDBGroup("cryptochromes",temp_dir="/Users/JG/Documents/Software/pyemap/test_dir/tmp_dir")
+pg = PDBGroup("flavoproteins")
 for i in range(0,len(pdb_ids)):
     emap_obj = pyemap.fetch_and_parse(pdb_ids[i])
     pg.add_emap(emap_obj)
