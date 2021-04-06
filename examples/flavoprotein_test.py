@@ -21,5 +21,5 @@ pg.process_emaps(dist_def=1,sdef=None)
 pg.generate_graph_database()
 pg.run_gspan(int(0.5*len(pdb_ids)),lower_bound=4)
 
-print(pg.subgraph_report('0_WWWX_18'))
+print(pg.subgraph_report('7_WWWX_18'))
 

@@ -44,8 +44,13 @@ def nodes_and_edges_from_string(graph_str,edge_thresholds):
     for i in range(0,len(edge_thresholds)):
         l1.append(i+2)
     from itertools import product
-    edge_combs = product(l1, repeat=len(node_list)-1)
-    return node_list,edge_combs
+    edge_combs = list(product(l1, repeat=len(node_list)-1))
+    unique_edge_combs = []
+    for edge_comb in edge_combs:
+        ec = list(edge_comb)
+        if ec not in unique_edge_combs and ec[::-1] not in unique_edge_combs:
+            unique_edge_combs.append(ec)
+    return node_list,unique_edge_combs
 
 
 def strip_res_number(u):
@@ -221,8 +226,8 @@ class FrequentSubgraph():
                         A[i][j] = 1/(distance+1)
                         A[j][i] = 1/(distance+1)
                     else:
-                        A[i][j] = 0.01
-                        A[j][i] = 0.01   
+                        A[i][j] = 0.001
+                        A[j][i] = 0.001   
                 D[i][i] = np.sum(A[i])
             # laplacian
             L = D - A
@@ -699,10 +704,13 @@ class PDBGroup():
             specific_subgraph.nodes[node]['label'] = str(node)
             specific_subgraph.nodes[node]['resnum'] = protein_graph.nodes[node]['resnum']
             specific_subgraph.nodes[node]['aligned_resnum'] = protein_graph.nodes[node]['aligned_resnum']
+            specific_subgraph.graph['pdb_id'] = protein_graph.graph['pdb_id']
             nodes.append((node,specific_subgraph.nodes[node]['resnum']))
         for edge in specific_subgraph.edges():
             for key in protein_graph.edges[edge]:
                 specific_subgraph.edges[edge][key] = protein_graph.edges[edge][key]
+        return specific_subgraph
+        '''
         # now the sorted version
         nodes.sort(key=lambda x: x[1])
         nodes_only = []
@@ -718,6 +726,7 @@ class PDBGroup():
             sorted_G.graph['pdb_id'] = protein_graph.graph['pdb_id']
             sorted_G.nodes[node]['aligned_resnum'] = protein_graph.nodes[node]['aligned_resnum']
         return sorted_G
+        '''
 
     def _find_subgraph_in_pdb(self, generic_subgraph, pdb_id):
         protein_graph = self.emaps[pdb_id].init_graph

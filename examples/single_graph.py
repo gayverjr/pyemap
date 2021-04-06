@@ -17,13 +17,13 @@ for i in range(0,len(pdb_ids)):
     emap_obj = pyemap.fetch_and_parse(pdb_ids[i])
     pg.add_emap(emap_obj)
 
-pg.process_emaps(dist_def=1,sdef=None)
+pg.process_emaps(sdef=None)
 pg.generate_graph_database()
 pg.find_subgraph('WWWX')
 
-print(pg.subgraph_report('1_WWWX_18'))
+print(pg.subgraph_report('0_WWWX_13'))
 
-fs = pg.frequent_subgraphs['1_WWWX_18']
+fs = pg.frequent_subgraphs['0_WWWX_13']
 for key,val in fs.specific_subgraphs.items():
     for key2,val2 in fs.specific_subgraphs.items():
         if not key==key2:
