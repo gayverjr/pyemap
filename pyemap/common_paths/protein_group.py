@@ -23,6 +23,31 @@ import string
 import matplotlib.pyplot as plt
 
 
+def nodes_and_edges_from_string(graph_str,edge_thresholds):
+    graph_str = graph_str.replace(" ","")
+    graph_str = list(graph_str)
+    node_list = []
+    idx = 0
+    while idx<len(graph_str):
+        if graph_str[idx] == "(":
+            node_label=""
+            idx+=1
+            while not graph_str[idx]==")":
+                node_label+=str(graph_str[idx])
+                idx+=1
+            node_list.append(node_label)
+            idx+=1
+        else:
+            node_list.append(str(graph_str[idx]))
+            idx+=1
+    l1 = []
+    for i in range(0,len(edge_thresholds)):
+        l1.append(i+2)
+    from itertools import product
+    edge_combs = product(l1, repeat=len(node_list)-1)
+    return node_list,edge_combs
+
+
 def strip_res_number(u):
     for i in range(0, len(u)):
         if u[i].isdigit():
@@ -175,63 +200,72 @@ class FrequentSubgraph():
     def clustering(self,all_graphs):
         self.eigenvector_sorted = {}
         dims = (len(all_graphs),len(all_graphs))
-        D = np.zeros(dims)
-        A = np.zeros(dims)
-        # adjacency matrix is distance between residues numbers in alignment
-        # degree matrix is sum of all outgoing edges
-        # J. Mol. Biol. (1999) 292, 441-464
-        for i in range(0,len(all_graphs)):
-            for j in range(i+1,len(all_graphs)):
-                G1 = all_graphs[i]
-                G2 = all_graphs[j]
-                distance = 0
-                mismatches = 0
-                for k,node1 in enumerate(G1.nodes):
-                    # only count for standard amino acid residues
-                    if strip_res_number(node1) in char_to_res_name:
-                        node2 = list(G2.nodes())[k]
-                        distance+= np.absolute(G1.nodes[node1]['aligned_resnum'] - G2.nodes[node2]['aligned_resnum'])
-                if distance<10:
-                    A[i][j] = 1/(distance+1)
-                    A[j][i] = 1/(distance+1)
+        if len(all_graphs)>1:
+            D = np.zeros(dims)
+            A = np.zeros(dims)
+            # adjacency matrix is distance between residues numbers in alignment
+            # degree matrix is sum of all outgoing edges
+            # J. Mol. Biol. (1999) 292, 441-464
+            for i in range(0,len(all_graphs)):
+                for j in range(i+1,len(all_graphs)):
+                    G1 = all_graphs[i]
+                    G2 = all_graphs[j]
+                    distance = 0
+                    mismatches = 0
+                    for k,node1 in enumerate(G1.nodes):
+                        # only count for standard amino acid residues
+                        if strip_res_number(node1) in char_to_res_name:
+                            node2 = list(G2.nodes())[k]
+                            distance+= np.absolute(G1.nodes[node1]['aligned_resnum'] - G2.nodes[node2]['aligned_resnum'])
+                    if distance<10:
+                        A[i][j] = 1/(distance+1)
+                        A[j][i] = 1/(distance+1)
+                    else:
+                        A[i][j] = 0.01
+                        A[j][i] = 0.01   
+                D[i][i] = np.sum(A[i])
+            # laplacian
+            L = D - A
+            eigv,eigvc=LA.eig(L)
+            eigv = np.real(eigv)
+            eigvc = np.real(eigvc)
+            idx = eigv.argsort()
+            eigv = eigv[idx]
+            eigvc = eigvc[:,idx] 
+            # second lowest eigenvector
+            eigvc2 = eigvc[:,1]
+            eigenvector_sorted = {}
+            for i,val in enumerate(eigvc2):
+                rounded_val = np.round(val,decimals=4)
+                if rounded_val not in eigenvector_sorted:
+                    eigenvector_sorted[rounded_val] = [all_graphs[i]]
                 else:
-                    A[i][j] = 0.01
-                    A[j][i] = 0.01   
-            D[i][i] = np.sum(A[i])
-        # laplacian
-        L = D - A
-        eigv,eigvc=LA.eig(L)
-        eigv = np.real(eigv)
-        eigvc = np.real(eigvc)
-        idx = eigv.argsort()
-        eigv = eigv[idx]
-        eigvc = eigvc[:,idx] 
-        # second lowest eigenvector
-        eigvc2 = eigvc[:,1]
-        eigenvector_sorted = {}
-        for i,val in enumerate(eigvc2):
-            rounded_val = np.round(val,decimals=4)
-            if rounded_val not in eigenvector_sorted:
-                eigenvector_sorted[rounded_val] = [all_graphs[i]]
-            else:
-                graphs = eigenvector_sorted[rounded_val]
-                graphs.append(all_graphs[i])
-                eigenvector_sorted[rounded_val] =  graphs
-        tuples = []
-        for key,val in eigenvector_sorted.items():
-            tuples.append((key,val))
-        # largest groups first
-        tuples.sort(key=lambda x: len(x[1]), reverse=True)
-        for idx,tuple1 in enumerate(tuples):
-            key,group = tuple1
-            pdb_list = []
-            self.eigenvector_sorted[idx+1] = group
-            for graph in group:
-                pdb_list.append(graph.graph['pdb_id'])
-                # ID is PDB_ID(group number)-index IN PDB e.g. 1U3D(1)-2 is the second subgraph from 1u3d which belongs to the first group
-                graph.graph['id'] = graph.graph['pdb_id']+"("+str(idx+1)+")-"+ str(pdb_list.count(graph.graph['pdb_id']))
-                graph.graph['group_val'] = key 
-                self.specific_subgraphs[graph.graph['id']] = graph
+                    graphs = eigenvector_sorted[rounded_val]
+                    graphs.append(all_graphs[i])
+                    eigenvector_sorted[rounded_val] =  graphs
+            tuples = []
+            for key,val in eigenvector_sorted.items():
+                tuples.append((key,val))
+            # largest groups first
+            tuples.sort(key=lambda x: len(x[1]), reverse=True)
+            for idx,tuple1 in enumerate(tuples):
+                key,group = tuple1
+                pdb_list = []
+                for graph in group:
+                    pdb_list.append(graph.graph['pdb_id'])
+                    # ID is PDB_ID(group number)-index IN PDB e.g. 1U3D(1)-2 is the second subgraph from 1u3d which belongs to the first group
+                    graph.graph['id'] = graph.graph['pdb_id']+"("+str(idx+1)+")-"+ str(pdb_list.count(graph.graph['pdb_id']))
+                    graph.graph['group_val'] = key 
+                    self.specific_subgraphs[graph.graph['id']] = graph
+                self.eigenvector_sorted[idx+1] = group
+        else:
+            graph = all_graphs[0]
+            graph.graph['id'] = graph.graph['pdb_id']+"("+str(1)+")-"+ str(1)
+            graph.graph['group_val'] = 0.0 
+            self.specific_subgraphs[graph.graph['id']] = graph
+            self.eigenvector_sorted[1] = all_graphs
+
+
 
 
 class PDBGroup():
@@ -344,11 +378,7 @@ class PDBGroup():
                     for resname,res in emap.eta_moieties.items():
                         if res.get_full_id()[2] == chain.id:
                             res.aligned_residue_number = res.id[1] + num_gaps
-
-        
-
-
-    # chains and eta_moieties should be dictionaries
+       
     def process_emaps(self, chains=None, eta_moieties=None, include_residues=["TYR", "TRP"], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 
         
@@ -472,7 +502,7 @@ class PDBGroup():
                 all_edge_weights.append(G.edges[edge]['weight'])
         mean = np.mean(all_edge_weights)
         std_dev = np.std(all_edge_weights)
-        self.edge_thresholds = [mean+std_dev,mean+3*std_dev]
+        self.edge_thresholds = [mean,mean+std_dev]
         print(self.edge_thresholds)
 
     def _set_node_labels(self, node_labels, categories):
@@ -489,8 +519,11 @@ class PDBGroup():
             self.num_label_to_res[num_label] = "X"
             self.res_to_num_label["X"] = num_label
         else:
-            self.res_to_num_label = node_labels
             self.num_label_to_res = categories
+            self.res_to_num_label = node_labels
+            # add back in categories for single subgraph search
+            for key,val in categories.items():
+                self.res_to_num_label[val] = key
             num_label = len(self.num_label_to_res) + 2
             self.num_label_to_res[num_label] = "X"
             self.res_to_num_label["X"] = num_label
@@ -701,24 +734,34 @@ class PDBGroup():
         return sgs
 
     def find_subgraph(self,graph_specification):
+        node_list,edge_combs = nodes_and_edges_from_string(graph_specification,self.edge_thresholds)
         G = nx.Graph()
-        prev = None
-        for node_idx,node in enumerate(list(graph_specification)):
+        for node_idx,node in enumerate(node_list):
             G.add_node(node_idx)
             G.nodes[node_idx]['label'] = node 
             G.nodes[node_idx]['num_label'] = self.res_to_num_label[node]
             if node_idx>0:
-                G.add_edge(node_idx-1,node_idx,label=2,num_label=2)
-        specific_subgraphs = []
-        support = []
-        for pdb_id in self.emaps:
-            specific_subgraphs_for_pdb=self._find_subgraph_in_pdb(G, pdb_id)
-            if len(specific_subgraphs_for_pdb)>0:
-                specific_subgraphs+=specific_subgraphs_for_pdb
-                support.append(pdb_id)
-        fs = FrequentSubgraph(G, 1, support)
-        fs.clustering(specific_subgraphs)
-        self.frequent_subgraphs[fs.id] = fs
+                G.add_edge(node_idx-1,node_idx)
+        frequent_subgraphs = []
+        for edge_comb in edge_combs:
+            for j,edge in enumerate(G.edges):
+                G.edges[edge]['num_label'] = edge_comb[j]
+                G.edges[edge]['label'] = edge_comb[j]
+            specific_subgraphs = []
+            support = []
+            for pdb_id in self.emaps:
+                specific_subgraphs_for_pdb=self._find_subgraph_in_pdb(G, pdb_id)
+                if len(specific_subgraphs_for_pdb)>0:
+                    specific_subgraphs+=specific_subgraphs_for_pdb
+                    support.append(pdb_id)
+            if len(specific_subgraphs)>0:
+                fs = FrequentSubgraph(G.copy(), len(frequent_subgraphs), support)
+                fs.clustering(specific_subgraphs)
+                frequent_subgraphs.append(fs)
+        frequent_subgraphs.sort(key=lambda x: x.support_number, reverse=True)
+        for fs in frequent_subgraphs:
+            self.frequent_subgraphs[fs.id] = fs
+        
 
     def subgraphs_rmsd(self,subgraph_id,sg1,sg2):
         my_sg = self.frequent_subgraphs[subgraph_id]
@@ -741,7 +784,6 @@ class PDBGroup():
         si = Superimposer()
         si.set_atoms(atoms1, atoms2)
         return si.rms
-        #print(f"RMSD between structures: {si.rms:4.2f}")
 
 
 
