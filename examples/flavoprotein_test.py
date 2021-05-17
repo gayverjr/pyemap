@@ -1,6 +1,5 @@
 import pyemap
 from pyemap.common_paths import PDBGroup
-from pyemap.common_paths.protein_group import FrequentSubgraph
 import time
 
 
@@ -20,6 +19,4 @@ for i in range(0,len(pdb_ids)):
 pg.process_emaps(dist_def=1,sdef=None)
 pg.generate_graph_database()
 pg.run_gspan(int(0.5*len(pdb_ids)),lower_bound=4)
-
-print(pg.subgraph_report('7_WWWX_18'))
 
