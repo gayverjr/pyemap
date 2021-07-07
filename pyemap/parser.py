@@ -10,6 +10,7 @@ from .custom_residues import process_custom_residues
 from .data import res_name_to_char
 from .emap import emap
 import os
+import subprocess
 
 def fetch_and_parse(pdb_id, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
@@ -34,11 +35,12 @@ def fetch_and_parse(pdb_id, dest="", quiet=False):
         print("Fetching file " + pdb_id + " from RSCB Database...")
     cmd = ('wget -nc --no-check-certificate --quiet --read-timeout=1 -t 1 -P {0} https://files.rcsb.org/download/' +
     pdb_id + ".pdb").format(dest)
-    import subprocess
-    subprocess.check_output(cmd, shell=True)
+    cmd = ('wget --no-check-certificate --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/'
+               + fn).format(app.config['APP_FOLDER'] + '/static/pdbFiles/')
+    subprocess.Popen(cmd.split(" "))
     if not quiet:
         print("Success!")
-    return parse(dest + "/" + pdb_id + ".pdb", quiet)
+    return parse(os.path.join(dest,pdb_id + ".pdb", quiet))
 
 def parse(filename, quiet=False):
     '''Parses pdb file and returns emap object.
@@ -55,7 +57,9 @@ def parse(filename, quiet=False):
     my_emap: :class:`~pyemap.emap`
         emap object reading for parsing
     '''
+    print(filename)
     try:
+        os.listdir() 
         parser = PDBParser()
         structure = parser.get_structure("protein", filename)
     except Exception as e:

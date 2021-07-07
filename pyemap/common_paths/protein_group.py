@@ -369,10 +369,10 @@ class PDBGroup():
                     seqrec.description = record.id
                     self.sequences[record.id] = record.seq
                     records.append(seqrec)
-        SeqIO.write(records, self.temp_dir+"/data.fasta", "fasta")
-        inp = self.temp_dir+"/data.fasta"
-        out =  self.temp_dir+"/data_aligned.fasta"
-        log = self.temp_dir + "/log.txt"
+        SeqIO.write(records, os.path.join(self.temp_dir,"data.fasta"), "fasta")
+        inp = os.path.join(self.temp_dir,"data.fasta")
+        out =  os.path.join(self.temp_dir,"data_aligned.fasta")
+        log = os.path.join(self.temp_dir , "log.txt")
         muscle_cline = MuscleCommandline(input=inp,
                                  out=out,
                                  log=log)
