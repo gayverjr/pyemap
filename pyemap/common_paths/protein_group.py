@@ -1,6 +1,7 @@
 import numpy as np
 from io import StringIO
 import os
+import shutil
 from ..process_data import process
 from collections import OrderedDict
 import networkx as nx
@@ -373,10 +374,13 @@ class PDBGroup():
         inp = os.path.join(self.temp_dir,"data.fasta")
         out =  os.path.join(self.temp_dir,"data_aligned.fasta")
         log = os.path.join(self.temp_dir , "log.txt")
-        muscle_cline = MuscleCommandline(input=inp,
-                                 out=out,
-                                 log=log)
-        muscle_cline()
+        try:
+            muscle_cline = MuscleCommandline(input=inp,
+                                    out=out,
+                                    log=log)
+            muscle_cline()
+        except:
+            shutil.copyfile(inp,out)
         seqIO = SeqIO.parse(out,"fasta")
         for record in seqIO:
             self.aligned_sequences[record.id] = record.seq
