@@ -278,9 +278,13 @@ class emap():
                 mol = Chem.MolFromSmarts(self.smarts[resname])
                 mol.UpdatePropertyCache()
                 if dest:
-                    Draw.MolToFile(mol, dest, kekulize=False, size=size)
+                    # workaround until I figure out how to fix this
+                    png_dest=dest[:-4]+".png"
+                    Draw.MolToFile(mol, png_dest, kekulize=False, size=size)
+                    copyfile(png_dest,dest)
+
                 else:
-                    Draw.MolToFile(mol, resname + ".svg",
+                    Draw.MolToFile(mol, resname + ".png",
                                    kekulize=False, size=size)
         else:
             raise KeyError("No record of any residue by that name.")
