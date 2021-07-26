@@ -21,6 +21,14 @@ from numpy import linalg as LA
 import string
 import matplotlib.pyplot as plt
 
+def compare_graph_strings(str1,str2):
+    if not len(str1) == len(str2):
+        return False
+    for i in range(0,len(str1)):
+        if not str1[i] == str2[i] and not str1[i]=="*" and not str2[i]=="*":
+            return False
+    return True
+
 def subgraph_rmsd(sg1,sg2,emaps):
     emap1 = emaps[sg1.graph['pdb_id']]
     emap2 = emaps[sg2.graph['pdb_id']]
@@ -788,3 +796,14 @@ class PDBGroup():
         sg1 = my_sg.protein_subgraphs[key1]
         sg2 = my_sg.protein_subgraphs[key2]
         return subgraph_rmsd(sg1, sg2, self.emaps)
+
+    def apply_filter(self,filter_str):
+        matched_subgraphs = {}
+        for key in self.subgraph_patterns.keys():
+            idx1 = key.index("_")
+            idx2 = key.index("_",idx1+1)
+            graph_str = key[idx1+1:idx2]
+            if compare_graph_strings(graph_str,filter_str):
+                matched_subgraphs[key] = self.subgraph_patterns[key]
+        return matched_subgraphs
+
