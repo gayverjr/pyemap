@@ -13,6 +13,8 @@ import tempfile
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from .process_data import get_atom_list
+from .png2svg import convert_to_svg
+# need to checkout https://github.com/IngJavierR/PngToSvg
 
 
 class emap():
@@ -275,17 +277,24 @@ class emap():
                     target_name = resname + ".svg"
                 copyfile(cluster_img_name, target_name)
             else:
-                mol = Chem.MolFromSmarts(self.smarts[resname])
-                mol.UpdatePropertyCache()
-                if dest:
-                    # workaround until I figure out how to fix this
-                    png_dest=dest[:-4]+".png"
-                    Draw.MolToFile(mol, png_dest, kekulize=False, size=size)
-                    copyfile(png_dest,dest)
-
-                else:
-                    Draw.MolToFile(mol, resname + ".png",
-                                   kekulize=False, size=size)
+                try:
+                    mol = Chem.MolFromSmarts(self.smarts[resname])
+                    mol.UpdatePropertyCache()
+                    if dest:
+                        Draw.MolToFile(mol, dest, kekulize=False, size=size)
+                    else:
+                        Draw.MolToFile(mol, resname + ".svg",
+                                    kekulize=False, size=size)
+                except Exception as e:
+                    print("Warning: RDKIT couldn't draw: " + dest)
+                    try:
+                        if dest[-4:]==".svg":
+                            Draw.MolToFile(mol, dest[:-4]+".png", kekulize=False, size=size)
+                            convert_to_svg(dest[:-4]+".png",dest)
+                    except Exception as e:
+                        print(e)
+                        print("Warning: couldn't convert png to svg.")
+                            
         else:
             raise KeyError("No record of any residue by that name.")
 
@@ -319,10 +328,13 @@ class emap():
                 img = renderPM.drawToPIL(drawing)
                 return img
             else:
-                mol = Chem.MolFromSmarts(self.smarts[resname])
-                mol.UpdatePropertyCache()
-                img = Draw.MolToImage(mol, kekulize=False, size=size)
-                return img
+                try:
+                    mol = Chem.MolFromSmarts(self.smarts[resname])
+                    mol.UpdatePropertyCache()
+                    img = Draw.MolToImage(mol, kekulize=False, size=size)
+                    return img
+                except Exception as e:
+                    print("Warning: RDKIT couldn't draw: " + dest)
         else:
             raise KeyError("No record of any residue by that name.")
 

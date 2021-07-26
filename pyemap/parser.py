@@ -12,6 +12,26 @@ from .emap import emap
 import os
 import subprocess
 
+def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
+    """
+    Downloads a PDB file from the Internet and saves it in a data directory.
+    :param pdbcode: The standard PDB ID e.g. '3ICB' or '3icb'
+    :param datadir: The directory where the downloaded file will be saved
+    :param downloadurl: The base PDB download URL, cf.
+        `https://www.rcsb.org/pages/download/http#structures` for details
+    :return: the full path to the downloaded PDB file or None if something went wrong
+    """
+    import urllib
+    pdbfn = pdbcode + ".pdb"
+    url = downloadurl + pdbfn
+    outfnm = os.path.join(datadir, pdbfn)
+    try:
+        urllib.request.urlretrieve(url, outfnm)
+        return outfnm
+    except Exception as err:
+        print(str(err), file=sys.stderr)
+        return None
+
 def fetch_and_parse(pdb_id, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
 
@@ -32,15 +52,12 @@ def fetch_and_parse(pdb_id, dest="", quiet=False):
     if not dest:
         dest = os.getcwd()
     if not quiet:
-        print("Fetching file " + pdb_id + " from RSCB Database...")
-    cmd = ('wget -nc --no-check-certificate --quiet --read-timeout=1 -t 1 -P {0} https://files.rcsb.org/download/' +
-    pdb_id + ".pdb").format(dest)
-    cmd = ('wget --no-check-certificate --read-timeout=1 -t 1 -nc -P {0} https://files.rcsb.org/download/'
-               + fn).format(app.config['APP_FOLDER'] + '/static/pdbFiles/')
-    subprocess.Popen(cmd.split(" "))
+        print("Fetching PDB " + pdb_id + " from RSCB Database...")
+    outfnm = download_pdb(pdb_id,dest)
+    print(outfnm)
     if not quiet:
         print("Success!")
-    return parse(os.path.join(dest,pdb_id + ".pdb", quiet))
+    return parse(outfnm, quiet)
 
 def parse(filename, quiet=False):
     '''Parses pdb file and returns emap object.
