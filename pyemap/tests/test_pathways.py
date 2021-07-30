@@ -26,11 +26,8 @@ class PathwaysTest(unittest.TestCase):
             assert True
 
     def test_dijkstras_paths(self):
-        try:
-            pyemap.find_paths(self.my_emap,"Y167(B)")
-            assert len(self.my_emap.paths)>0
-        except Exception(e):
-            print(e)
+        pyemap.find_paths(self.my_emap,"Y167(B)")
+        assert len(self.my_emap.paths)>0
 
 
 
