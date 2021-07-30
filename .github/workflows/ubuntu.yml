@@ -21,14 +21,13 @@ jobs:
       
       - name: Install dependencies and pyemap
         run: |
-          conda install numpy scipy biopython networkx pillow
-          conda install -c rdkit rdkit
-          conda install -c conda-forge pygraphviz svglib
-          conda install -c bioconda msms
+          conda install -c conda-forge pygraphviz
+          conda install -c conda-forge rdkit
           pip install .
           
       - name: Generate coverage report
         run: |
+          sudo apt-get install dssp
           pip install pytest
           pip install pytest-cov
           pytest --cov=./ --cov-report=xml

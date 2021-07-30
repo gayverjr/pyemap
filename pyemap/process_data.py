@@ -225,62 +225,79 @@ def get_atom_list(res):
             atom_list.append(atm)
     return atom_list
 
+def get_full_atom_distance_matrix(residues):
+    com_d = []
+    atoms_per_res = []
+    for i in range(len(residues)):
+        res = residues[i]
+        res.get_full_id()
+        atm_list = get_atom_list(res)
+        atoms_per_res.append(len(atm_list))
+        for j in range(len(atm_list)):
+            cur_atom = atm_list[j]
+            com_d.append(np.array([cur_atom.coord[0], cur_atom.coord[1], cur_atom.coord[2]]))
+    return distance_matrix(com_d, com_d), atoms_per_res
+
+
+def get_com_distance_matrix(residues):
+    com_d = []
+    # Compute COMs (x0, y0, z0) of side-chains
+    for i in range(len(residues)):
+        res = residues[i]
+        res.get_full_id()
+        atm_list = get_atom_list(res)
+        x_wsum, y_wsum, z_wsum, mass_sum = 0.0, 0.0, 0.0, 0.0
+        for j in range(len(atm_list)):
+            cur_atom = atm_list[j]
+            mass = cur_atom.mass
+            x = cur_atom.coord[0]
+            y = cur_atom.coord[1]
+            z = cur_atom.coord[2]
+            x_wsum += x * mass
+            y_wsum += y * mass
+            z_wsum += z * mass
+            mass_sum += mass
+        com_x = x_wsum / mass_sum
+        com_y = y_wsum / mass_sum
+        com_z = z_wsum / mass_sum
+        com_d.append(np.array([com_x, com_y, com_z]))
+    return distance_matrix(com_d, com_d)
+
+
 def closest_atom_dmatrix(residues, coef_alpha, exp_beta, r_offset):
     """Constructs distance matrix based on closest atom distance.
-
+    
     Parameters
     ----------
     residues: list of :class:`Bio.PDB.Residue.Residue`
         List of BioPython residues
     coef_alpha,exp_beta,r_offset:float
         Penalty funciton parameters
-
     Returns
     -------
-    node_label: dict of int:str
-        Node labels for graph (by index in distance_matrix)
     distance_matrix: numpy.array of float
         Distance matrix of residues
     pathways_matrix: numpy.array of float
         Modified distance matrix of residues using scores determined by penalty function parameters
     """
-    node_label = {}
+    dmat, atoms_per_res = get_full_atom_distance_matrix(residues)
     distance_matrix = np.zeros((len(residues), len(residues)))
     pathways_matrix = np.zeros((len(residues), len(residues)))
-    # iterate over all residues
+    slice1_idx = 0
     for i in range(0, len(residues)):
-        res = residues[i]
-        atm_list = list(get_atom_list(res))
-        # iterate over all residues that follow
+        slice2_idx = slice1_idx + atoms_per_res[i]
+        slice3_idx = slice2_idx
         for j in range(i + 1, len(residues)):
-            res2 = residues[j]
-            atm_list_2 = list(get_atom_list(res2))
-            bestDist = sys.maxsize
-            # iterate over all atoms of my residue
-            for k in range(0, len(atm_list)):
-                # iterate over all atoms of neighbor
-                for l in range(0, len(atm_list_2)):
-                    cur_atom = atm_list[k]
-                    next_atom = atm_list_2[l]
-                    x1 = cur_atom.coord[0]
-                    y1 = cur_atom.coord[1]
-                    z1 = cur_atom.coord[2]
-                    x2 = next_atom.coord[0]
-                    y2 = next_atom.coord[1]
-                    z2 = next_atom.coord[2]
-                    a = np.array((x1, y1, z1))
-                    b = np.array((x2, y2, z2))
-                    dist_a_b = dist(a, b)
-                    if dist_a_b < bestDist:
-                        bestDist = dist_a_b
-            distance_matrix[i][j] = bestDist
-            distance_matrix[j][i] = bestDist
-            pathways_matrix[i][j] = pathways_model(
-                bestDist, coef_alpha, exp_beta, r_offset)
+            slice4_idx = slice3_idx + atoms_per_res[j]
+            my_slice = dmat[slice1_idx:slice2_idx, slice3_idx:slice4_idx]
+            min_val = np.min(my_slice)
+            distance_matrix[i][j] = min_val
+            distance_matrix[j][i] = min_val
+            pathways_matrix[i][j] = pathways_model(min_val, coef_alpha, exp_beta, r_offset)
             pathways_matrix[j][i] = pathways_matrix[i][j]
-        # Node names in graph
-        node_label[i] = res.node_label
-    return node_label, distance_matrix, pathways_matrix
+            slice3_idx = slice4_idx
+        slice1_idx = slice2_idx
+    return distance_matrix, pathways_matrix
 
 
 def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
@@ -301,39 +318,15 @@ def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
         Distance matrix of residues
 
     """
-    node_label = {}
-    com_d = []
-    # Compute COMs (x0, y0, z0) of side-chains
-    for i in range(len(residues)):
-        res = residues[i]
-        res.get_full_id()
-        atm_list = list(get_atom_list(res))
-        x_wsum, y_wsum, z_wsum, mass_sum = 0.0, 0.0, 0.0, 0.0
-        for j in range(len(atm_list)):
-            cur_atom = atm_list[j]
-            mass = cur_atom.mass
-            x = cur_atom.coord[0]
-            y = cur_atom.coord[1]
-            z = cur_atom.coord[2]
-            x_wsum += x * mass
-            y_wsum += y * mass
-            z_wsum += z * mass
-            mass_sum += mass
-        com_x = x_wsum / mass_sum
-        com_y = y_wsum / mass_sum
-        com_z = z_wsum / mass_sum
-        # Node names in graph
-        node_label[i] = res.node_label
-        com_d.append(np.array([com_x, com_y, com_z]))
+    com_d = get_com_distance_matrix(residues)
     # calculate matrix with penalty functions
     pathways_matrix = np.zeros((len(com_d), len(com_d)))
     for i in range(len(com_d)):
         for j in range(i + 1, len(com_d)):
-            dist_i_j = dist(com_d[i], com_d[j])
-            pathways_matrix[i][j] = pathways_model(
-                dist_i_j, coef_alpha, exp_beta, r_offset)
+            dist_i_j = com_d[i][j]
+            pathways_matrix[i][j] = pathways_model(dist_i_j, coef_alpha, exp_beta, r_offset)
             pathways_matrix[j][i] = pathways_matrix[i][j]
-    return node_label, distance_matrix(com_d, com_d), pathways_matrix
+    return com_d, pathways_matrix
 
 
 def process_standard_residues(standard_residue_list):
@@ -670,9 +663,9 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         Reference for 20A filter on edges
     """
     np.set_printoptions(threshold=sys.maxsize)
-    G = nx.from_numpy_matrix(dmatrix)
+    G = nx.from_numpy_array(dmatrix)
     minval_pathways = np.min(pathways_matrix[pathways_matrix.nonzero()])
-    G_pathways = nx.from_numpy_matrix(pathways_matrix)
+    G_pathways = nx.from_numpy_array(pathways_matrix)
     filter_edges(G, G_pathways, distance_cutoff,
                  percent_edges, num_st_dev_edges)
     for u, v, d in G_pathways.edges(data=True):
@@ -784,12 +777,18 @@ def process(emap,
         AROM_LIST.append(res.resname)
         emap.user_residues[res.resname] = res
     aromatic_residues += user_residues
+    node_labels = {}
+    residue_numbers = {}
+    aligned_residue_numbers = {}
+    for i in range(0, len(aromatic_residues)):
+        node_labels[i] = aromatic_residues[i].node_label
+        residue_numbers[aromatic_residues[i].node_label] = aromatic_residues[i].full_id[3][1]
+        if hasattr(aromatic_residues[i],'aligned_residue_number'):
+            aligned_residue_numbers[aromatic_residues[i].node_label] = aromatic_residues[i].aligned_residue_number
     if int(dist_def) == 0:
-        node_labels, dmatrix, pathways_matrix = com_dmatrix(
-            aromatic_residues, coef_alpha, exp_beta, r_offset)
+        dmatrix, pathways_matrix = com_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
     else:
-        node_labels, dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta,
-                                                                     r_offset)
+        dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
     G = create_graph(dmatrix, pathways_matrix, node_labels,
                      distance_cutoff, percent_edges, num_st_dev_edges,emap.eta_moieties.keys())
     if len(G.edges()) == 0:
