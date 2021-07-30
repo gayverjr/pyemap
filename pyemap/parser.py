@@ -1,6 +1,6 @@
 # PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
 # Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
-"""Parser used to parse PDB and MMCIF files. 
+"""Parser used to parse PDB and MMCIF files.
 
 Constructs an emap object containing parsed Bio.PDB.Structure and a list of customized Bio.PDB.Residue objects
 corresponding to automatically identified electron transfer moieties.
@@ -10,6 +10,27 @@ from .custom_residues import process_custom_residues
 from .data import res_name_to_char
 from .emap import emap
 import os
+import subprocess
+
+def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
+    """
+    Downloads a PDB file from the Internet and saves it in a data directory.
+    :param pdbcode: The standard PDB ID e.g. '3ICB' or '3icb'
+    :param datadir: The directory where the downloaded file will be saved
+    :param downloadurl: The base PDB download URL, cf.
+        `https://www.rcsb.org/pages/download/http#structures` for details
+    :return: the full path to the downloaded PDB file or None if something went wrong
+    """
+    import urllib
+    pdbfn = pdbcode + ".pdb"
+    url = downloadurl + pdbfn
+    outfnm = os.path.join(datadir, pdbfn)
+    try:
+        urllib.request.urlretrieve(url, outfnm)
+        return outfnm
+    except Exception as err:
+        print(str(err), file=sys.stderr)
+        return None
 
 def fetch_and_parse(pdb_id, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
@@ -31,14 +52,12 @@ def fetch_and_parse(pdb_id, dest="", quiet=False):
     if not dest:
         dest = os.getcwd()
     if not quiet:
-        print("Fetching file " + pdb_id + " from RSCB Database...")
-    cmd = ('wget -nc --no-check-certificate --quiet --read-timeout=1 -t 1 -P {0} https://files.rcsb.org/download/' +
-    pdb_id + ".pdb").format(dest)
-    import subprocess
-    subprocess.check_output(cmd, shell=True)
+        print("Fetching PDB " + pdb_id + " from RSCB Database...")
+    outfnm = download_pdb(pdb_id,dest)
+    print(outfnm)
     if not quiet:
         print("Success!")
-    return parse(dest + "/" + pdb_id + ".pdb", quiet)
+    return parse(outfnm, quiet)
 
 def parse(filename, quiet=False):
     '''Parses pdb file and returns emap object.
@@ -55,7 +74,9 @@ def parse(filename, quiet=False):
     my_emap: :class:`~pyemap.emap`
         emap object reading for parsing
     '''
+    print(filename)
     try:
+        os.listdir()
         parser = PDBParser()
         structure = parser.get_structure("protein", filename)
     except Exception as e:
@@ -86,3 +107,4 @@ def parse(filename, quiet=False):
         print("Identified " + str(len(custom_residue_list)) + " non-protein ET active moieties.")
     my_emap = emap(filename, structure, custom_residue_list, chain_list)
     return my_emap
+

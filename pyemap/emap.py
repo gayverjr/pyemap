@@ -13,6 +13,7 @@ import tempfile
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from .process_data import get_atom_list
+from .png2svg import convert_to_svg
 
 
 class emap():
@@ -62,7 +63,7 @@ class emap():
             Chains identified by the parser
         '''
         self.filename = filename
-        self.pdb_id = filename[-8:-4]
+        self.pdb_id = filename[-8:-4].upper()
         self.structure = structure
         self.residues = {}
         self.chains = chain_list
@@ -203,7 +204,7 @@ class emap():
     def _add_residue(self, residue):
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
         '''
-        if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
+        if not residue.resname[:3] in clusters and "CUST" not in residue.resname and residue.resname[:3] in ["PHE","HIS","TYR","TRP"]:
             res_graph = self._get_residue_graph(residue)
             smarts_str = getSimpleSmarts(res_graph)
             residue.Smarts = smarts_str
@@ -275,13 +276,24 @@ class emap():
                     target_name = resname + ".svg"
                 copyfile(cluster_img_name, target_name)
             else:
-                mol = Chem.MolFromSmarts(self.smarts[resname])
-                mol.UpdatePropertyCache()
-                if dest:
-                    Draw.MolToFile(mol, dest, kekulize=False, size=size)
-                else:
-                    Draw.MolToFile(mol, resname + ".svg",
-                                   kekulize=False, size=size)
+                try:
+                    mol = Chem.MolFromSmarts(self.smarts[resname])
+                    mol.UpdatePropertyCache()
+                    if dest:
+                        Draw.MolToFile(mol, dest, kekulize=False, size=size)
+                    else:
+                        Draw.MolToFile(mol, resname + ".svg",
+                                    kekulize=False, size=size)
+                except Exception as e:
+                    print("Warning: RDKIT couldn't draw: " + dest)
+                    try:
+                        if dest[-4:]==".svg":
+                            Draw.MolToFile(mol, dest[:-4]+".png", kekulize=False, size=size)
+                            convert_to_svg(dest[:-4]+".png",dest)
+                    except Exception as e:
+                        print(e)
+                        print("Warning: couldn't convert png to svg.")
+                            
         else:
             raise KeyError("No record of any residue by that name.")
 
@@ -315,10 +327,13 @@ class emap():
                 img = renderPM.drawToPIL(drawing)
                 return img
             else:
-                mol = Chem.MolFromSmarts(self.smarts[resname])
-                mol.UpdatePropertyCache()
-                img = Draw.MolToImage(mol, kekulize=False, size=size)
-                return img
+                try:
+                    mol = Chem.MolFromSmarts(self.smarts[resname])
+                    mol.UpdatePropertyCache()
+                    img = Draw.MolToImage(mol, kekulize=False, size=size)
+                    return img
+                except Exception as e:
+                    print("Warning: RDKIT couldn't draw: " + dest)
         else:
             raise KeyError("No record of any residue by that name.")
 
@@ -347,11 +362,11 @@ class emap():
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
-                agraph.draw(svg_fn)
-                agraph.draw(png_fn)
+                agraph.draw(svg_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
+                agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
             else:
                 png_fn = self.filename[:-4] + "_graph.png"
-                agraph.draw(png_fn)
+                agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
         else:
             raise RuntimeError("Nothing to draw.")
 
@@ -435,10 +450,9 @@ class emap():
         if G:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
             agraph = to_agraph(G)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             try:
-                agraph.layout(args="-Gepsilon=0.01 -Gmaxiter=50")
+                agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
             except Exception as e:
                 raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
             if agraph.number_of_nodes() <= 200:
@@ -468,3 +482,4 @@ class emap():
         img: :class:`PIL.Image.Image`
         '''
         return self._graph_to_Image(self.paths_graph)
+
