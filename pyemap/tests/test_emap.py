@@ -30,7 +30,7 @@ def test_save_functions():
     #init graph
     my_emap.init_graph_to_Image()
     my_emap.init_graph_to_file(dest=fout.name)
-    pyemap.find_paths(my_emap,"Y443(A)")
+    pyemap.find_paths(my_emap,"Y443(A)",target="Y437(A)")
     #paths graph
     my_emap.paths_graph_to_Image()
     my_emap.paths_graph_to_file(dest=fout.name)

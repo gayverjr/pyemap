@@ -21,10 +21,8 @@ jobs:
       
       - name: Install dependencies and pyemap
         run: |
-          conda install numpy scipy biopython networkx pillow
-          conda install -c conda-forge pygraphviz rdkit
-          conda install -c bioconda msms
-          conda install -c salilab dssp
+          conda install -c conda-forge pygraphviz
+          conda install -c rdkit
           pip install .
           
       - name: Generate coverage report
