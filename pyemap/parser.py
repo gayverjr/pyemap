@@ -10,7 +10,6 @@ from .custom_residues import process_custom_residues
 from .data import res_name_to_char
 from .emap import emap
 import os
-import subprocess
 
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
     """
