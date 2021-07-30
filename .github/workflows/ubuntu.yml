@@ -27,6 +27,7 @@ jobs:
           
       - name: Generate coverage report
         run: |
+          sudo apt-get install dssp
           pip install pytest
           pip install pytest-cov
           pytest --cov=./ --cov-report=xml
