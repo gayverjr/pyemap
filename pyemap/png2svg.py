@@ -1,9 +1,10 @@
-# Source code obtained from: https://github.com/ianmackinnon/png2svg
-
 from PIL import Image
 import operator
 from collections import deque
 from io import StringIO
+
+#adapted from: https://github.com/IngJavierR/PngToSvg
+# and https://github.com/ianmackinnon/png2svg
 
 def add_tuple(a, b):
     return tuple(map(operator.add, a, b))
@@ -27,11 +28,11 @@ def normalize(a):
 
 def svg_header(width, height):
     return """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="%d" height="%d"
      xmlns="http://www.w3.org/2000/svg" version="1.1">
-""" % (width, height)    
+""" % (width, height)
 
 def joined_edges(assorted_edges, keep_every_point=False):
     pieces = []

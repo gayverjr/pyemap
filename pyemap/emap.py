@@ -13,7 +13,7 @@ import tempfile
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from .process_data import get_atom_list
-from .png2svg2 import convert_to_svg
+from .png2svg import convert_to_svg
 
 
 class emap():
