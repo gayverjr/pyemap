@@ -13,7 +13,7 @@ import tempfile
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from .process_data import get_atom_list
-from .png2svg import convert_to_svg
+from .png2svg2 import convert_to_svg
 
 
 class emap():
@@ -245,7 +245,7 @@ class emap():
                 id[2]) + " and ." + atm.name + ")"
         return select_string
 
-    def residue_to_file(self, resname, dest="", size=(200, 200)):
+    def residue_to_file(self, resname, dest="", size=(100, 100)):
         '''Saves image of residue to file in .svg format.
 
         Parameters
@@ -286,6 +286,7 @@ class emap():
                                     kekulize=False, size=size)
                 except Exception as e:
                     print("Warning: RDKIT couldn't draw: " + dest)
+                    print("Trying to convert png to svg...")
                     try:
                         if dest[-4:]==".svg":
                             Draw.MolToFile(mol, dest[:-4]+".png", kekulize=False, size=size)
@@ -297,7 +298,7 @@ class emap():
         else:
             raise KeyError("No record of any residue by that name.")
 
-    def residue_to_Image(self, resname, size=(200, 200)):
+    def residue_to_Image(self, resname, size=(100, 100)):
         '''Returns PIL image of chemical structure
 
         Parameters

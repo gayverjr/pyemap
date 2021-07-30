@@ -670,9 +670,9 @@ def create_graph(dmatrix, pathways_matrix, node_labels, distance_cutoff, percent
         Reference for 20A filter on edges
     """
     np.set_printoptions(threshold=sys.maxsize)
-    G = nx.from_numpy_matrix(dmatrix)
+    G = nx.from_numpy_array(dmatrix)
     minval_pathways = np.min(pathways_matrix[pathways_matrix.nonzero()])
-    G_pathways = nx.from_numpy_matrix(pathways_matrix)
+    G_pathways = nx.from_numpy_array(pathways_matrix)
     filter_edges(G, G_pathways, distance_cutoff,
                  percent_edges, num_st_dev_edges)
     for u, v, d in G_pathways.edges(data=True):
