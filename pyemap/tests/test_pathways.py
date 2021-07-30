@@ -14,12 +14,6 @@ class PathwaysTest(unittest.TestCase):
         elif platform == "darwin":
             pyemap.process(cls.my_emap)
 
-'''  commented out until CI for dssp/msms can be resolved
-    def test_dijkstras_paths(self):
-        pyemap.find_paths(self.my_emap,"Y167(B)")
-        assert len(self.my_emap.paths)>0
-'''
-
     def test_yens_paths(self):
         pyemap.find_paths(self.my_emap,"Y167(B)",target="Y369(B)")
         assert len(self.my_emap.paths)==10
@@ -30,6 +24,12 @@ class PathwaysTest(unittest.TestCase):
             assert False
         except Exception as e:
             assert True
+
+'''  commented out until CI for dssp/msms can be resolved
+    def test_dijkstras_paths(self):
+        pyemap.find_paths(self.my_emap,"Y167(B)")
+        assert len(self.my_emap.paths)>0
+'''
 
 
 
