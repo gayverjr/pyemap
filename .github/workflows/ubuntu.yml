@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies and pyemap
         run: |
           conda install -c conda-forge pygraphviz
-          conda install -c rdkit
+          conda install -c conda-forge rdkit
           pip install .
           
       - name: Generate coverage report
