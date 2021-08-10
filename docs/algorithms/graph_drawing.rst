@@ -3,8 +3,8 @@ Graph construction
 
 Introduction
 -------------
-The first step to constructing the graph theory model is constructing a pairwise distance matrix is built for the selected  The distance is calculated
-either between centers of mass of the side chains, or between their
+The first step to constructing the graph theory model is constructing a pairwise distance matrix for the selected amino acid residues.
+The distance is calculated either between centers of mass of the side chains, or between their
 closest atoms. For standard protein residues, only side chain atoms
 are considered in the calculation. All atoms of automatically identified
 non-protein ET active moieties and user-specified custom fragments
