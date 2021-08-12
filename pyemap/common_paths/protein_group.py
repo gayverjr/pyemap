@@ -20,6 +20,7 @@ from Bio import AlignIO
 from numpy import linalg as LA
 import string
 import matplotlib.pyplot as plt
+import warnings
 
 def compare_graph_strings(str1,str2):
     if not len(str1) == len(str2):
@@ -44,9 +45,13 @@ def subgraph_rmsd(sg1,sg2,emaps):
         for atm in res.get_atoms():
             if 'CA' in atm.id:
                 atoms2.append(atm)
-    si = Superimposer()
-    si.set_atoms(atoms1, atoms2)
-    return si.rms
+    if len(atoms1) == len(atoms2):
+        si = Superimposer()
+        si.set_atoms(atoms1, atoms2)
+        return si.rms
+    else:
+       print("Warning: pbds: " + sg1.graph['pdb_id'] + " and " + sg2.graph['pdb_id']+ " have different numbers of CA, so they cannot be superimposed. Setting their distance to 100.")
+       return 100
 
 def nodes_and_edges_from_string(graph_str,edge_thresholds):
     graph_str = graph_str.replace(" ","")
