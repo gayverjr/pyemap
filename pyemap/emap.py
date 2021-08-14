@@ -229,7 +229,7 @@ class emap():
         select_string = ""
         atm_list = list(residue.get_atoms())
         first_atm = atm_list[0]
-        if first_atm.original_id:
+        if hasattr(first_atm,"original_id"):
             id = first_atm.original_id
         else:
             id = first_atm.full_id
@@ -237,7 +237,7 @@ class emap():
             id[2]) + " and ." + first_atm.name + ")"
         for i in range(1, len(atm_list)):
             atm = atm_list[i]
-            if atm.original_id:
+            if hasattr(atm,"original_id"):
                 id = first_atm.original_id
             else:
                 id = atm.full_id
@@ -246,7 +246,7 @@ class emap():
                 id[2]) + " and ." + atm.name + ")"
         return select_string
 
-    def residue_to_file(self, resname, dest="", size=(200, 200)):
+    def residue_to_file(self, resname, dest="", size=(200, 200),convert_png_to_svg=False):
         '''Saves image of residue to file in .svg format.
 
         Parameters
@@ -257,6 +257,8 @@ class emap():
             destination to save the image
         size: (float,float), optional
             dimensions of image saved to file
+        convert_png_to_svg, optional
+            Converts png to svg. Can be very slow.
         '''
         try:
             from rdkit import Chem
@@ -290,7 +292,8 @@ class emap():
                     try:
                         if dest[-4:]==".svg":
                             Draw.MolToFile(mol, dest[:-4]+".png", kekulize=False, size=size)
-                            convert_to_svg(dest[:-4]+".png",dest)
+                            if convert_png_to_svg:
+                                convert_to_svg(dest[:-4]+".png",dest)
                     except Exception as e:
                         print(e)
                         print("Warning: couldn't convert png to svg.")

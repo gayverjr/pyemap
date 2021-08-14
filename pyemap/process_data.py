@@ -21,52 +21,13 @@ import time
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
 
-
 def detach_parent(self):
     if self.parent:
         self.original_id = self.parent.full_id
     self.parent = None
 
-
 Bio.PDB.Atom.Atom.detach_parent = detach_parent
-
-# Monkey patches Atom __init__ to include a variable which tracks its original ID and assigns a unique ID
-
-
-def atm_init(self, name, coord, bfactor, occupancy, altloc, fullname, serial_number, element=None):
-    self.level = "A"
-    # Reference to the residue
-    self.parent = None
-    # the atomic data
-    self.name = name  # eg. CA, spaces are removed from atom name
-    self.fullname = fullname  # e.g. " CA ", spaces included
-    self.coord = coord
-    self.bfactor = bfactor
-    self.occupancy = occupancy
-    self.altloc = altloc
-    # (structure id, model id, chain id, residue id, atom id)
-    self.full_id = None
-    # id of atom is the atom name (e.g. "CA")
-    self.id = name + str(serial_number)
-    self.disordered_flag = 0
-    self.anisou_array = None
-    self.original_id = None
-    self.siguij_array = None
-    self.sigatm_array = None
-    self.serial_number = serial_number
-    # Dictionary that keeps additional properties
-    self.xtra = {}
-    assert not element or element == element.upper(), element
-    self.element = self._assign_element(element)
-    self.mass = self._assign_atom_mass()
-    # For atom sorting (protein backbone atoms first)
-    self._sorting_keys = {'N': 0, 'CA': 1, 'C': 2, 'O': 3}
-
-
-Bio.PDB.Atom.Atom.__init__ = atm_init
-
 # monkey patches mangling of disordered atoms
-
 
 def get_unpacked_list(self):
     """
@@ -85,7 +46,6 @@ def get_unpacked_list(self):
 
 
 Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
-
 
 def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     """Applies penalty function parameters and returns score.
@@ -221,7 +181,7 @@ def get_atom_list(res):
     if res.resname in side_chain_atoms:
         atom_list = []
         sca = side_chain_atoms[res.resname]
-        for atm in res.get_atoms():
+        for atm in res:
             if atm.name in sca:
                 atom_list.append(atm)
         return atom_list
@@ -356,7 +316,7 @@ def process_standard_residues(standard_residue_list):
         atm_ids = []
         atm_names = []
         valid = False
-        for atm in res.get_atoms():
+        for atm in res:
             sca = side_chain_atoms[res.resname]
             if atm.name in sca:
                 valid = True
@@ -364,10 +324,8 @@ def process_standard_residues(standard_residue_list):
         if valid:
             res_list.append(res)
         else:
-            #side_chain_atms = side_chain_atoms[res.resname]
             def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
                 return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
-
             warnings.formatwarning = warning_on_one_line
             warnings.warn("The record for residue " + res.node_label +
                           " did not contain any of the following side chain atoms: " + str(sca) +
@@ -419,10 +377,9 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
             atm_list.append(atm_copy)
     source_res.get_full_id()
     user_res = source_res.copy()
-    for atm in list(source_res.get_atoms()):
-        user_res.detach_child(atm.id)
-    for atm in atm_list:
-        user_res.add(atm)
+    for atm in source_res:
+        if atm not in atm_list:
+            user_res.detach_child(atm.id)
     k = 1
     name = "CUST"
     name += "-"
@@ -526,7 +483,7 @@ def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
             else:
                 raise SyntaxError("Invalid atom serial number range. See the manual for proper syntax.")
             res_list.append(new_res)
-            for atm in new_res.get_atoms():
+            for atm in new_res:
                 used_atoms.append(atm.serial_number)
         return res_list
     return []
@@ -753,7 +710,7 @@ def process(emap,
         aromatic_residues.append(emap.eta_moieties[resname])
     used_atoms = []
     for res in aromatic_residues:
-        for atm in res.get_atoms():
+        for atm in res:
             used_atoms.append(atm.serial_number)
     user_residues = []
     if custom:

@@ -35,23 +35,31 @@ def subgraph_rmsd(sg1,sg2,emaps):
     emap2 = emaps[sg2.graph['pdb_id']]
     atoms1 = []
     atoms2 = []
-    for node in sg1.nodes:
-        res = emap1.residues[node]
-        for atm in res.get_atoms():
-            if 'CA' in atm.id:
-                atoms1.append(atm)
-    for node in sg2.nodes:
-        res = emap2.residues[node]
-        for atm in res.get_atoms():
-            if 'CA' in atm.id:
-                atoms2.append(atm)
-    if len(atoms1) == len(atoms2):
+    nodes1 = list(sg1.nodes)
+    nodes2 = list(sg2.nodes)
+    for i in range(0,len(nodes1)):
+        res1 = emap1.residues[nodes1[i]]
+        res2 = emap2.residues[nodes2[i]]
+        if 'CA' in res1 and 'CA' in res2:
+            atoms1.append(res1['CA'])
+            atoms2.append(res2['CA'])
+        else:
+            shared_id = None
+            for atm in res1:
+                if atm.id in res2:
+                    shared_id = atm.id
+                    break
+            if shared_id is not None:
+                atoms1.append(res1[shared_id])
+                atoms2.append(res2[shared_id])
+            else: 
+                return 100
+    if len(atoms1) == len(nodes1):
         si = Superimposer()
         si.set_atoms(atoms1, atoms2)
         return si.rms
     else:
-       print("Warning: pbds: " + sg1.graph['pdb_id'] + " and " + sg2.graph['pdb_id']+ " have different numbers of CA, so they cannot be superimposed. Setting their distance to 100.")
-       return 100
+        return 100
 
 def nodes_and_edges_from_string(graph_str,edge_thresholds):
     graph_str = graph_str.replace(" ","")
@@ -392,7 +400,7 @@ class PDBGroup():
                                     out=out,
                                     log=log)
             muscle_cline()
-        except:
+        except Exception as e:
             shutil.copyfile(inp,out)
         seqIO = SeqIO.parse(out,"fasta")
         for record in seqIO:
