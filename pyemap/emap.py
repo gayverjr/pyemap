@@ -49,25 +49,29 @@ class emap():
         Graph generated after the shortest paths step.
     '''
 
-    def __init__(self, file_path, structure, eta_moieties, chain_list):
+    def __init__(self, file_path, eta_moieties, chain_list, sequences,chain_start):
         '''Initializes emap object.
 
         Parameters
         ----------
         file_path: str
             Name of file
-        structure: :class:`Bio.PDB.Structure.Structure`
-            Macromolecular protein structure
         eta_moieties: list of :class:`Bio.PDB.Residue.Residue`
             Customized residue objects generated for automatically detected eta moieties
         chain_list: list of str
             Chains identified by the parser
+        sequences: dict of str:str
+            Key is chain id, value is sequence in fasta format
+        chain_start: dict of str:int
+            Key is chain id, value is residue number of first residue in record (which is generally not 1)
         '''
         self.file_path = file_path
         self.pdb_id = file_path[-8:-4].upper()
-        self.structure = structure
         self.residues = {}
         self.chains = chain_list
+        self.chain_start = chain_start
+        self.sequences = sequences
+        self.active_chains = {}
         self.eta_moieties = {}
         self.user_residues = {}
         self.smarts = {}
@@ -130,6 +134,7 @@ class emap():
         '''Returns emap object to state it was in after parsing.
         '''
         self.residues = {}
+        self.active_chains = {}
         self.user_residues = {}
         self.init_graph = []
         self.paths = OrderedDict()
@@ -145,7 +150,7 @@ class emap():
         self.branches = OrderedDict()
 
     def _get_residue_graph(self, residue):
-        atoms = get_atom_list(residue)
+        atoms = list(get_atom_list(residue))
         arom_atoms = ['O', 'P', 'N', 'C', 'S']
         res_graph = nx.Graph()
         for i in range(len(atoms)):
@@ -213,6 +218,16 @@ class emap():
         residue.ngl_string = self._get_ngl_string(residue)
         self.residues[residue.node_label] = residue
         self.ngl_strings[residue.node_label] = residue.ngl_string
+        resnum = str(residue.full_id[3][1])
+        chain_id = residue.full_id[2]
+        if residue.resname in self.eta_moieties:
+            key = resnum + residue.resname[residue.resname.index(")")+1:]
+        else:
+            key = resnum
+        if chain_id in self.active_chains:
+            self.active_chains[chain_id][key] = residue
+        else:
+            self.active_chains["extra"][key] = residue
 
     def _get_ngl_string(self, residue):
         """Returns NGL selection string for residue
@@ -288,7 +303,7 @@ class emap():
                         Draw.MolToFile(mol, resname + ".svg",
                                     kekulize=False, size=size)
                 except Exception as e:
-                    print("Warning: RDKIT couldn't draw: " + dest)
+                    #print("Warning: RDKIT couldn't draw: " + dest)
                     try:
                         if dest[-4:]==".svg":
                             Draw.MolToFile(mol, dest[:-4]+".png", kekulize=False, size=size)

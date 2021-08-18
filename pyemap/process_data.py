@@ -14,10 +14,26 @@ import networkx as nx
 import numpy as np
 from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
+from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from scipy.spatial import distance_matrix
 import warnings
 from .data import res_name_to_char, side_chain_atoms
 import time
+
+
+def get_structure(filename):
+    try:
+        parser = PDBParser()
+        return parser.get_structure("protein", filename)
+    except Exception as e:
+        parser = FastMMCIFParser()
+        structure = parser.get_structure("protein", filename)
+        io = PDBIO()
+        fn = filename[:-4] + ".pdb"
+        io.set_structure(structure)
+        io.save(fn)
+        parser = PDBParser()
+        return parser.get_structure("protein", fn)
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
 
@@ -69,16 +85,15 @@ def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     return mod_penalty
 
 
-def calculate_residue_depth(aromatic_residues, model, rd_cutoff):
+def calculate_residue_depth(filename, aromatic_residues, rd_cutoff):
     """Returns a list of surface exposed residues as determined by residue depth.
 
     Parameters
     ----------
+    filename: str
+        Name of pdb file to be analyzed
     aromatic_residues: list of :class:`Bio.PDB.Residue.Residue`
         residues included in the analysis
-    model: :class:`Bio.PDB.Model.Model`
-        BioPython object containing a model of a PDB or MMCIF file
-
     Returns
     -------
     surface_exposed_res: list of str
@@ -96,13 +111,13 @@ def calculate_residue_depth(aromatic_residues, model, rd_cutoff):
         return surface_exposed_res
     except Exception as e:
         warnings.warn(
-            "Unable to calculate residue depth. Check that MSMS is installed. Please note that MSMS is not compatible with MacOS Catalina.",
+            "Unable to calculate residue depth. Check that MSMS is installed.",
             RuntimeWarning,
             stacklevel=2)
         return []
 
 
-def calculate_asa(model, filename, node_list, asa_cutoff):
+def calculate_asa(filename, node_list, asa_cutoff):
     """Returns a list of surface exposed residues as determined by relative solvent accessibility.
 
     Only standard protein residues are currently supported. Non-protein and user specified custom residues cannot be
@@ -110,8 +125,6 @@ def calculate_asa(model, filename, node_list, asa_cutoff):
 
     Parameters
     ---------
-    model: :class:`Bio.PDB.Model.Model`
-        Model which contains chains and residues of protein strucutre
     filename: str
         Name of pdb file to be analyzed
     node_list : list of str
@@ -134,8 +147,7 @@ def calculate_asa(model, filename, node_list, asa_cutoff):
     surface_exposed_res = []
     try:
         dssp = DSSP(model, filename, acc_array="Wilke")
-        keys = list(dssp.keys())
-        for key in keys:
+        for key in dssp.keys():
             goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
             if goal_str in node_list and dssp[key][3] >= cutoff:
                 surface_exposed_res.append(goal_str)
@@ -186,33 +198,31 @@ def get_atom_list(res):
                 atom_list.append(atm)
         return atom_list
     else:
-        return list(res.get_atoms())
+        return res.get_atoms()
 
 
 def get_full_atom_distance_matrix(residues):
     com_d = []
     atoms_per_res = []
-    for i in range(len(residues)):
-        res = residues[i]
+    for res in residues:
         res.get_full_id()
-        atm_list = get_atom_list(res)
-        atoms_per_res.append(len(atm_list))
-        for j in range(len(atm_list)):
-            cur_atom = atm_list[j]
+        atoms = get_atom_list(res)
+        num_atoms = 0
+        for cur_atom in atoms:
+            num_atoms+=1
             com_d.append(np.array([cur_atom.coord[0], cur_atom.coord[1], cur_atom.coord[2]]))
+        atoms_per_res.append(num_atoms)
     return distance_matrix(com_d, com_d), atoms_per_res
 
 
 def get_com_distance_matrix(residues):
     com_d = []
     # Compute COMs (x0, y0, z0) of side-chains
-    for i in range(len(residues)):
-        res = residues[i]
+    for res in residues:
         res.get_full_id()
-        atm_list = get_atom_list(res)
+        atoms = get_atom_list(res)
         x_wsum, y_wsum, z_wsum, mass_sum = 0.0, 0.0, 0.0, 0.0
-        for j in range(len(atm_list)):
-            cur_atom = atm_list[j]
+        for cur_atom in atoms:
             mass = cur_atom.mass
             x = cur_atom.coord[0]
             y = cur_atom.coord[1]
@@ -307,8 +317,7 @@ def process_standard_residues(standard_residue_list):
 
     """
     res_list = []
-    for i in range(0, len(standard_residue_list)):
-        res = standard_residue_list[i]
+    for res in standard_residue_list:
         res_letter = res_name_to_char.get(res.resname)
         chain = res.full_id[2]
         resnum = res.full_id[3][1]
@@ -342,7 +351,7 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
     ----------
     serial_list: list of int
         List of atom serial numbers included in residue
-    all_atoms: list of :class:`Bio.PDB.Atom.Atom`
+    all_atoms: iterator of :class:`Bio.PDB.Atom.Atom`
         All atoms in protein on selected chains
     chain_selected: list of str
         Chains included in analysis
@@ -400,7 +409,7 @@ def get_standard_residues(all_residues, chain_list, include_residues):
 
     Parameters
     ----------
-    all_residues: list of :class:`Bio.PDB.Residue.Residue`
+    all_residues: iterator of :class:`Bio.PDB.Residue.Residue`
         List of every residue in structure
     chain_list: list of str
         Chains to be included in analysis
@@ -434,7 +443,7 @@ def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
     ----------
     custom: str
         Specified by user to select atoms for custom residues
-    all_atoms: list of :class:`Bio.PDB.Atom.Atom`
+    all_atoms: iterator of :class:`Bio.PDB.Atom.Atom`
         All atoms in protein on selected chains
     chain_selected: list of str
         Chains included in analysis
@@ -566,7 +575,7 @@ def filter_edges(G, G_pathways, distance_cutoff, percent_edges, num_st_dev_edges
             G_pathways.remove_edge(node1, node2)
 
 
-def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, aligned_residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
+def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
                  eta_moieties):
     """Constructs the graph from the distance matrix and node labels.
 
@@ -578,8 +587,6 @@ def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, aligned
         Labels for residues in the graph.
     residue_numbers:
         res numbers
-    aligned_residue_numbers:
-        res numbers from sequence alignment
     distance_cutoff,percent_edges,num_st_dev_edges: float
         Parameters that determine which edges are kept.
     eta_moieties: list of str
@@ -616,8 +623,6 @@ def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, aligned
         G.nodes[name_node]['color'] = '#708090'
         G.nodes[name_node]['penwidth'] = 2.0
         G.nodes[name_node]["resnum"] = residue_numbers[name_node]
-        if name_node in aligned_residue_numbers:
-            G.nodes[name_node]['aligned_resnum'] = aligned_residue_numbers[name_node]
         if (name_node[1].isdigit()):
             if name_node not in eta_moieties:
                 if 'Y' == name_node[0]:
@@ -654,7 +659,8 @@ def process(emap,
             exp_beta=2.3,
             r_offset=0.0,
             rd_thresh=3.03,
-            asa_thresh=.05):
+            asa_thresh=.05,
+            structure=None):
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
 
     Parameters
@@ -688,6 +694,7 @@ def process(emap,
 
     """
     emap._reset_process()
+    pdb_file = emap.file_path
     if chains == None:
         chains = [emap.chains[0]]
     if eta_moieties == None:
@@ -695,17 +702,18 @@ def process(emap,
         for resname,moiety in emap.eta_moieties.items():
             if moiety.get_full_id()[2] in chains:
                 eta_moieties.append(resname)
-    if chains == None:
-        chains = emap.chains
+    else:
+        for resname in eta_moieties:
+            if resname[resname.index("(")+1:resname.index(")")] not in chains:
+                warnings.warn(str(resname) + " is not in a selected chain, so it will not be included in the analysis.")
+                eta_moieties.remove(resname)
     for i, res in enumerate(include_residues):
         if res.upper() in res_name_to_char:
             include_residues[i] = res.upper()
         else:
             raise RuntimeError("Error: " + str(res) + " is not a valid 3 letter amino acid code.")
-    model = emap.structure[0]
-    all_residues = list(model.get_residues())
-    all_atoms = list(model.get_atoms())
-    aromatic_residues = get_standard_residues(all_residues, chains, include_residues)
+    model = get_structure(pdb_file)[0]
+    aromatic_residues = get_standard_residues(model.get_residues(), chains, include_residues)
     for resname in eta_moieties:
         aromatic_residues.append(emap.eta_moieties[resname])
     used_atoms = []
@@ -714,36 +722,34 @@ def process(emap,
             used_atoms.append(atm.serial_number)
     user_residues = []
     if custom:
-        user_residues = get_user_residues(custom, all_atoms, chains, used_atoms)
+        user_residues = get_user_residues(custom, model.get_atoms(), chains, used_atoms)
     for res in user_residues:
         emap.user_residues[res.resname] = res
     aromatic_residues += user_residues
     node_labels = {}
     residue_numbers = {}
-    aligned_residue_numbers = {}
     for i in range(0, len(aromatic_residues)):
         node_labels[i] = aromatic_residues[i].node_label
         residue_numbers[aromatic_residues[i].node_label] = aromatic_residues[i].full_id[3][1]
-        if hasattr(aromatic_residues[i],'aligned_residue_number'):
-            aligned_residue_numbers[aromatic_residues[i].node_label] = aromatic_residues[i].aligned_residue_number
     if int(dist_def) == 0:
         dmatrix, pathways_matrix = com_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
     else:
         dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
-    G = create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, aligned_residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
+    G = create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
                      emap.eta_moieties.keys())
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise RuntimeError("Not enough edges to construct a graph.")
     # define surface exposed residues
     if sdef and int(sdef) == 0:
-        surface_exposed_res = calculate_residue_depth(aromatic_residues, model, rd_thresh)
+        surface_exposed_res = calculate_residue_depth(pdb_file,aromatic_residues,rd_thresh)
     elif sdef and int(sdef) == 1:
-        pdb_file = emap.file_path
-        surface_exposed_res = calculate_asa(model, pdb_file, node_labels.values(), asa_thresh)
+        surface_exposed_res = calculate_asa(pdb_file, node_labels.values(), asa_thresh)
     else:
         surface_exposed_res = []
     finish_graph(G, surface_exposed_res, chains)
+    for chain in chains:
+        emap.active_chains[chain] = {}
     for res in aromatic_residues:
         emap._add_residue(res)
     emap._store_initial_graph(G)

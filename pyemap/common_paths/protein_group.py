@@ -8,7 +8,7 @@ import networkx as nx
 from networkx.algorithms import isomorphism
 import time
 import datetime
-from ..data import char_to_res_name,res_name_to_char
+from ..data import char_to_res_name, res_name_to_char
 import re
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -22,22 +22,24 @@ import string
 import matplotlib.pyplot as plt
 import warnings
 
-def compare_graph_strings(str1,str2):
+
+def compare_graph_strings(str1, str2):
     if not len(str1) == len(str2):
         return False
-    for i in range(0,len(str1)):
-        if not str1[i] == str2[i] and not str1[i]=="*" and not str2[i]=="*":
+    for i in range(0, len(str1)):
+        if not str1[i] == str2[i] and not str1[i] == "*" and not str2[i] == "*":
             return False
     return True
 
-def subgraph_rmsd(sg1,sg2,emaps):
+
+def subgraph_rmsd(sg1, sg2, emaps):
     emap1 = emaps[sg1.graph['pdb_id']]
     emap2 = emaps[sg2.graph['pdb_id']]
     atoms1 = []
     atoms2 = []
     nodes1 = list(sg1.nodes)
     nodes2 = list(sg2.nodes)
-    for i in range(0,len(nodes1)):
+    for i in range(0, len(nodes1)):
         res1 = emap1.residues[nodes1[i]]
         res2 = emap2.residues[nodes2[i]]
         if 'CA' in res1 and 'CA' in res2:
@@ -52,7 +54,7 @@ def subgraph_rmsd(sg1,sg2,emaps):
             if shared_id is not None:
                 atoms1.append(res1[shared_id])
                 atoms2.append(res2[shared_id])
-            else: 
+            else:
                 return 100
     if len(atoms1) == len(nodes1):
         si = Superimposer()
@@ -61,42 +63,46 @@ def subgraph_rmsd(sg1,sg2,emaps):
     else:
         return 100
 
-def nodes_and_edges_from_string(graph_str,edge_thresholds):
-    graph_str = graph_str.replace(" ","")
+
+def nodes_and_edges_from_string(graph_str, edge_thresholds):
+    graph_str = graph_str.replace(" ", "")
     graph_str = list(graph_str)
     node_list = []
     idx = 0
-    while idx<len(graph_str):
+    while idx < len(graph_str):
         if graph_str[idx] == "(":
-            node_label=""
-            idx+=1
-            while not graph_str[idx]==")":
-                node_label+=str(graph_str[idx])
-                idx+=1
+            node_label = ""
+            idx += 1
+            while not graph_str[idx] == ")":
+                node_label += str(graph_str[idx])
+                idx += 1
             node_list.append(node_label)
-            idx+=1
+            idx += 1
         else:
             node_list.append(str(graph_str[idx]))
-            idx+=1
+            idx += 1
     l1 = []
-    for i in range(0,len(edge_thresholds)):
-        l1.append(i+2)
+    for i in range(0, len(edge_thresholds)):
+        l1.append(i + 2)
     from itertools import product
-    edge_combs = list(product(l1, repeat=len(node_list)-1))
+    edge_combs = list(product(l1, repeat=len(node_list) - 1))
     unique_edge_combs = []
     for edge_comb in edge_combs:
         ec = list(edge_comb)
         if ec not in unique_edge_combs and ec[::-1] not in unique_edge_combs:
             unique_edge_combs.append(ec)
-    return node_list,unique_edge_combs
+    return node_list, unique_edge_combs
+
 
 def strip_res_number(u):
     for i in range(0, len(u)):
         if u[i].isdigit():
             return u[:i]
 
+
 def node_match(node1, node2):
     return node1['num_label'] == node2['num_label']
+
 
 def edge_match(edge1, edge2):
     return edge1['num_label'] == edge2['num_label']
@@ -121,7 +127,6 @@ class SubgraphPattern():
     support_number: int
         Number of PDBs this subgraph pattern was identified in 
     '''
-
     def __init__(self, G, graph_number, support):
         '''Initializes SubgraphPattern object.
 
@@ -137,6 +142,7 @@ class SubgraphPattern():
         self.generic_subgraph = G
         self.support = support
         self.protein_subgraphs = {}
+        self.eigenvector_sorted = {}
         self.support_number = len(support)
         self.id = str(graph_number) + "_" + str(self._gen_node_rep()) + "_" + str(self.support_number)
 
@@ -144,17 +150,18 @@ class SubgraphPattern():
         ''' Generates general report which describes this subgraph pattern.
         '''
         full_str = ""
-        full_str+= "ID:" + str(self.id) + "\n"
-        full_str+= "Support:" + str(self.support_number) + "\n"
-        full_str+= "Where:" + str(self.support) + "\n"
-        full_str+= "Adjacency list:\n"
+        full_str += "ID:" + str(self.id) + "\n"
+        full_str += "Support:" + str(self.support_number) + "\n"
+        full_str += "Where:" + str(self.support) + "\n"
+        full_str += "Adjacency list:\n"
         G = self.generic_subgraph
         for node in G.nodes:
-            full_str+= G.nodes[node]['label'] + str(node) + ":["
+            full_str += G.nodes[node]['label'] + str(node) + ":["
             for neighbor in G.neighbors(node):
-                full_str+= G.nodes[neighbor]['label'] + str(neighbor) + "(" + str(G.edges[(node,neighbor)]['num_label']) + "), "
-            full_str=full_str[:-2]
-            full_str+="]\n"
+                full_str += G.nodes[neighbor]['label'] + str(neighbor) + "(" + str(
+                    G.edges[(node, neighbor)]['num_label']) + "), "
+            full_str = full_str[:-2]
+            full_str += "]\n"
         return full_str
 
     def full_report(self):
@@ -163,27 +170,27 @@ class SubgraphPattern():
         full_str += "Graphs are classified using " + self.clustering_option + " clustering.\n\n"
         for key in self.eigenvector_sorted:
             graphs = self.eigenvector_sorted[key]
-            full_str+=  "Group " + str(key) + ": " + str(len(graphs))+ " members\n---------------\n"
+            full_str += "Group " + str(key) + ": " + str(len(graphs)) + " members\n---------------\n"
             for graph in graphs:
-                full_str+= self._report_for_graph(graph)+ "\n"
+                full_str += self._report_for_graph(graph) + "\n"
         return full_str
 
-    def _report_for_graph(self,G):
+    def _report_for_graph(self, G):
         full_str = ""
-        full_str+= str(G.graph['id']) + "\n"
-        full_str+="Nodes\n"
+        full_str += str(G.graph['id']) + "\n"
+        full_str += "Nodes\n"
         for node in G.nodes:
-            full_str+=G.nodes[node]['label']
-            full_str+= " Position in alignment:" + str(G.nodes[node]['aligned_resnum'])
-            full_str+="\n"
-        full_str+="Adjacency list:\n"
+            full_str += G.nodes[node]['label']
+            full_str += " Position in alignment:" + str(G.nodes[node]['aligned_resnum'])
+            full_str += "\n"
+        full_str += "Adjacency list:\n"
         for node in G.nodes:
-            full_str+= G.nodes[node]['label'] + ":["
+            full_str += G.nodes[node]['label'] + ":["
             for neighbor in G.neighbors(node):
-                dist = '{0:.2f}'.format(G.edges[(node,neighbor)]['distance'])
-                full_str+= G.nodes[neighbor]['label'] + "(" + str(dist) + "), "
-            full_str=full_str[:-2]
-            full_str+="]\n"
+                dist = '{0:.2f}'.format(G.edges[(node, neighbor)]['distance'])
+                full_str += G.nodes[neighbor]['label'] + "(" + str(dist) + "), "
+            full_str = full_str[:-2]
+            full_str += "]\n"
         return full_str
 
     def _gen_node_rep(self):
@@ -192,8 +199,7 @@ class SubgraphPattern():
             node_rep = ''.join([node_rep, node_data['label']])
         return node_rep
 
-
-    def visualize_subgraph_in_ngl(self,emap,G):
+    def visualize_subgraph_in_ngl(self, emap, G):
         ''' Gets visualization of subgraph in ngl viewer
 
         Parameters
@@ -222,100 +228,103 @@ class SubgraphPattern():
                 labeled_atoms.append(next(emap.residues[res].get_atoms()).name)
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
-    
 
-    def clustering(self,all_graphs,emaps,clustering_option):
+    def clustering(self, all_graphs, emaps, clustering_option):
         self.eigenvector_sorted = {}
-        dims = (len(all_graphs),len(all_graphs))
-        if len(all_graphs)>1:
-            if(clustering_option=="structural"):
-                D,A = self._structural_clustering(all_graphs, emaps)
+        dims = (len(all_graphs), len(all_graphs))
+        if len(all_graphs) > 1:
+            if (clustering_option == "structural"):
+                D, A = self._structural_clustering(all_graphs, emaps)
             else:
-                D,A = self._sequence_clustering(all_graphs)
+                D, A = self._sequence_clustering(all_graphs)
             self.clustering_option = clustering_option
             L = D - A
-            eigv,eigvc=LA.eig(L)
+            eigv, eigvc = LA.eig(L)
             eigv = np.real(eigv)
             eigvc = np.real(eigvc)
             idx = eigv.argsort()
             eigv = eigv[idx]
-            eigvc = eigvc[:,idx] 
+            eigvc = eigvc[:, idx]
             # second lowest eigenvector
-            eigvc2 = eigvc[:,1]
+            eigvc2 = eigvc[:, 1]
             eigenvector_sorted = {}
-            for i,val in enumerate(eigvc2):
-                rounded_val = np.round(val,decimals=4)
+            for i, val in enumerate(eigvc2):
+                rounded_val = np.round(val, decimals=4)
                 if rounded_val not in eigenvector_sorted:
                     eigenvector_sorted[rounded_val] = [all_graphs[i]]
                 else:
                     graphs = eigenvector_sorted[rounded_val]
                     graphs.append(all_graphs[i])
-                    eigenvector_sorted[rounded_val] =  graphs
+                    eigenvector_sorted[rounded_val] = graphs
             tuples = []
-            for key,val in eigenvector_sorted.items():
-                tuples.append((key,val))
+            for key, val in eigenvector_sorted.items():
+                tuples.append((key, val))
             # largest groups first
             tuples.sort(key=lambda x: len(x[1]), reverse=True)
-            for idx,tuple1 in enumerate(tuples):
-                key,group = tuple1
+            for idx, tuple1 in enumerate(tuples):
+                key, group = tuple1
                 pdb_list = []
                 for graph in group:
                     pdb_list.append(graph.graph['pdb_id'])
                     # ID is PDB_ID(group number)-index IN PDB e.g. 1U3D(1)-2 is the second subgraph from 1u3d which belongs to the first group
-                    graph.graph['id'] = graph.graph['pdb_id']+"("+str(idx+1)+")-"+ str(pdb_list.count(graph.graph['pdb_id']))
-                    graph.graph['group_val'] = key 
+                    graph.graph['id'] = graph.graph['pdb_id'] + "(" + str(idx + 1) + ")-" + str(
+                        pdb_list.count(graph.graph['pdb_id']))
+                    graph.graph['group_val'] = key
                     self.protein_subgraphs[graph.graph['id']] = graph
-                self.eigenvector_sorted[idx+1] = group
+                self.eigenvector_sorted[idx + 1] = group
         else:
             graph = all_graphs[0]
-            graph.graph['id'] = graph.graph['pdb_id']+"("+str(1)+")-"+ str(1)
-            graph.graph['group_val'] = 0.0 
+            graph.graph['id'] = graph.graph['pdb_id'] + "(" + str(1) + ")-" + str(1)
+            graph.graph['group_val'] = 0.0
             self.protein_subgraphs[graph.graph['id']] = graph
-            self.eigenvector_sorted[1] = all_graphs        
+            self.eigenvector_sorted[1] = all_graphs
 
     # clustering based on graph spectral method
-    def _sequence_clustering(self,all_graphs):
-        dims = (len(all_graphs),len(all_graphs))
+    def _sequence_clustering(self, all_graphs):
+        dims = (len(all_graphs), len(all_graphs))
         D = np.zeros(dims)
         A = np.zeros(dims)
         # adjacency matrix is distance between residues numbers in alignment
         # degree matrix is sum of all outgoing edges
         # J. Mol. Biol. (1999) 292, 441-464
-        for i in range(0,len(all_graphs)):
-            for j in range(i+1,len(all_graphs)):
+        for i in range(0, len(all_graphs)):
+            for j in range(i + 1, len(all_graphs)):
                 G1 = all_graphs[i]
                 G2 = all_graphs[j]
                 G2nodes = list(G2.nodes())
                 distance = 0
-                for k,node1 in enumerate(G1.nodes):
+                for k, node1 in enumerate(G1.nodes):
                     # only count for standard amino acid residues
                     if strip_res_number(node1) in char_to_res_name:
                         node2 = G2nodes[k]
-                        distance+= np.absolute(G1.nodes[node1]['aligned_resnum'] - G2.nodes[node2]['aligned_resnum'])
-                if distance<10:
-                    A[i][j] = 1/(distance+1)
-                    A[j][i] = 1/(distance+1)
+                        if str(G1.nodes[node1]['aligned_resnum']).isdigit() and str(G2.nodes[node2]['aligned_resnum']).isdigit():
+                            distance += np.absolute(G1.nodes[node1]['aligned_resnum'] -
+                                                    G2.nodes[node2]['aligned_resnum'])
+                if distance < 10:
+                    A[i][j] = 1 / (distance + 1)
+                    A[j][i] = 1 / (distance + 1)
                 else:
                     A[i][j] = 0.001
-                    A[j][i] = 0.001   
+                    A[j][i] = 0.001
             D[i][i] = np.sum(A[i])
-        return D,A
+        return D, A
 
-    def _structural_clustering(self,all_graphs,emaps):
-        dims = (len(all_graphs),len(all_graphs))
+    def _structural_clustering(self, all_graphs, emaps):
+        dims = (len(all_graphs), len(all_graphs))
         D = np.zeros(dims)
         A = np.zeros(dims)
-        for i in range(0,len(all_graphs)):
-            for j in range(i+1,len(all_graphs)):
-                distance = subgraph_rmsd(all_graphs[i],all_graphs[j],emaps)
-                if distance<1:
-                    A[i][j] = 1/(distance+1)
-                    A[j][i] = 1/(distance+1)
+        for i in range(0, len(all_graphs)):
+            for j in range(i + 1, len(all_graphs)):
+                distance = subgraph_rmsd(all_graphs[i], all_graphs[j], emaps)
+                if distance < 1:
+                    A[i][j] = 1 / (distance + 1)
+                    A[j][i] = 1 / (distance + 1)
                 else:
                     A[i][j] = 0.001
-                    A[j][i] = 0.001   
+                    A[j][i] = 0.001
             D[i][i] = np.sum(A[i])
-        return D,A
+        return D, A
+
 
 class PDBGroup():
     '''
@@ -351,86 +360,72 @@ class PDBGroup():
         self.res_to_num_label = {}
         self.num_label_to_res = {}
         self.edge_thresholds = []
-        self.parameters = {}
+        self.emap_parameters = {}
+        self.gspan_parameters = {}
+        self.graph_database_parameters = {}
         self.included_eta_moieties = {}
         self.included_chains = {}
         self.included_standard_residues = []
         self.sequences = {}
         self.aligned_sequences = {}
 
-    def _clean_subgraphs(self):
-        self.subgraph_patterns = {}
+    def _clean_graph_database(self):
+        self.graph_database_parameters = {}
         self.res_to_num_label = {}
         self.num_label_to_res = {}
         self.edge_thresholds = []
         self.sep_buried_exposed = False
+        self._clean_subgraphs()
+    
+    def _clean_subgraphs(self):
+        self.gspan_parameters = {}
+        self.subgraph_patterns = {}
 
     def _reset_process(self):
-        self.parameters = {}
+        self.emap_parameters = {}
         self.included_eta_moieties = {}
         self.included_chains = {}
         self.included_standard_residues = []
         self.sequences = {}
         self.aligned_sequences = {}
-        self._clean_subgraphs()
-        
-    def _align_sequences(self,chains):
+        self._clean_graph_database()
+
+    def _align_sequences(self, chains):
         records = []
         valid_ids = []
-        for pdb_id,chain_list in chains.items():
-            for chain in chain_list:
-                valid_ids.append(pdb_id+":"+chain)
-        for pdb_id,emap in self.emaps.items():
-            seqIO = SeqIO.parse(emap.file_path, 'pdb-atom')
-            for record in seqIO:
-                if ":" not in record.id: 
-                    record.id = pdb_id + ":" + record.id
-                if record.id in valid_ids:
-                    seqrec = SeqRecord(record.seq)
-                    seqrec.id = record.id
-                    seqrec.description = record.id
-                    self.sequences[record.id] = record.seq
-                    records.append(seqrec)
-        SeqIO.write(records, os.path.join(self.temp_dir,"data.fasta"), "fasta")
-        inp = os.path.join(self.temp_dir,"data.fasta")
-        out =  os.path.join(self.temp_dir,"data_aligned.fasta")
-        log = os.path.join(self.temp_dir , "log.txt")
+        inp = os.path.join(self.temp_dir, "data.fasta")
+        with open(inp, 'w') as handle:
+            for pdb_id, emap in self.emaps.items():
+                for chain in emap.active_chains:
+                    handle.write(emap.sequences[chain] + "\n")
+        out = os.path.join(self.temp_dir, "data_aligned.fasta")
+        log = os.path.join(self.temp_dir, "log.txt")
         try:
-            muscle_cline = MuscleCommandline(input=inp,
-                                    out=out,
-                                    log=log)
+            muscle_cline = MuscleCommandline(input=inp, out=out, log=log)
             muscle_cline()
         except Exception as e:
-            shutil.copyfile(inp,out)
-        seqIO = SeqIO.parse(out,"fasta")
+            shutil.copyfile(inp, out)
+        seqIO = SeqIO.parse(out, "fasta")
         for record in seqIO:
-            self.aligned_sequences[record.id] = record.seq
+            self.aligned_sequences[record.id.upper()] = record.seq
         # now lets save the updated sequence numbers
-        for pdb_id,emap in self.emaps.items():
-            model = emap.structure[0]
-            for chain in model:
-                if pdb_id+":"+chain.id in self.aligned_sequences:
-                    seq_map={}
-                    aligned_seq = self.aligned_sequences[pdb_id+":"+chain.id]
-                    original_seq = self.sequences[pdb_id+":"+chain.id]
-                    original_idx = 0
-                    aligned_idx = 0
-                    num_gaps = 0
-                    for res in aligned_seq:
-                        if not res=="-":
-                            residue_obj = list(chain.get_residues())[original_idx]
-                            seq_map[residue_obj.id[1]] = aligned_idx
-                            original_idx+=1
-                        else:
-                            num_gaps+=1
-                        aligned_idx+=1
-                    for res in chain:
-                        if res.id[1] in seq_map:
-                            res.aligned_residue_number = seq_map[res.id[1]]
-                    for resname,res in emap.eta_moieties.items():
-                        if res.get_full_id()[2] == chain.id:
-                            res.aligned_residue_number = res.id[1] + num_gaps
-       
+        for pdb_id, emap in self.emaps.items():
+            for chain, residues in emap.active_chains.items():
+                original_idx = emap.chain_start[chain]
+                aligned_idx = emap.chain_start[chain]
+                seq_map = {}
+                aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
+                for res in aligned_seq:
+                    if not res == "-":
+                        seq_map[original_idx] = aligned_idx
+                        original_idx += 1
+                    aligned_idx += 1
+                for resnum, residue in residues.items():
+                    if resnum.isdigit() and int(resnum) in seq_map:
+                        residue.aligned_residue_number = seq_map[int(resnum)]
+                    else:
+                        residue.aligned_residue_number = 'X'
+
     def process_emaps(self, chains=None, eta_moieties=None, include_residues=["TYR", "TRP"], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 
         
@@ -452,57 +447,54 @@ class PDBGroup():
         >>> my_pg.process_emaps(chains=chains,eta_moieties=eta_moieties)
 
         '''
-        # do nothing if processing params are the same
-        if kwargs == self.parameters \
-            and self.included_chains == chains \
-            and self.included_eta_moieties==eta_moieties \
-            and self.included_standard_residues == include_residues:
-            return
         self._reset_process()
-        if chains==None:
+        if chains == None:
             chains = {}
             for pdb_id in self.emaps:
                 chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
-        self._align_sequences(chains)
         for pdb_id in self.emaps:
-            if not eta_moieties==None:
+            if not eta_moieties == None:
                 cur_eta_moieties = eta_moieties[pdb_id]
             else:
                 cur_eta_moieties = None
-                print("Processing:" + str(pdb_id))
-            process(self.emaps[pdb_id], chains=chains[pdb_id], eta_moieties=cur_eta_moieties, include_residues=include_residues, **kwargs)
-        self.parameters = kwargs
+            process(self.emaps[pdb_id],
+                    chains=chains[pdb_id],
+                    eta_moieties=cur_eta_moieties,
+                    include_residues=include_residues,
+                    **kwargs)
+        self._align_sequences(chains)
+        self.emap_parameters = kwargs
         self.included_chains = chains
         self.included_eta_moieties = eta_moieties
         self.included_standard_residues = include_residues
 
     def report_header(self):
-        full_str=""
-        full_str+= "Generated:\n" + str(datetime.datetime.now()) + "\n"
-        full_str+="Parameters:\n"
-        if not self.parameters:
-            full_str+="Custom.\n"
+        full_str = ""
+        full_str += "Generated:\n" + str(datetime.datetime.now()) + "\n"
+        full_str += "Parameters:\n"
+        if not self.emap_parameters:
+            full_str += "Custom.\n"
         else:
-            full_str+=str(self.parameters)
-            full_str+="\n"
-        full_str+="Chains:\n"
+            full_str += str(self.emap_parameters)
+            full_str += "\n"
+        full_str += "Chains:\n"
         if not self.included_chains:
-            full_str+="Custom.\n"
+            full_str += "Custom.\n"
         else:
-            full_str+=str(self.included_chains)
-            full_str+="\n"
-        full_str+="Included non protein moieties:\n"
+            full_str += str(self.included_chains)
+            full_str += "\n"
+        full_str += "Included non protein moieties:\n"
         if not self.included_eta_moieties:
-            full_str+="Custom.\n"
+            full_str += "Custom.\n"
         else:
-            full_str+=str(self.included_eta_moieties)
-            full_str+="\n"
-        full_str+="Edge thresholds:\n"+str(self.edge_thresholds)+"\n"
-        full_str+="Node labels:\n"+str(self.res_to_num_label) + "\n"
-        full_str+="Node categories:\n" + str(self.num_label_to_res) + "\n"
+            full_str += str(self.included_eta_moieties)
+            full_str += "\n"
+        full_str += "Edge thresholds:\n" + str(self.edge_thresholds) + "\n"
+        full_str += "Node labels:\n" + str(self.res_to_num_label) + "\n"
+        full_str += "Node categories:\n" + str(self.num_label_to_res) + "\n"
         return full_str
-    
-    def general_report(self,dest=None):
+
+    def general_report(self, dest=None):
         ''' Generates general report of all subgraph patterns found in the analysis.
 
         Returns
@@ -510,18 +502,18 @@ class PDBGroup():
         report: str
             General report of all subgraph patterns found in the analysis.
         '''
-        full_str="Overview of all subgraphs:\n"
-        full_str+=self.report_header()
-        full_str+="\nSubgraphs found:\n\n"
+        full_str = "Overview of all subgraphs:\n"
+        full_str += self.report_header()
+        full_str += "\nSubgraphs found:\n\n"
         for fsg in self.subgraph_patterns:
-            full_str+=self.subgraph_patterns[fsg].general_report()+"\n"
+            full_str += self.subgraph_patterns[fsg].general_report() + "\n"
         if dest:
             fi = open(dest, "w")
             fi.write(full_str)
             fi.close()
         return full_str
 
-    def subgraph_report(self,sg_id,dest=None):
+    def subgraph_report(self, sg_id, dest=None):
         ''' Generates detailed report for a given subgraph pattern.
 
         Parameters
@@ -537,9 +529,9 @@ class PDBGroup():
             Detailed report for a particular subgraph pattern.
         '''
         sg = self.subgraph_patterns[sg_id]
-        full_str="Full report for subgraph:" + str(sg_id) + "\n"
-        full_str+=self.report_header() + "\n"
-        full_str+=sg.full_report()
+        full_str = "Full report for subgraph:" + str(sg_id) + "\n"
+        full_str += self.report_header() + "\n"
+        full_str += sg.full_report()
         if dest:
             fi = open(dest, "w")
             fi.write(full_str)
@@ -548,18 +540,19 @@ class PDBGroup():
 
     def _set_edge_labels(self):
         all_edge_weights = []
-        for id,emap in self.emaps.items():
+        for id, emap in self.emaps.items():
             G = emap.init_graph
             for edge in G.edges:
                 all_edge_weights.append(G.edges[edge]['weight'])
         mean = np.mean(all_edge_weights)
         std_dev = np.std(all_edge_weights)
-        self.edge_thresholds = [mean,mean+std_dev]
+        self.edge_thresholds = [mean, mean + std_dev]
+        print("Edge thresholds:")
         print(self.edge_thresholds)
 
     def _set_node_labels(self, node_labels, categories):
-        self.res_to_num_label={}
-        self.num_label_to_res={}
+        self.res_to_num_label = {}
+        self.num_label_to_res = {}
         if categories is not None and ("X" in node_labels or "X" in categories.values()):
             raise KeyError("X is reserved for unknown residue type. Do not use X as a key.")
         if not node_labels:
@@ -567,14 +560,14 @@ class PDBGroup():
             for res in self.included_standard_residues:
                 self.res_to_num_label[res_name_to_char[res]] = num_label
                 self.num_label_to_res[num_label] = res_name_to_char[res]
-                num_label+=1
+                num_label += 1
             self.num_label_to_res[num_label] = "X"
             self.res_to_num_label["X"] = num_label
         else:
             self.num_label_to_res = categories
             self.res_to_num_label = node_labels
             # add back in categories for single subgraph search
-            for key,val in categories.items():
+            for key, val in categories.items():
                 self.res_to_num_label[val] = key
             num_label = len(self.num_label_to_res) + 2
             self.num_label_to_res[num_label] = "X"
@@ -582,9 +575,9 @@ class PDBGroup():
         if self.sep_buried_exposed:
             num_label_to_res = self.num_label_to_res.copy()
             num_categories = len(self.num_label_to_res)
-            for num_label,res_label in num_label_to_res.items():
-                self.num_label_to_res[num_label+num_categories] = res_label+"_exp"
-                self.res_to_num_label[res_label+"_exp"] = num_label+num_categories
+            for num_label, res_label in num_label_to_res.items():
+                self.num_label_to_res[num_label + num_categories] = res_label + "_exp"
+                self.res_to_num_label[res_label + "_exp"] = num_label + num_categories
 
     def _get_edge_label(self, G, edge):
         dist = G.edges[edge]['distance']
@@ -601,12 +594,12 @@ class PDBGroup():
         if strip_res_number(u) in char_to_res_name:
             res_name = strip_res_number(u)
             if self.sep_buried_exposed and self.emaps[pdb_id].init_graph.nodes[u]['shape'] == 'box':
-                res_name+="_exp"
+                res_name += "_exp"
             result = self.res_to_num_label[res_name]
-        elif (pdb_id+"_"+str(u)) in self.res_to_num_label:
-            res_label = pdb_id+"_"+str(u)
+        elif (pdb_id + "_" + str(u)) in self.res_to_num_label:
+            res_label = pdb_id + "_" + str(u)
             if self.sep_buried_exposed and self.emaps[pdb_id].init_graph.nodes[u]['shape'] == 'box':
-                res_label+="_exp"
+                res_label += "_exp"
             result = self.res_to_num_label[res_label]
         else:
             if self.sep_buried_exposed and self.emaps[pdb_id].init_graph.nodes[u]['shape'] == 'box':
@@ -625,21 +618,19 @@ class PDBGroup():
         '''
         if emap_obj.pdb_id not in self.emaps:
             self.emaps[emap_obj.pdb_id] = emap_obj
-            print("Added emap object with PDB ID: " + emap_obj.pdb_id)
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
-    
     def generate_graph_database(self, node_labels=None, categories=None, sep_buried_exposed=False):
         ''' Generates graph database for analysis by GSpan using specified node labels, node categories, and edge thresholds.
 
         Parameters
         ----------
-            node_labels: dict of str:int, optional
-                Dict which maps residue labels to their numerical label for usage in the gSpan algorithm. Labels for non-standard
-                residues should be preceded with the 4 character PDB ID followed by an underscore (e.g. 1u3d_FAD510(A)-2)
-            categories: dict of int:str, optional
-                Dict which maps numerical label to node category (which will appear in generic representation of subgraph pattern)
+        node_labels: dict of str:int, optional
+            Dict which maps residue labels to their numerical label for usage in the gSpan algorithm. Labels for non-standard
+            residues should be preceded with the 4 character PDB ID followed by an underscore (e.g. 1u3d_FAD510(A)-2)
+        categories: dict of int:str, optional
+            Dict which maps numerical label to node category (which will appear in generic representation of subgraph pattern)
         
         Examples
         ---------
@@ -652,7 +643,11 @@ class PDBGroup():
         >>> my_pg.generate_graph_database(node_labels=node_labels,categories=categories)
 
         '''
-        self._clean_subgraphs()
+        # check if we need to regenerate database
+        self._clean_graph_database()
+        self.graph_database_parameters["node_labels"] = node_labels.copy()
+        self.graph_database_parameters["categories"] = categories.copy()
+        self.graph_database_parameters["sep_buried_exposed"] = sep_buried_exposed
         self.sep_buried_exposed = sep_buried_exposed
         self._set_node_labels(node_labels, categories)
         self._set_edge_labels()
@@ -661,25 +656,30 @@ class PDBGroup():
             G = self.emaps[key].init_graph
             f.write("t # " + str(i) + "\n")
             for i, node in enumerate(G.nodes):
-                f.write("v " + str(i) + " " + str(self._get_numerical_node_label(node,key)) + "\n")
+                f.write("v " + str(i) + " " + str(self._get_numerical_node_label(node, key)) + "\n")
             for i, edge in enumerate(G.edges):
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
                         str(self._get_edge_label(G, edge)) + "\n")
         f.write("t # -1")
         f.close()
 
-    def run_gspan(self, support, lower_bound=4,clustering_option="structural"):
+    def run_gspan(self, support, lower_bound=4, clustering_option="structural"):
         ''' Runs gSpan algorithm to mine for subgraph patterns, and then identifies each occurence of each subgraph pattern in each PDB which supports it.
         
         Parameters
         ----------
-            support: int, optional
-                Minimum support number of subgraphs in the search space 
-            lower_bound: int, optional
-                Minimum number of nodes for subgraphs in the search space
+        support: int, optional
+            Minimum support number of subgraphs in the search space 
+        lower_bound: int, optional
+            Minimum number of nodes for subgraphs in the search space
         '''
-        if not clustering_option=="structural" and not clustering_option=="sequence":
+        if not clustering_option == "structural" and not clustering_option == "sequence":
             raise Exception("Either structural or sequence.")
+        self._clean_subgraphs()
+        self.gspan_parameters["support"] = support
+        self.gspan_parameters["lower_bound"] = lower_bound
+        self.gspan_parameters["clustering_option"] = clustering_option
+        self.gspan_parameters["graph_specification"] = ""
         import sys
         old_stdout = sys.stdout
         f = open(os.path.join(self.temp_dir, 'gspan_results.out'), "w")
@@ -695,7 +695,18 @@ class PDBGroup():
         f.close()
         self._generate_subgraph_patterns(clustering_option)
 
-    def _generate_subgraph_patterns(self,clustering):
+    def generate_clustering(self,clustering_option):
+        if len(self.subgraph_patterns)==0:
+            raise Exception("This function should only be called when subgraphs have already been found.")
+        if not clustering_option == "structural" and not clustering_option == "sequence":
+            raise Exception("Either structural or sequence.")
+        for sg in self.subgraph_patterns.values():
+            subgraphs = list(sg.protein_subgraphs.values())
+            sg.eigenvector_sorted = {}
+            sg.protein_subgraphs = {}
+            sg.clustering(subgraphs, self.emaps, clustering_option)
+
+    def _generate_subgraph_patterns(self, clustering):
         buff = open(os.path.join(self.temp_dir, 'gspan_results.out'), "r")
         subgraphs = []
         lines = buff.readlines()
@@ -737,12 +748,11 @@ class PDBGroup():
         for sg in subgraphs:
             protein_subgraphs = []
             for pdb_id in sg.support:
-                protein_subgraphs+=self._find_subgraph_in_pdb(sg.generic_subgraph, pdb_id)
-            sg.clustering(protein_subgraphs,self.emaps,clustering)
+                protein_subgraphs += self._find_subgraph_in_pdb(sg.generic_subgraph, pdb_id)
+            sg.clustering(protein_subgraphs, self.emaps, clustering)
             self.subgraph_patterns[sg.id] = sg
 
-
-    def _generate_protein_subgraph(self, mapping, protein_graph, generic_subgraph):
+    def _generate_protein_subgraph(self, mapping, protein_graph, generic_subgraph, emap_obj):
         mapping = dict((v, k) for k, v in mapping.items())
         protein_subgraph = generic_subgraph.copy()
         protein_subgraph = nx.relabel_nodes(protein_subgraph, mapping)
@@ -751,9 +761,9 @@ class PDBGroup():
             protein_subgraph.nodes[node]['shape'] = protein_graph.nodes[node]['shape']
             protein_subgraph.nodes[node]['label'] = str(node)
             protein_subgraph.nodes[node]['resnum'] = protein_graph.nodes[node]['resnum']
-            protein_subgraph.nodes[node]['aligned_resnum'] = protein_graph.nodes[node]['aligned_resnum']
+            protein_subgraph.nodes[node]['aligned_resnum'] = emap_obj.residues[node].aligned_residue_number
             protein_subgraph.graph['pdb_id'] = protein_graph.graph['pdb_id']
-            nodes.append((node,protein_subgraph.nodes[node]['resnum']))
+            nodes.append((node, protein_subgraph.nodes[node]['resnum']))
         for edge in protein_subgraph.edges():
             for key in protein_graph.edges[edge]:
                 protein_subgraph.edges[edge][key] = protein_graph.edges[edge][key]
@@ -762,61 +772,65 @@ class PDBGroup():
     def _find_subgraph_in_pdb(self, generic_subgraph, pdb_id):
         protein_graph = self.emaps[pdb_id].init_graph
         for node in protein_graph.nodes:
-            protein_graph.nodes[node]['num_label'] = self._get_numerical_node_label(node,pdb_id)
+            protein_graph.nodes[node]['num_label'] = self._get_numerical_node_label(node, pdb_id)
         for edge in protein_graph.edges:
             protein_graph.edges[edge]['num_label'] = self._get_edge_label(protein_graph, edge)
         GM = isomorphism.GraphMatcher(protein_graph, generic_subgraph, node_match=node_match, edge_match=edge_match)
         subgraph_isos = GM.subgraph_monomorphisms_iter()
         sgs = []
         for mapping in subgraph_isos:
-            sg = self._generate_protein_subgraph(mapping, protein_graph, generic_subgraph)
+            sg = self._generate_protein_subgraph(mapping, protein_graph, generic_subgraph, self.emaps[pdb_id])
             sgs.append(sg)
         return sgs
 
-    def find_subgraph(self,graph_specification,clustering_option="structural"):
-        if not clustering_option=="structural" and not clustering_option=="sequence":
+    def find_subgraph(self, graph_specification, clustering_option="structural"):
+        if not clustering_option == "structural" and not clustering_option == "sequence":
             raise Exception("Either structural or sequence.")
-        node_list,edge_combs = nodes_and_edges_from_string(graph_specification,self.edge_thresholds)
+        self._clean_subgraphs()
+        self.gspan_parameters["support"] = None
+        self.gspan_parameters["lower_bound"] = None
+        self.gspan_parameters["clustering_option"] = clustering_option
+        self.gspan_parameters["graph_specification"] = graph_specification
+        node_list, edge_combs = nodes_and_edges_from_string(graph_specification, self.edge_thresholds)
         G = nx.Graph()
-        for node_idx,node in enumerate(node_list):
+        for node_idx, node in enumerate(node_list):
             G.add_node(node_idx)
-            G.nodes[node_idx]['label'] = node 
+            G.nodes[node_idx]['label'] = node
             G.nodes[node_idx]['num_label'] = self.res_to_num_label[node]
-            if node_idx>0:
-                G.add_edge(node_idx-1,node_idx)
+            if node_idx > 0:
+                G.add_edge(node_idx - 1, node_idx)
         subgraph_patterns = []
         for edge_comb in edge_combs:
-            for j,edge in enumerate(G.edges):
+            for j, edge in enumerate(G.edges):
                 G.edges[edge]['num_label'] = edge_comb[j]
                 G.edges[edge]['label'] = edge_comb[j]
             protein_subgraphs = []
             support = []
             for pdb_id in self.emaps:
-                protein_subgraphs_for_pdb=self._find_subgraph_in_pdb(G, pdb_id)
-                if len(protein_subgraphs_for_pdb)>0:
-                    protein_subgraphs+=protein_subgraphs_for_pdb
+                protein_subgraphs_for_pdb = self._find_subgraph_in_pdb(G, pdb_id)
+                if len(protein_subgraphs_for_pdb) > 0:
+                    protein_subgraphs += protein_subgraphs_for_pdb
                     support.append(pdb_id)
-            if len(protein_subgraphs)>0:
+            if len(protein_subgraphs) > 0:
                 fs = SubgraphPattern(G.copy(), len(subgraph_patterns), support)
-                fs.clustering(protein_subgraphs,self.emaps,clustering_option)
+                fs.clustering(protein_subgraphs, self.emaps, clustering_option)
                 subgraph_patterns.append(fs)
         subgraph_patterns.sort(key=lambda x: x.support_number, reverse=True)
         for fs in subgraph_patterns:
             self.subgraph_patterns[fs.id] = fs
-    
-    def subgraph_rmsd(self,sg_id,key1,key2):
+
+    def subgraph_rmsd(self, sg_id, key1, key2):
         my_sg = self.subgraph_patterns[sg_id]
         sg1 = my_sg.protein_subgraphs[key1]
         sg2 = my_sg.protein_subgraphs[key2]
         return subgraph_rmsd(sg1, sg2, self.emaps)
 
-    def apply_filter(self,filter_str):
+    def apply_filter(self, filter_str):
         matched_subgraphs = {}
         for key in self.subgraph_patterns.keys():
             idx1 = key.index("_")
-            idx2 = key.index("_",idx1+1)
-            graph_str = key[idx1+1:idx2]
-            if compare_graph_strings(graph_str,filter_str):
+            idx2 = key.index("_", idx1 + 1)
+            graph_str = key[idx1 + 1:idx2]
+            if compare_graph_strings(graph_str, filter_str):
                 matched_subgraphs[key] = self.subgraph_patterns[key]
         return matched_subgraphs
-

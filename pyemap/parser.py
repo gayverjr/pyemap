@@ -10,7 +10,6 @@ from .custom_residues import process_custom_residues
 from .data import res_name_to_char
 from .emap import emap
 import os
-import subprocess
 
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
     """
@@ -54,7 +53,6 @@ def fetch_and_parse(pdb_id, dest="", quiet=False):
     if not quiet:
         print("Fetching PDB " + pdb_id + " from RSCB Database...")
     outfnm = download_pdb(pdb_id,dest)
-    print(outfnm)
     if not quiet:
         print("Success!")
     return parse(outfnm, quiet)
@@ -74,9 +72,7 @@ def parse(filename, quiet=False):
     my_emap: :class:`~pyemap.emap`
         emap object reading for parsing
     '''
-    print(filename)
     try:
-        os.listdir() 
         parser = PDBParser()
         structure = parser.get_structure("protein", filename)
     except Exception as e:
@@ -89,6 +85,9 @@ def parse(filename, quiet=False):
         parser = PDBParser()
         structure = parser.get_structure("protein", fn)
     chain_list = []
+    sequences = {}
+    chain_start = {}
+    non_standard_residue_list = []
     num_models = 0
     for model in structure.get_models():
         num_models += 1
@@ -96,14 +95,19 @@ def parse(filename, quiet=False):
         raise RuntimeError("Unable to parse file.")
     for chain in structure[0].get_chains():
         chain_list.append(chain.id)
-    non_standard_residue_list = []
-    for res in structure[0].get_residues():
-        if res.resname not in res_name_to_char:
-            res.get_full_id()
-            arom_res = res.copy()
-            non_standard_residue_list.append(arom_res)
+        seq = []
+        for residue in chain:
+            if chain.id not in chain_start:
+                chain_start[chain.id] = residue.full_id[3][1]
+            if residue.resname in res_name_to_char:
+                seq.append(res_name_to_char[residue.resname])
+            else:
+                residue.get_full_id()
+                non_standard_residue_list.append(residue.copy())
+        seq_str = ">"+filename[-8:-4] + ":" + chain.id + "\n"+''.join(seq)
+        sequences[chain.id] = seq_str
     custom_residue_list = process_custom_residues(non_standard_residue_list)
     if not quiet:
         print("Identified " + str(len(custom_residue_list)) + " non-protein ET active moieties.")
-    my_emap = emap(filename, structure, custom_residue_list, chain_list)
+    my_emap = emap(filename, custom_residue_list, chain_list, sequences, chain_start)
     return my_emap
