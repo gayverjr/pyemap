@@ -564,8 +564,8 @@ class PDBGroup():
             self.num_label_to_res[num_label] = "X"
             self.res_to_num_label["X"] = num_label
         else:
-            self.num_label_to_res = categories
-            self.res_to_num_label = node_labels
+            self.num_label_to_res = categories.copy()
+            self.res_to_num_label = node_labels.copy()
             # add back in categories for single subgraph search
             for key, val in categories.items():
                 self.res_to_num_label[val] = key
@@ -645,8 +645,8 @@ class PDBGroup():
         '''
         # check if we need to regenerate database
         self._clean_graph_database()
-        self.graph_database_parameters["node_labels"] = node_labels.copy()
-        self.graph_database_parameters["categories"] = categories.copy()
+        self.graph_database_parameters["node_labels"] = node_labels
+        self.graph_database_parameters["categories"] = categories
         self.graph_database_parameters["sep_buried_exposed"] = sep_buried_exposed
         self.sep_buried_exposed = sep_buried_exposed
         self._set_node_labels(node_labels, categories)
