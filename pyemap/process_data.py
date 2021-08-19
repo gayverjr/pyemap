@@ -633,6 +633,8 @@ def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distanc
                     G.nodes[name_node]['fillcolor'] = '#f09664'
                 elif 'H' == name_node[0]:
                     G.nodes[name_node]['fillcolor'] = '#c8f0c8'
+                else:
+                    G.nodes[name_node]['fillcolor'] = '#708090'
             else:
                 G.nodes[name_node]['fillcolor'] = '#FFC0CB'
         else:
