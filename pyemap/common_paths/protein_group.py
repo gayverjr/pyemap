@@ -546,7 +546,7 @@ class PDBGroup():
                 all_edge_weights.append(G.edges[edge]['weight'])
         mean = np.mean(all_edge_weights)
         std_dev = np.std(all_edge_weights)
-        self.edge_thresholds = [mean, mean + std_dev]
+        self.edge_thresholds = [mean+2*std_dev, mean+3*std_dev]
         print("Edge thresholds:")
         print(self.edge_thresholds)
 
