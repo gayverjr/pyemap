@@ -7,36 +7,19 @@ on user specifications. Finally, the selected criteria for surface exposure is u
 Results are stored in the emap object which was passed in.
 
 """
-import math
+
 import sys
 import Bio.PDB
 import networkx as nx
 import numpy as np
 from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
-from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from scipy.spatial import distance_matrix
 import warnings
 from .data import res_name_to_char, side_chain_atoms
-import time
 
-
-def get_structure(filename):
-    try:
-        parser = PDBParser()
-        return parser.get_structure("protein", filename)
-    except Exception as e:
-        parser = FastMMCIFParser()
-        structure = parser.get_structure("protein", filename)
-        io = PDBIO()
-        fn = filename[:-4] + ".pdb"
-        io.set_structure(structure)
-        io.save(fn)
-        parser = PDBParser()
-        return parser.get_structure("protein", fn)
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
-
 def detach_parent(self):
     if self.parent:
         self.original_id = self.parent.full_id
@@ -117,7 +100,7 @@ def calculate_residue_depth(filename, aromatic_residues, rd_cutoff):
         return []
 
 
-def calculate_asa(filename, node_list, asa_cutoff):
+def calculate_asa(filename, model, node_list, asa_cutoff):
     """Returns a list of surface exposed residues as determined by relative solvent accessibility.
 
     Only standard protein residues are currently supported. Non-protein and user specified custom residues cannot be
@@ -141,7 +124,6 @@ def calculate_asa(filename, node_list, asa_cutoff):
     ---------
     Tien, M. Z.; Meyer, A. G.; Sydykova, D. K.; Spielman, S. J.; Wilke, C. O. PLoS ONE 2013, 8 (11).
         Reference for relative solvent accessibility cutoff of 0.05, and for MaxASA values
-
     """
     cutoff = asa_cutoff
     surface_exposed_res = []
@@ -202,7 +184,7 @@ def get_atom_list(res):
 
 
 def get_full_atom_distance_matrix(residues):
-    com_d = []
+    atm_d = []
     atoms_per_res = []
     for res in residues:
         res.get_full_id()
@@ -210,12 +192,54 @@ def get_full_atom_distance_matrix(residues):
         num_atoms = 0
         for cur_atom in atoms:
             num_atoms+=1
-            com_d.append(np.array([cur_atom.coord[0], cur_atom.coord[1], cur_atom.coord[2]]))
+            atm_d.append(np.array([cur_atom.coord[0], cur_atom.coord[1], cur_atom.coord[2]]))
         atoms_per_res.append(num_atoms)
-    return distance_matrix(com_d, com_d), atoms_per_res
+    return distance_matrix(atm_d, atm_d), atoms_per_res
 
 
-def get_com_distance_matrix(residues):
+def closest_atom_dmatrix(residues):
+    """Constructs distance matrix based on closest atom distance.
+    
+    Parameters
+    ----------
+    residues: list of :class:`Bio.PDB.Residue.Residue`
+        List of BioPython residues
+    coef_alpha,exp_beta,r_offset:float
+        Penalty funciton parameters
+    Returns
+    -------
+    distance_matrix: numpy.array of float
+        Distance matrix of residues
+    """
+    dmat, atoms_per_res = get_full_atom_distance_matrix(residues)
+    distance_matrix = np.zeros((len(residues), len(residues)))
+    slice1_idx = 0
+    for i in range(0, len(residues)):
+        slice2_idx = slice1_idx + atoms_per_res[i]
+        slice3_idx = slice2_idx
+        for j in range(i + 1, len(residues)):
+            slice4_idx = slice3_idx + atoms_per_res[j]
+            my_slice = dmat[slice1_idx:slice2_idx, slice3_idx:slice4_idx]
+            min_val = np.min(my_slice)
+            distance_matrix[i][j] = min_val
+            distance_matrix[j][i] = min_val
+            slice3_idx = slice4_idx
+        slice1_idx = slice2_idx
+    return distance_matrix
+
+def com_dmatrix(residues):
+    """Constructs distance matrix based on distances between centers of mass.
+
+    Parameters
+    ----------
+    residues: list of :class:`Bio.PDB.Residue.Residue`
+        List of residues to be included in analysis
+    Returns
+    -------
+    distance_matrix: numpy array of :class:`Bio.PDB.Residue.Residue`
+        Distance matrix of residues
+
+    """
     com_d = []
     # Compute COMs (x0, y0, z0) of side-chains
     for res in residues:
@@ -236,71 +260,6 @@ def get_com_distance_matrix(residues):
         com_z = z_wsum / mass_sum
         com_d.append(np.array([com_x, com_y, com_z]))
     return distance_matrix(com_d, com_d)
-
-
-def closest_atom_dmatrix(residues, coef_alpha, exp_beta, r_offset):
-    """Constructs distance matrix based on closest atom distance.
-    
-    Parameters
-    ----------
-    residues: list of :class:`Bio.PDB.Residue.Residue`
-        List of BioPython residues
-    coef_alpha,exp_beta,r_offset:float
-        Penalty funciton parameters
-    Returns
-    -------
-    distance_matrix: numpy.array of float
-        Distance matrix of residues
-    pathways_matrix: numpy.array of float
-        Modified distance matrix of residues using scores determined by penalty function parameters
-    """
-    dmat, atoms_per_res = get_full_atom_distance_matrix(residues)
-    distance_matrix = np.zeros((len(residues), len(residues)))
-    pathways_matrix = np.zeros((len(residues), len(residues)))
-    slice1_idx = 0
-    for i in range(0, len(residues)):
-        slice2_idx = slice1_idx + atoms_per_res[i]
-        slice3_idx = slice2_idx
-        for j in range(i + 1, len(residues)):
-            slice4_idx = slice3_idx + atoms_per_res[j]
-            my_slice = dmat[slice1_idx:slice2_idx, slice3_idx:slice4_idx]
-            min_val = np.min(my_slice)
-            distance_matrix[i][j] = min_val
-            distance_matrix[j][i] = min_val
-            pathways_matrix[i][j] = pathways_model(min_val, coef_alpha, exp_beta, r_offset)
-            pathways_matrix[j][i] = pathways_matrix[i][j]
-            slice3_idx = slice4_idx
-        slice1_idx = slice2_idx
-    return distance_matrix, pathways_matrix
-
-
-def com_dmatrix(residues, coef_alpha, exp_beta, r_offset):
-    """Constructs distance matrix based on distances between centers of mass.
-
-    Parameters
-    ----------
-    residues: list of :class:`Bio.PDB.Residue.Residue`
-        List of residues to be included in analysis
-    coef_alpha,exp_beta,r_offset:float
-        Penalty funciton parameters
-
-    Returns
-    -------
-    node_label: dict of int:str
-        List of node labels for graph
-    distance_matrix: numpy array of :class:`Bio.PDB.Residue.Residue`
-        Distance matrix of residues
-
-    """
-    com_d = get_com_distance_matrix(residues)
-    # calculate matrix with penalty functions
-    pathways_matrix = np.zeros((len(com_d), len(com_d)))
-    for i in range(len(com_d)):
-        for j in range(i + 1, len(com_d)):
-            dist_i_j = com_d[i][j]
-            pathways_matrix[i][j] = pathways_model(dist_i_j, coef_alpha, exp_beta, r_offset)
-            pathways_matrix[j][i] = pathways_matrix[i][j]
-    return com_d, pathways_matrix
 
 
 def process_standard_residues(standard_residue_list):
@@ -520,63 +479,74 @@ def finish_graph(G, surface_exposed_res, chain_list):
         if G[node] == {}:
             G.remove_node(node)
 
-
-def filter_edges(G, G_pathways, distance_cutoff, percent_edges, num_st_dev_edges):
+def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, include_residues,eta_moieties):
     '''Applies distance based filters to edges, removing those edges which do not fit criteria.
 
     Parameters
     ----------
     G: :class:`networkx.graph`
-        graph where edge weights are pure distances
-    G_pathways: :class:`networkx.graph`
-        graph where edge weights are distance dependent penalty functions
-    distance_cutoff,percent_edges,num_st_dev_edges: float
+        protein graph
+    distance_cutoff,percentile: float
         Parameters that determine which edges are kept.
     '''
-    # keep 99th percentile and ~20A filter on all edges
-    included_edges = []
-    for node in G.nodes():
-        edge_length_per_node = []
-        weights = []
-        for neighbor in G[node]:
-            weights.append(G.get_edge_data(node, neighbor)['weight'])
-        weights = sorted(weights)
-        thresh_index = math.ceil(len(weights) * percent_edges / 100)
-        for neighbor in G[node]:
-            if weights.index(G.get_edge_data(node, neighbor)['weight']) <= thresh_index and \
-                    G.get_edge_data(node, neighbor)['weight'] <= distance_cutoff:
-                edge_length_per_node.append(G.get_edge_data(node, neighbor)['weight'])
+    G2 = G.copy()
+    edge_types = [[[] for i in range(len(include_residues))] for j in range(len(include_residues))]
+    edge_dist_dict = {}
+    letter_codes = [res_name_to_char[res.upper()] for res in include_residues]
+    minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
+    # should never happen, but just in case
+    if minval == 0:
+        minval = 1
+    remove_edges = []
+    # impose hard cutoff, collect other edge weights
+    for u, v, d in G.edges(data=True):
+        if d['weight'] > distance_cutoff:
+            remove_edges.append((u,v))
+        else:
+            d['distance'] = d['weight']
+            d['weight'] = pathways_model(d['weight'],coef_alpha, exp_beta, r_offset)
+            d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
+            if u not in eta_moieties and v not in eta_moieties:
+                idx1 = letter_codes.index(u[0])
+                idx2 = letter_codes.index(v[0])
+                edge_types[idx1][idx2].append(d['distance'])
+    # collect percentiles for each edge type
+    for i in range(0,len(edge_types)):
+        for j in range(i,len(edge_types)):
+            key = letter_codes[i]+letter_codes[j]
+            if(len(edge_types[i][j])) > 1:
+                value = np.percentile(edge_types[i][j],percentile)
+            else:
+                value = 0.0
+            edge_dist_dict[key] = value
+    default_cutoff = np.ma.masked_equal(list(edge_dist_dict.values()), 0.0, copy=False).max()
+    # remove edges which don't fit criteria
+    for u, v, d in G.edges(data=True):
+        if (u,v) not in remove_edges:
+            if u in eta_moieties or v in eta_moieties:
+                cutoff = default_cutoff
+            else:
+                idx1 = letter_codes.index(u[0])
+                idx2 = letter_codes.index(v[0])
+                key = letter_codes[idx1]+letter_codes[idx2]
+                if key not in edge_dist_dict:
+                    key = letter_codes[idx2]+letter_codes[idx1]
+                cutoff = edge_dist_dict[key]
+            if d['distance'] > cutoff:
+                remove_edges.append((u,v))
+    for u,v in remove_edges:
+        G.remove_edge(u,v)
+    remove_edges = []
+    for node in G.nodes:
+        if G.degree(node) > 5:
+            for edge in sorted(list(G.edges(node)), key=lambda x: G.edges[x]['distance'])[5:]:
+                if edge not in remove_edges and edge[::-1] not in remove_edges:
+                    remove_edges.append(edge)
+    for u,v in remove_edges:
+        G.remove_edge(u,v)
+    
 
-        len_average, len_st_dev = 0.0, 0.0
-        if edge_length_per_node != []:
-            edge_length_per_node = np.array(edge_length_per_node, dtype='float64')
-            len_average = np.average(edge_length_per_node)
-            len_st_dev = np.std(edge_length_per_node)
-
-        for neighbor in G[node]:
-            if weights.index(G.get_edge_data(node, neighbor)['weight']) <= thresh_index and \
-                    G.get_edge_data(node, neighbor)['weight'] <= distance_cutoff and \
-                    np.round(G.get_edge_data(node, neighbor)['weight'], 8) <= np.round((len_average + num_st_dev_edges * len_st_dev), 8):
-                included_edges.append([node, neighbor])
-
-    excluded_edges = []
-    for edge in G.edges():
-        node1 = edge[0]
-        node2 = edge[1]
-        if ([node1, node2] not in included_edges) and ([node2, node1] not in included_edges):
-            excluded_edges.append(edge)
-
-    for edge in excluded_edges:
-        node1 = edge[0]
-        node2 = edge[1]
-        if G.has_edge(node1, node2):
-            G.remove_edge(node1, node2)
-        if G_pathways.has_edge(node1, node2):
-            G_pathways.remove_edge(node1, node2)
-
-
-def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
-                 eta_moieties):
+def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,percentile,eta_moieties,include_residues):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
@@ -587,7 +557,7 @@ def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distanc
         Labels for residues in the graph.
     residue_numbers:
         res numbers
-    distance_cutoff,percent_edges,num_st_dev_edges: float
+    distance_cutoff,percentile: float
         Parameters that determine which edges are kept.
     eta_moieties: list of str
         Non standard residues that were automatically identified
@@ -605,14 +575,8 @@ def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distanc
     """
     np.set_printoptions(threshold=sys.maxsize)
     G = nx.from_numpy_matrix(dmatrix)
-    minval_pathways = np.min(pathways_matrix[pathways_matrix.nonzero()])
-    G_pathways = nx.from_numpy_matrix(pathways_matrix)
-    filter_edges(G, G_pathways, distance_cutoff, percent_edges, num_st_dev_edges)
-    for u, v, d in G_pathways.edges(data=True):
-        d['len'] = d['weight'] / minval_pathways
-        d['distance'] = G[u][v]['weight']
-    G = G_pathways
     G = nx.relabel_nodes(G, node_labels)
+    filter_edges(G,coef_alpha, exp_beta, r_offset,distance_cutoff,percentile,include_residues,eta_moieties)
     for name_node in G.nodes():
         G.nodes[name_node]['style'] = 'filled'
         G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
@@ -622,7 +586,6 @@ def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distanc
         G.nodes[name_node]['fontcolor'] = "#000000"
         G.nodes[name_node]['color'] = '#708090'
         G.nodes[name_node]['penwidth'] = 2.0
-        G.nodes[name_node]["resnum"] = residue_numbers[name_node]
         if (name_node[1].isdigit()):
             if name_node not in eta_moieties:
                 if 'Y' == name_node[0]:
@@ -646,23 +609,20 @@ def create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distanc
         G[name_node1][name_node2]['style'] = 'dashed'
     return G
 
-
 def process(emap,
             chains=None,
             eta_moieties=None,
-            dist_def=0,
+            dist_def=1,
             sdef=1,
             include_residues=["TYR", "TRP"],
             custom="",
             distance_cutoff=20,
-            percent_edges=1.0,
-            num_st_dev_edges=1.0,
+            percent_edges=20,
             coef_alpha=1.0,
             exp_beta=2.3,
             r_offset=0.0,
             rd_thresh=3.03,
-            asa_thresh=.05,
-            structure=None):
+            asa_thresh=.05):
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
 
     Parameters
@@ -684,9 +644,7 @@ def process(emap,
     distance_cutoff: float
          Defines a pure distance threshold. PyeMap will only keep edges with distances less than or equal distance_cutoff.
     percent_edges: float
-        Specifies a percentage of the shortest edges per vertex to keep.
-    num_st_dev_edges: float
-        For a particular vertex, only edges with length < average length + num_st_dev_edges * SD included
+        Specifies a percentage of the shortest edges per edge type to keep.
     coef_alpha,exp_beta,r_offset: float, optional
         Penalty function parameters.
     Raises
@@ -714,7 +672,7 @@ def process(emap,
             include_residues[i] = res.upper()
         else:
             raise RuntimeError("Error: " + str(res) + " is not a valid 3 letter amino acid code.")
-    model = get_structure(pdb_file)[0]
+    model = emap._structure[0]
     aromatic_residues = get_standard_residues(model.get_residues(), chains, include_residues)
     for resname in eta_moieties:
         aromatic_residues.append(emap.eta_moieties[resname])
@@ -729,16 +687,14 @@ def process(emap,
         emap.user_residues[res.resname] = res
     aromatic_residues += user_residues
     node_labels = {}
-    residue_numbers = {}
     for i in range(0, len(aromatic_residues)):
         node_labels[i] = aromatic_residues[i].node_label
-        residue_numbers[aromatic_residues[i].node_label] = aromatic_residues[i].full_id[3][1]
     if int(dist_def) == 0:
-        dmatrix, pathways_matrix = com_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
+        dmatrix = com_dmatrix(aromatic_residues)
     else:
-        dmatrix, pathways_matrix = closest_atom_dmatrix(aromatic_residues, coef_alpha, exp_beta, r_offset)
-    G = create_graph(dmatrix, pathways_matrix, node_labels, residue_numbers, distance_cutoff, percent_edges, num_st_dev_edges,
-                     emap.eta_moieties.keys())
+        dmatrix = closest_atom_dmatrix(aromatic_residues)
+    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff,percent_edges,
+                     emap.eta_moieties.keys(),include_residues)
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise RuntimeError("Not enough edges to construct a graph.")
@@ -746,7 +702,7 @@ def process(emap,
     if sdef and int(sdef) == 0:
         surface_exposed_res = calculate_residue_depth(pdb_file,aromatic_residues,rd_thresh)
     elif sdef and int(sdef) == 1:
-        surface_exposed_res = calculate_asa(pdb_file, node_labels.values(), asa_thresh)
+        surface_exposed_res = calculate_asa(pdb_file, model, node_labels.values(), asa_thresh)
     else:
         surface_exposed_res = []
     finish_graph(G, surface_exposed_res, chains)

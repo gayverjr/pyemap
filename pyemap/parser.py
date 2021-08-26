@@ -9,6 +9,7 @@ from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from .custom_residues import process_custom_residues
 from .data import res_name_to_char
 from .emap import emap
+import sys
 import os
 
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
@@ -57,7 +58,7 @@ def fetch_and_parse(pdb_id, dest="", quiet=False):
         print("Success!")
     return parse(outfnm, quiet)
 
-def parse(filename, quiet=False):
+def parse(filename, quiet=True):
     '''Parses pdb file and returns emap object.
     
     Parameters
@@ -72,6 +73,8 @@ def parse(filename, quiet=False):
     my_emap: :class:`~pyemap.emap`
         emap object reading for parsing
     '''
+    if not quiet:
+        print("Parsing file: " + str(filename))
     try:
         parser = PDBParser()
         structure = parser.get_structure("protein", filename)
@@ -110,4 +113,5 @@ def parse(filename, quiet=False):
     if not quiet:
         print("Identified " + str(len(custom_residue_list)) + " non-protein ET active moieties.")
     my_emap = emap(filename, custom_residue_list, chain_list, sequences, chain_start)
+    my_emap._structure = structure
     return my_emap

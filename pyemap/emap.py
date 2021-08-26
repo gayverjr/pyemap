@@ -356,7 +356,7 @@ class emap():
         if G:
             agraph = to_agraph(G)
             agraph.graph_attr.update(
-                ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+                ratio=1.0, overlap="rc", mode="ipsep", splines="true")
             if agraph.number_of_nodes() <= 200:
                 try:
                     agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")

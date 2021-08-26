@@ -19,17 +19,17 @@ for i in range(0,len(pdb_ids)):
 pg.process_emaps(sdef=None,dist_def=1)
 pg.generate_graph_database()
 pg.find_subgraph('WWWX')
+fs = pg.subgraph_patterns['1_WWWX_17']
 
+fs.find_protein_subgraphs()
+print(fs.full_report())
 
-print(pg.subgraph_report('0_WWWX_18'))
-
-fs = pg.subgraph_patterns['0_WWWX_18']
 for key,val in fs.protein_subgraphs.items():
     for key2,val2 in fs.protein_subgraphs.items():
         if not key==key2:
             print(str(key) + " group:" + str(val.graph['group_val']))
             print(str(key2) + " group:" + str(val2.graph['group_val']))
-            print(pg.subgraph_rmsd(fs.id,key,key2))
+            print(fs.subgraph_rmsd(key,key2))
             print()
 
 
