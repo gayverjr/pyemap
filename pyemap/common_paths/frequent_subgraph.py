@@ -4,7 +4,7 @@ from numpy import linalg as LA
 from Bio.PDB import Superimposer
 import matplotlib.pyplot as plt
 import warnings
-from .utils import get_edge_label, get_numerical_node_label, strip_res_number, get_graph_matcher
+from .utils import get_edge_label, get_numerical_node_label, strip_res_number, get_graph_matcher, write_graph_smiles
 import networkx as nx
 
 class FrequentSubgraph():
@@ -46,7 +46,14 @@ class FrequentSubgraph():
         self.res_to_num_label = res_to_num_label
         self.edge_thresholds = edge_thresholds
         self.support_number = len(support)
-        self.id = str(graph_number+1) + "_" + str(self._gen_node_rep()) + "_" + str(self.support_number)
+        self.id = str(graph_number+1) + "_" + str(write_graph_smiles(self.generic_subgraph)) + "_" + str(self.support_number)
+        if "#" in self.id:
+            self.file_id = self.id.replace("#","NP")
+        else:
+            self.file_id = self.id
+        for node in self.generic_subgraph.nodes:
+            if self.generic_subgraph.nodes[node]['label'] == "#":
+                self.generic_subgraph.nodes[node]['label'] = "NP"
 
     def general_report(self):
         ''' Generates general report which describes this subgraph pattern.
@@ -141,6 +148,7 @@ class FrequentSubgraph():
         for pdb_id in self.support:
             all_graphs += self._find_subgraph_in_pdb(pdb_id)
         dims = (len(all_graphs), len(all_graphs))
+        print(str(dims[0])+" graphs found.")
         if len(all_graphs) > 1:
             if clustering_option == "structural":
                 D, A = self._structural_clustering(all_graphs)
@@ -149,6 +157,7 @@ class FrequentSubgraph():
             else:
                 raise Exception("Either structural or sequence.")
             self.clustering_option = clustering_option
+            print("Finished generating laplacian.")
             L = D - A
             eigv, eigvc = LA.eig(L)
             eigv = np.real(eigv)
@@ -274,9 +283,13 @@ class FrequentSubgraph():
         GM = get_graph_matcher(self.support[pdb_id].init_graph, self.generic_subgraph)
         subgraph_isos = GM.subgraph_monomorphisms_iter()
         sgs = []
+        degree_dicts = []
         for mapping in subgraph_isos:
             sg = self._generate_protein_subgraph(mapping, self.support[pdb_id].init_graph, self.generic_subgraph, self.support[pdb_id])
-            sgs.append(sg)
+            degree_dict = dict(sg.degree)
+            if degree_dict not in degree_dicts:
+                degree_dicts.append(degree_dict)
+                sgs.append(sg)
         return sgs
 
     def _generate_protein_subgraph(self, mapping, protein_graph, generic_subgraph, emap_obj):

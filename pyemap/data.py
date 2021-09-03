@@ -27,6 +27,13 @@ res_name_to_char = {
 
 char_to_res_name = {v: k for k, v in res_name_to_char.items()}
 
+aromatic_aa = ["HIS","PHE","TRP","TYR"]
+polar_aa = ["SER","THR","CYS","PRO","ASN","GLN"]
+pos_aa = ["LYS","ARG"]
+neg_aa = ["ASP","GLU"]
+nonpolar_aa = ["GLY","ALA","VAL","LEU","MET","ILE"]
+
+
 radii = {
     'H': 1.20,
     'N': 1.55,

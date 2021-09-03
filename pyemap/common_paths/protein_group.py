@@ -16,34 +16,30 @@ from .frequent_subgraph import FrequentSubgraph
 import warnings
 from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher
 
-def nodes_and_edges_from_string(graph_str, edge_thresholds):
+def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
     graph_str = graph_str.replace(" ", "")
     graph_str = list(graph_str)
     node_list = []
     idx = 0
     while idx < len(graph_str):
-        if graph_str[idx] == "(":
-            node_label = ""
-            idx += 1
-            while not graph_str[idx] == ")":
-                node_label += str(graph_str[idx])
-                idx += 1
-            node_list.append(node_label)
-            idx += 1
-        else:
-            node_list.append(str(graph_str[idx]))
-            idx += 1
+        node_list.append(str(graph_str[idx]))
+        idx+=1
     l1 = []
     for i in range(0, len(edge_thresholds)):
         l1.append(i + 2)
     from itertools import product
+    indices = [i for i,x in enumerate(node_list) if x=="*"]
+    if len(indices) == 0:
+        node_combs = [node_list]
+    else:
+        node_combs = []
+        wildcard_combs = list(product(residue_categories,repeat=len(indices)))
+        for comb in wildcard_combs:
+            for i,idx in enumerate(indices):
+                node_list[idx] = comb[i]
+            node_combs.append(node_list.copy())
     edge_combs = list(product(l1, repeat=len(node_list) - 1))
-    unique_edge_combs = []
-    for edge_comb in edge_combs:
-        ec = list(edge_comb)
-        if ec not in unique_edge_combs and ec[::-1] not in unique_edge_combs:
-            unique_edge_combs.append(ec)
-    return node_list, unique_edge_combs
+    return node_combs, edge_combs
 
 class PDBGroup():
     '''
@@ -76,8 +72,8 @@ class PDBGroup():
         self.emaps = {}
         self.temp_dir = temp_dir
         self.subgraph_patterns = {}
-        self.res_to_num_label = {}
-        self.num_label_to_res = {}
+        self.node_labels = {}
+        self.residue_categories = {}
         self.edge_thresholds = []
         self.emap_parameters = {}
         self.gspan_parameters = {}
@@ -90,8 +86,8 @@ class PDBGroup():
 
     def _clean_graph_database(self):
         self.graph_database_parameters = {}
-        self.res_to_num_label = {}
-        self.num_label_to_res = {}
+        self.node_labels = {}
+        self.residue_categories = {}
         self.edge_thresholds = []
         self.sep_buried_exposed = False
         self._clean_subgraphs()
@@ -133,12 +129,13 @@ class PDBGroup():
                 original_idx = emap.chain_start[chain]
                 aligned_idx = emap.chain_start[chain]
                 seq_map = {}
-                aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
-                for res in aligned_seq:
-                    if not res == "-":
-                        seq_map[original_idx] = aligned_idx
-                        original_idx += 1
-                    aligned_idx += 1
+                if pdb_id + ":" + chain in self.aligned_sequences:
+                    aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
+                    for res in aligned_seq:
+                        if not res == "-":
+                            seq_map[original_idx] = aligned_idx
+                            original_idx += 1
+                        aligned_idx += 1
                 for resnum, residue in residues.items():
                     if resnum.isdigit() and int(resnum) in seq_map:
                         residue.aligned_residue_number = seq_map[int(resnum)]
@@ -185,7 +182,9 @@ class PDBGroup():
                         include_residues=include_residues,
                         sdef = sdef,
                         **kwargs)
+                print("Finished:"+str(pdb_id))
             except Exception as e:
+                print(e)
                 remove_pdbs.append(pdb_id)
                 warnings.warn("Could not generate graph for: "+ pdb_id + ". It will not be included in the analysis.")
         for pdb_id in remove_pdbs:
@@ -198,10 +197,10 @@ class PDBGroup():
         print("Processing took:" + str(time.time() - start_time) + " seconds.")
 
     def _apply_num_labels(self):
-        for pdb_id,emap in self.emaps.items():
+        for emap in self.emaps.values():
             protein_graph = emap.init_graph
             for node in protein_graph.nodes:
-                protein_graph.nodes[node]['num_label'] = get_numerical_node_label(node, pdb_id, self.res_to_num_label)
+                protein_graph.nodes[node]['num_label'] = get_numerical_node_label(node, self.node_labels)
             for edge in protein_graph.edges:
                 protein_graph.edges[edge]['num_label'] = get_edge_label(protein_graph, edge, self.edge_thresholds)
 
@@ -227,8 +226,8 @@ class PDBGroup():
             full_str += str(self.included_eta_moieties)
             full_str += "\n"
         full_str += "Edge thresholds:\n" + str(self.edge_thresholds) + "\n"
-        full_str += "Node labels:\n" + str(self.res_to_num_label) + "\n"
-        full_str += "Node categories:\n" + str(self.num_label_to_res) + "\n"
+        full_str += "Node labels:\n" + str(self.node_labels) + "\n"
+        full_str += "Residue categories:\n" + str(self.residue_categories) + "\n"
         return full_str
 
     def general_report(self, dest=None):
@@ -279,53 +278,43 @@ class PDBGroup():
         total_num_edges = 0
         for emap in self.emaps.values():
             total_num_edges+=emap.init_graph.number_of_edges()
-        print("Number of edges: " + str(total_num_edges))
-        if edge_thresholds is not None:
-            self.edge_thresholds = edge_thresholds
-            return 
+        if "distance_cutoff" in self.emap_parameters:
+            end = self.emap_parameters["distance_cutoff"]
         else:
-            if "distance_cutoff" in self.emap_parameters:
-                end = self.emap_parameters["distance_cutoff"]
-            else:
-                end = 20
-            if self.emap_parameters["dist_def"] == 1:
-                edge_thresholds = [6]
-            else:
-                edge_thresholds = [8]
-            cur_thresh = edge_thresholds[0]+4
-            while cur_thresh < end:
-                edge_thresholds.append(cur_thresh)
-                cur_thresh+=4
-            self.edge_thresholds = edge_thresholds
+            end = 20
+        if self.emap_parameters["dist_def"] == 1:
+            edge_thresholds = [6]
+        else:
+            edge_thresholds = [10]
+        cur_thresh = edge_thresholds[0]+4
+        while cur_thresh < end:
+            edge_thresholds.append(cur_thresh)
+            cur_thresh+=4
+        self.edge_thresholds = edge_thresholds
 
-    def _set_node_labels(self, node_labels, categories):
-        self.res_to_num_label = {}
-        self.num_label_to_res = {}
-        if categories is not None and ("X" in node_labels or "X" in categories.values()):
-            raise KeyError("X is reserved for unknown residue type. Do not use X as a key.")
-        if not node_labels:
-            num_label = 2
-            for res in self.included_standard_residues:
-                self.res_to_num_label[res_name_to_char[res]] = num_label
-                self.num_label_to_res[num_label] = res_name_to_char[res]
-                num_label += 1
-            self.num_label_to_res[num_label] = "X"
-            self.res_to_num_label["X"] = num_label
+    def _set_node_labels(self, nodes=None, categories=None, labels=None):
+        assert (categories is None and labels is None) or  (categories is not None and labels is not None)
+        if categories is not None:
+            if "X" in labels or "X" in categories.values():
+                raise KeyError("X is reserved for unspecified residue type. Do not use X as a key.")
+            if not nodes==['H','W','F',"Y"]:
+                warnings.warn("Warning: 'nodes' keyword is incompatible and will be ignored.")
+            self.residue_categories = categories
+            self.node_labels = labels
         else:
-            self.num_label_to_res = categories.copy()
-            self.res_to_num_label = node_labels.copy()
-            # add back in categories for single subgraph search
-            for key, val in categories.items():
-                self.res_to_num_label[val] = key
-            num_label = len(self.num_label_to_res) + 2
-            self.num_label_to_res[num_label] = "X"
-            self.res_to_num_label["X"] = num_label
-        if self.sep_buried_exposed:
-            num_label_to_res = self.num_label_to_res.copy()
-            num_categories = len(self.num_label_to_res)
-            for num_label, res_label in num_label_to_res.items():
-                self.num_label_to_res[num_label + num_categories] = res_label + "_exp"
-                self.res_to_num_label[res_label + "_exp"] = num_label + num_categories
+            if nodes is None:
+                nodes = self.included_standard_residues
+            num_label = 2
+            for res in nodes:
+                if res in self.included_standard_residues:
+                    self.node_labels[res_name_to_char[res]] = num_label
+                    self.residue_categories[num_label] = res_name_to_char[res]
+                    num_label+=1
+        num_label = max(self.node_labels.values()) + 1
+        self.residue_categories[num_label] = "X"
+        self.node_labels["X"] = num_label
+        self.residue_categories[num_label+1] = "#"
+        self.node_labels["#"] = num_label+1
 
     def add_emap(self, emap_obj):
         ''' Adds a parsed :class:`~pyemap.emap` object to the PDB group.
@@ -340,7 +329,7 @@ class PDBGroup():
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
-    def generate_graph_database(self, node_labels=None, categories=None, sep_buried_exposed=False, edge_thresholds=None):
+    def generate_graph_database(self,**kwargs):
         ''' Generates graph database for analysis by GSpan using specified node labels, node categories, and edge thresholds.
 
         Parameters
@@ -364,20 +353,18 @@ class PDBGroup():
         '''
         # check if we need to regenerate database
         self._clean_graph_database()
-        self.graph_database_parameters["node_labels"] = node_labels
-        self.graph_database_parameters["categories"] = categories
-        self.graph_database_parameters["sep_buried_exposed"] = sep_buried_exposed
-        self.sep_buried_exposed = sep_buried_exposed
-        self._set_node_labels(node_labels, categories)
-        self._set_edge_labels(edge_thresholds)
-        print("thresholds:")
-        print(self.edge_thresholds)
+        if "edge_thresholds" in kwargs:
+            assert (float(x) for x in kwargs["edge_thresholds"] and float(kwargs["edge_thresholds"][i]) >float(kwargs["edge_thresholds"][i-1]) for i in range(1,len(kwargs["edge_thresholds"])))
+            self.edge_thresholds = kwargs["edge_thresholds"]
+        else:
+            self._set_edge_labels(kwargs)
+        self._set_node_labels(**kwargs)
         f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
         for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph
             f.write("t # " + str(i) + "\n")
             for i, node in enumerate(G.nodes):
-                f.write("v " + str(i) + " " + str(get_numerical_node_label(node,key,self.res_to_num_label)) + "\n")
+                f.write("v " + str(i) + " " + str(get_numerical_node_label(node,self.node_labels)) + "\n")
             for i, edge in enumerate(G.edges):
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
                         str(get_edge_label(G, edge,self.edge_thresholds)) + "\n")
@@ -435,7 +422,7 @@ class PDBGroup():
                         node_idx = int(line.split()[1])
                         node_label = int(line.split()[2])
                         G.add_node(node_idx)
-                        G.nodes[node_idx]['label'] = self.num_label_to_res[node_label]
+                        G.nodes[node_idx]['label'] = self.residue_categories[node_label]
                         G.nodes[node_idx]['num_label'] = node_label
                     if len(line.split()) > 1 and line.split()[0] == "e":
                         idx1 = int(line.split()[1])
@@ -450,7 +437,7 @@ class PDBGroup():
                         support = {}
                         for idx in pdb_list_by_index:
                             support[pdb_list[idx]] = self.emaps[pdb_list[idx]]
-                        subgraphs.append(FrequentSubgraph(G,graph_number,support,self.res_to_num_label,self.edge_thresholds))
+                        subgraphs.append(FrequentSubgraph(G,graph_number,support,self.node_labels,self.edge_thresholds))
                     line_idx += 1
             line_idx += 1
         buff.close()
@@ -463,27 +450,28 @@ class PDBGroup():
         self.gspan_parameters["support"] = None
         self.gspan_parameters["lower_bound"] = None
         self.gspan_parameters["graph_specification"] = graph_specification
-        node_list, edge_combs = nodes_and_edges_from_string(graph_specification, self.edge_thresholds)
-        G = nx.Graph()
-        for node_idx, node in enumerate(node_list):
-            G.add_node(node_idx)
-            G.nodes[node_idx]['label'] = node
-            G.nodes[node_idx]['num_label'] = self.res_to_num_label[node]
-            if node_idx > 0:
-                G.add_edge(node_idx - 1, node_idx)
+        node_combs, edge_combs = nodes_and_edges_from_string(graph_specification, self.edge_thresholds, list(self.residue_categories.values()))
         subgraph_patterns = []
-        for edge_comb in edge_combs:
-            for j, edge in enumerate(G.edges):
-                G.edges[edge]['num_label'] = edge_comb[j]
-                G.edges[edge]['label'] = edge_comb[j]
-            protein_subgraphs = []
-            support = {}
-            for pdb_id in self.emaps:
-                GM = get_graph_matcher(self.emaps[pdb_id].init_graph, G)
-                if GM.subgraph_is_monomorphic():
-                    support[pdb_id] = self.emaps[pdb_id]
-            if len(support) > 0:
-                subgraph_patterns.append(FrequentSubgraph(G,len(subgraph_patterns),support,self.res_to_num_label,self.edge_thresholds))
+        for node_list in node_combs:
+            G = nx.Graph()
+            for node_idx, node in enumerate(node_list):
+                G.add_node(node_idx)
+                G.nodes[node_idx]['label'] = node
+                G.nodes[node_idx]['num_label'] = self.node_labels[node]
+                if node_idx > 0:
+                    G.add_edge(node_idx - 1, node_idx)
+            for edge_comb in edge_combs:
+                for j, edge in enumerate(G.edges):
+                    G.edges[edge]['num_label'] = edge_comb[j]
+                    G.edges[edge]['label'] = edge_comb[j]
+                protein_subgraphs = []
+                support = {}
+                for pdb_id in self.emaps:
+                    GM = get_graph_matcher(self.emaps[pdb_id].init_graph, G)
+                    if GM.subgraph_is_monomorphic():
+                        support[pdb_id] = self.emaps[pdb_id]
+                if len(support) > 0:
+                    subgraph_patterns.append(FrequentSubgraph(G,len(subgraph_patterns),support,self.node_labels,self.edge_thresholds))
         subgraph_patterns.sort(key=lambda x: x.support_number, reverse=True)
         for fs in subgraph_patterns:
             self.subgraph_patterns[fs.id] = fs

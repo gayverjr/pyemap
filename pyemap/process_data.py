@@ -479,14 +479,14 @@ def finish_graph(G, surface_exposed_res, chain_list):
         if G[node] == {}:
             G.remove_node(node)
 
-def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, include_residues,eta_moieties):
+def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, max_degree, include_residues,eta_moieties):
     '''Applies distance based filters to edges, removing those edges which do not fit criteria.
 
     Parameters
     ----------
     G: :class:`networkx.graph`
         protein graph
-    distance_cutoff,percentile: float
+    distance_cutoff,percentile,max_degree: float
         Parameters that determine which edges are kept.
     '''
     G2 = G.copy()
@@ -510,6 +510,8 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
                 idx1 = letter_codes.index(u[0])
                 idx2 = letter_codes.index(v[0])
                 edge_types[idx1][idx2].append(d['distance'])
+    G.remove_edges_from(remove_edges)
+    remove_edges = []
     # collect percentiles for each edge type
     for i in range(0,len(edge_types)):
         for j in range(i,len(edge_types)):
@@ -522,31 +524,31 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
     default_cutoff = np.ma.masked_equal(list(edge_dist_dict.values()), 0.0, copy=False).max()
     # remove edges which don't fit criteria
     for u, v, d in G.edges(data=True):
-        if (u,v) not in remove_edges:
-            if u in eta_moieties or v in eta_moieties:
-                cutoff = default_cutoff
-            else:
-                idx1 = letter_codes.index(u[0])
-                idx2 = letter_codes.index(v[0])
-                key = letter_codes[idx1]+letter_codes[idx2]
-                if key not in edge_dist_dict:
-                    key = letter_codes[idx2]+letter_codes[idx1]
-                cutoff = edge_dist_dict[key]
-            if d['distance'] > cutoff:
-                remove_edges.append((u,v))
-    for u,v in remove_edges:
-        G.remove_edge(u,v)
+        if u in eta_moieties or v in eta_moieties:
+            cutoff = default_cutoff
+        else:
+            idx1 = letter_codes.index(u[0])
+            idx2 = letter_codes.index(v[0])
+            key = letter_codes[idx1]+letter_codes[idx2]
+            if key not in edge_dist_dict:
+                key = letter_codes[idx2]+letter_codes[idx1]
+            cutoff = edge_dist_dict[key]
+        if d['distance'] > cutoff:
+            remove_edges.append((u,v))
+    G.remove_edges_from(remove_edges)
     remove_edges = []
     for node in G.nodes:
-        if G.degree(node) > 5:
-            for edge in sorted(list(G.edges(node)), key=lambda x: G.edges[x]['distance'])[5:]:
+        if G.degree(node) > max_degree:
+            for edge in sorted(list(G.edges(node)), key=lambda x: G.edges[x]['distance'])[max_degree:]:
                 if edge not in remove_edges and edge[::-1] not in remove_edges:
                     remove_edges.append(edge)
+    remove_edges = sorted(remove_edges, key=lambda x: G.edges[x]['distance'])
     for u,v in remove_edges:
-        G.remove_edge(u,v)
+        if G.degree(u) > max_degree or G.degree(v) > max_degree:
+            G.remove_edge(u,v)
     
 
-def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,percentile,eta_moieties,include_residues):
+def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,percentile,max_degree,eta_moieties,include_residues):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
@@ -557,7 +559,7 @@ def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_c
         Labels for residues in the graph.
     residue_numbers:
         res numbers
-    distance_cutoff,percentile: float
+    distance_cutoff,percentile, max_degree: float
         Parameters that determine which edges are kept.
     eta_moieties: list of str
         Non standard residues that were automatically identified
@@ -576,7 +578,7 @@ def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_c
     np.set_printoptions(threshold=sys.maxsize)
     G = nx.from_numpy_matrix(dmatrix)
     G = nx.relabel_nodes(G, node_labels)
-    filter_edges(G,coef_alpha, exp_beta, r_offset,distance_cutoff,percentile,include_residues,eta_moieties)
+    filter_edges(G,coef_alpha, exp_beta, r_offset,distance_cutoff,percentile,max_degree,include_residues,eta_moieties)
     for name_node in G.nodes():
         G.nodes[name_node]['style'] = 'filled'
         G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
@@ -617,12 +619,13 @@ def process(emap,
             include_residues=["TYR", "TRP"],
             custom="",
             distance_cutoff=20,
-            percent_edges=20,
+            percent_edges=100,
             coef_alpha=1.0,
+            max_degree = 4,
             exp_beta=2.3,
             r_offset=0.0,
             rd_thresh=3.03,
-            asa_thresh=.05):
+            asa_thresh=0.2):
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
 
     Parameters
@@ -645,6 +648,8 @@ def process(emap,
          Defines a pure distance threshold. PyeMap will only keep edges with distances less than or equal distance_cutoff.
     percent_edges: float
         Specifies a percentage of the shortest edges per edge type to keep.
+    max_degree: int
+        Maximum degree of any vertex.
     coef_alpha,exp_beta,r_offset: float, optional
         Penalty function parameters.
     Raises
@@ -693,7 +698,7 @@ def process(emap,
         dmatrix = com_dmatrix(aromatic_residues)
     else:
         dmatrix = closest_atom_dmatrix(aromatic_residues)
-    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff,percent_edges,
+    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff,percent_edges, max_degree,
                      emap.eta_moieties.keys(),include_residues)
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
