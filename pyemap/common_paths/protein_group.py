@@ -279,11 +279,11 @@ class PDBGroup():
         for emap in self.emaps.values():
             total_num_edges+=emap.init_graph.number_of_edges()
         if "distance_cutoff" in self.emap_parameters:
-            end = self.emap_parameters["distance_cutoff"]
+            end = float(self.emap_parameters["distance_cutoff"])
         else:
             end = 20
-        if self.emap_parameters["dist_def"] == 1:
-            edge_thresholds = [6]
+        if int(self.emap_parameters["dist_def"]) == 1:
+            edge_thresholds = [5]
         else:
             edge_thresholds = [10]
         cur_thresh = edge_thresholds[0]+4

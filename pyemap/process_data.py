@@ -511,6 +511,7 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
                 idx2 = letter_codes.index(v[0])
                 edge_types[idx1][idx2].append(d['distance'])
     G.remove_edges_from(remove_edges)
+    '''
     remove_edges = []
     # collect percentiles for each edge type
     for i in range(0,len(edge_types)):
@@ -536,6 +537,7 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
         if d['distance'] > cutoff:
             remove_edges.append((u,v))
     G.remove_edges_from(remove_edges)
+    '''
     remove_edges = []
     for node in G.nodes:
         if G.degree(node) > max_degree:
