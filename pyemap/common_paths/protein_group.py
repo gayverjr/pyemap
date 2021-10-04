@@ -5,7 +5,7 @@ from ..process_data import process
 import networkx as nx
 import time
 import datetime
-from ..data import res_name_to_char
+from ..data import res_name_to_char, char_to_res_name
 import re
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -274,7 +274,7 @@ class PDBGroup():
             fi.close()
         return full_str
 
-    def _set_edge_labels(self,edge_thresholds):
+    def _set_edge_labels(self):
         total_num_edges = 0
         for emap in self.emaps.values():
             total_num_edges+=emap.init_graph.number_of_edges()
@@ -292,7 +292,8 @@ class PDBGroup():
             cur_thresh+=4
         self.edge_thresholds = edge_thresholds
 
-    def _set_node_labels(self, nodes=None, categories=None, labels=None):
+    def _set_node_labels(self,nodes):
+        '''
         assert (categories is None and labels is None) or  (categories is not None and labels is not None)
         if categories is not None:
             if "X" in labels or "X" in categories.values():
@@ -301,15 +302,15 @@ class PDBGroup():
                 warnings.warn("Warning: 'nodes' keyword is incompatible and will be ignored.")
             self.residue_categories = categories
             self.node_labels = labels
-        else:
-            if nodes is None:
-                nodes = self.included_standard_residues
-            num_label = 2
-            for res in nodes:
-                if res in self.included_standard_residues:
-                    self.node_labels[res_name_to_char[res]] = num_label
-                    self.residue_categories[num_label] = res_name_to_char[res]
-                    num_label+=1
+        '''
+        if nodes is None:
+            nodes = [res_name_to_char[x] for x in self.included_standard_residues]
+        assert all(x in char_to_res_name for x in nodes)
+        num_label = 2
+        for res in nodes:
+            self.node_labels[res] = num_label
+            self.residue_categories[num_label] = res
+            num_label+=1
         num_label = max(self.node_labels.values()) + 1
         self.residue_categories[num_label] = "X"
         self.node_labels["X"] = num_label
@@ -329,36 +330,32 @@ class PDBGroup():
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
-    def generate_graph_database(self,**kwargs):
+    def generate_graph_database(self,nodes=None,edge_thresholds=None):
         ''' Generates graph database for analysis by GSpan using specified node labels, node categories, and edge thresholds.
 
         Parameters
         ----------
-        node_labels: dict of str:int, optional
-            Dict which maps residue labels to their numerical label for usage in the gSpan algorithm. Labels for non-standard
-            residues should be preceded with the 4 character PDB ID followed by an underscore (e.g. 1u3d_FAD510(A)-2)
-        categories: dict of int:str, optional
-            Dict which maps numerical label to node category (which will appear in generic representation of subgraph pattern)
-        
+        nodes: list of str
+            List of one character amino acid codes to be given their own category. The remaining
+            AA will be labeled as "X". Default is all standard amino acid receive their own category.
+        edge_thresholds: list of float
+            List of edge thresholds. Edges with weight below the first value will be given the label 2, edges
+            between the 1st and second values will be labeled as 3, and so on. 
+            Default is [5,9,13...] for closest atom, and [10,14,18...] for center of mass distance.
         Examples
         ---------
-        >>> # labels for each type of residue included in analysis, including eta moieties grouped as a category
-        >>> node_labels = {'1u3d_FAD510(A)-2': 2, '1u3c_FAD510(A)-2': 2, '6PU0_FAD501(A)-2': 2, 
-                           '4I6G_FAD900(A)-2': 2, '2J4D_FAD1498(A)-2': 2, '1u3d_ANP511(A)': 3, 
-                           'W': 4, 'Y': 5}
-        >>> categories = {2: 'Fla', 3: 'Ade', 4: 'W', 5: 'Y'}
-        >>> # edge length thresholds for categorizing edges
-        >>> my_pg.generate_graph_database(node_labels=node_labels,categories=categories)
-
+        pg.generate_graph_database(nodes=['W','Y'],edge_thresholds=[5,15])
         '''
         # check if we need to regenerate database
         self._clean_graph_database()
-        if "edge_thresholds" in kwargs:
-            assert (float(x) for x in kwargs["edge_thresholds"] and float(kwargs["edge_thresholds"][i]) >float(kwargs["edge_thresholds"][i-1]) for i in range(1,len(kwargs["edge_thresholds"])))
-            self.edge_thresholds = kwargs["edge_thresholds"]
+        if edge_thresholds is not None:
+            assert (float(x) for x in edge_thresholds)
+            assert all(edge_thresholds[i] <= edge_thresholds[i+1] for i in range(len(edge_thresholds)-1))
+            self.edge_thresholds = edge_thresholds.copy()
         else:
-            self._set_edge_labels(kwargs)
-        self._set_node_labels(**kwargs)
+            self._set_edge_labels()
+        self._set_node_labels(nodes)
+        print(self.edge_thresholds)
         f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
         for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph

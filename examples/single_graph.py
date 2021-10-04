@@ -17,11 +17,13 @@ for i in range(0,len(pdb_ids)):
     pg.add_emap(emap_obj)
 
 pg.process_emaps(sdef=None,dist_def=0)
+#pg.generate_graph_database()
 pg.generate_graph_database()
 pg.find_subgraph('WW*#')
 print(pg.subgraph_patterns)
 
-sg = pg.subgraph_patterns['13_WWW#_18']
+# get graph w/ largest support
+sg = next(iter(pg.subgraph_patterns.items()))[1]
 sg.find_protein_subgraphs()
 print("RMSD between: 1U3D(1)-1 and 1U3C(1)-1")
 print(sg.subgraph_rmsd("1U3D(1)-1","1U3C(1)-1"))

@@ -19,7 +19,7 @@ pg.process_emaps(dist_def=0,include_residues=["TYR","TRP"])
 pg.generate_graph_database()
 pg.run_gspan(int(0.65*len(pdb_ids)),lower_bound=4)
 print(pg.general_report())
-sg = pg.subgraph_patterns['8_WWW#_18']
+sg = next(iter(pg.subgraph_patterns.items()))[1]
 sg.find_protein_subgraphs()
 print(sg.full_report())
 
