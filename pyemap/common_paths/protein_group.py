@@ -14,7 +14,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio.SeqUtils import seq1
 from .frequent_subgraph import FrequentSubgraph
 import warnings
-from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher
+from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, strip_insertion_code
 
 def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
     graph_str = graph_str.replace(" ", "")
@@ -136,8 +136,9 @@ class PDBGroup():
                             seq_map[original_idx] = aligned_idx
                             original_idx += 1
                         aligned_idx += 1
-                for resnum, residue in residues.items():
-                    if resnum.isdigit() and int(resnum) in seq_map:
+                for residue in residues:
+                    resnum = residue.id[1]
+                    if int(resnum) in seq_map:
                         residue.aligned_residue_number = seq_map[int(resnum)]
                     else:
                         residue.aligned_residue_number = 'X'
@@ -355,7 +356,6 @@ class PDBGroup():
         else:
             self._set_edge_labels()
         self._set_node_labels(nodes)
-        print(self.edge_thresholds)
         f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
         for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph

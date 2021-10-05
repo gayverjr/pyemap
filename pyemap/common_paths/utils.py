@@ -11,6 +11,12 @@ def get_edge_label(G, edge, edge_thresholds):
             label += 1
     return label
 
+def strip_insertion_code(u):
+    for i in range(0, len(u)):
+        if u[i].isalpha():
+            return u[:i-1]
+    return u
+
 #adapted from: https://github.com/pckroon/pysmiles/
 def write_graph_smiles(generic_subgraph):
     import networkx as nx

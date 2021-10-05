@@ -16,7 +16,6 @@ from .process_data import get_atom_list
 from .png2svg import convert_to_svg
 # need to checkout https://github.com/IngJavierR/PngToSvg
 
-
 class emap():
     '''
     Manages the data generated at all stages of PyeMap analysis.
@@ -220,14 +219,10 @@ class emap():
         self.ngl_strings[residue.node_label] = residue.ngl_string
         resnum = str(residue.full_id[3][1])
         chain_id = residue.full_id[2]
-        if residue.resname in self.eta_moieties:
-            key = resnum + residue.resname[residue.resname.index(")")+1:]
-        else:
-            key = resnum
         if chain_id in self.active_chains:
-            self.active_chains[chain_id][key] = residue
+            self.active_chains[chain_id].append(residue)
         else:
-            self.active_chains["extra"][key] = residue
+            self.active_chains[chain_id] = [residue] 
 
     def _get_ngl_string(self, residue):
         """Returns NGL selection string for residue
@@ -258,7 +253,7 @@ class emap():
                 id = atm.full_id
             select_string += " or "
             select_string += "(" + str(id[3][1]) + " and :" + str(
-                id[2]) + " and ." + atm.name + ")"
+                id[2]) + " and ^" + residue.id[2] + " and ." + atm.name + ")"
         return select_string
 
     def residue_to_file(self, resname, dest="", size=(200, 200),convert_png_to_svg=False):

@@ -713,8 +713,6 @@ def process(emap,
     else:
         surface_exposed_res = []
     finish_graph(G, surface_exposed_res, chains)
-    for chain in chains:
-        emap.active_chains[chain] = {}
     for res in aromatic_residues:
         emap._add_residue(res)
     emap._store_initial_graph(G)
