@@ -228,7 +228,7 @@ class emap():
         select_string = ""
         atm_list = list(residue.get_atoms())
         first_atm = atm_list[0]
-        if hasattr(first_atm,"original_id"):
+        if hasattr(first_atm,"original_id") and first_atm.original_id is not None:
             id = first_atm.original_id
         else:
             id = first_atm.full_id
@@ -236,7 +236,7 @@ class emap():
             id[2]) + " and ^" + residue.id[2] + " and ." + first_atm.name + ")"
         for i in range(1, len(atm_list)):
             atm = atm_list[i]
-            if hasattr(atm,"original_id"):
+            if hasattr(atm,"original_id") and atm.original_id is not None:
                 id = first_atm.original_id
             else:
                 id = atm.full_id
