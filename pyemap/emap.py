@@ -244,7 +244,7 @@ class emap():
         else:
             id = first_atm.full_id
         select_string += "(" + str(id[3][1]) + " and :" + str(
-            id[2]) + " and ." + first_atm.name + ")"
+            id[2]) + " and ^" + residue.id[2] + " and ." + first_atm.name + ")"
         for i in range(1, len(atm_list)):
             atm = atm_list[i]
             if hasattr(atm,"original_id"):
