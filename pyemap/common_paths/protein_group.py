@@ -127,7 +127,7 @@ class PDBGroup():
         for pdb_id, emap in self.emaps.items():
             for chain, residues in emap.active_chains.items():
                 original_idx = emap.chain_start[chain]
-                aligned_idx = emap.chain_start[chain]
+                aligned_idx = 1
                 seq_map = {}
                 if pdb_id + ":" + chain in self.aligned_sequences:
                     aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
@@ -182,7 +182,7 @@ class PDBGroup():
                         eta_moieties=cur_eta_moieties,
                         include_residues=include_residues,
                         sdef = sdef,
-                        **kwargs)
+                        **kwargs) 
                 print("Finished:"+str(pdb_id))
             except Exception as e:
                 print(e)
@@ -275,24 +275,6 @@ class PDBGroup():
             fi.close()
         return full_str
 
-    def _set_edge_labels(self):
-        total_num_edges = 0
-        for emap in self.emaps.values():
-            total_num_edges+=emap.init_graph.number_of_edges()
-        if "distance_cutoff" in self.emap_parameters:
-            end = float(self.emap_parameters["distance_cutoff"])
-        else:
-            end = 20
-        if int(self.emap_parameters["dist_def"]) == 1:
-            edge_thresholds = [5]
-        else:
-            edge_thresholds = [10]
-        cur_thresh = edge_thresholds[0]+4
-        while cur_thresh < end:
-            edge_thresholds.append(cur_thresh)
-            cur_thresh+=4
-        self.edge_thresholds = edge_thresholds
-
     def _set_node_labels(self,nodes):
         '''
         assert (categories is None and labels is None) or  (categories is not None and labels is not None)
@@ -331,14 +313,14 @@ class PDBGroup():
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
-    def generate_graph_database(self,nodes=None,edge_thresholds=None):
+    def generate_graph_database(self,node_categories=None,edge_thresholds=[10,15]):
         ''' Generates graph database for analysis by GSpan using specified node labels, node categories, and edge thresholds.
 
         Parameters
         ----------
         nodes: list of str
             List of one character amino acid codes to be given their own category. The remaining
-            AA will be labeled as "X". Default is all standard amino acid receive their own category.
+            AA will be labeled as "X". Default is all standard amino acids receive their own category.
         edge_thresholds: list of float
             List of edge thresholds. Edges with weight below the first value will be given the label 2, edges
             between the 1st and second values will be labeled as 3, and so on. 
@@ -349,13 +331,10 @@ class PDBGroup():
         '''
         # check if we need to regenerate database
         self._clean_graph_database()
-        if edge_thresholds is not None:
-            assert (float(x) for x in edge_thresholds)
-            assert all(edge_thresholds[i] <= edge_thresholds[i+1] for i in range(len(edge_thresholds)-1))
-            self.edge_thresholds = edge_thresholds.copy()
-        else:
-            self._set_edge_labels()
-        self._set_node_labels(nodes)
+        assert (float(x) for x in edge_thresholds)
+        assert all(edge_thresholds[i] <= edge_thresholds[i+1] for i in range(len(edge_thresholds)-1))
+        self.edge_thresholds = edge_thresholds.copy()
+        self._set_node_labels(node_categories)
         f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
         for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph

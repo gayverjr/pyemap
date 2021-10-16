@@ -166,7 +166,7 @@ class FrequentSubgraph():
             eigv = eigv[idx]
             eigvc = eigvc[:, idx]
             # second lowest eigenvector
-            eigvc2 = eigvc[:, 1]
+            eigvc2 = eigvc[:, 1][:-1]
             eigenvector_sorted = {}
             for i, val in enumerate(eigvc2):
                 rounded_val = np.round(val, decimals=4)
@@ -200,12 +200,12 @@ class FrequentSubgraph():
             self.eigenvector_sorted[1] = all_graphs
 
     def _sequence_clustering(self, all_graphs):
-        dims = (len(all_graphs), len(all_graphs))
+        num_graphs = len(all_graphs)
+        dims = (num_graphs+1, num_graphs+1)
         D = np.zeros(dims)
-        A = np.zeros(dims)
-        # adjacency matrix is distance between residue numbers in alignment
-        # degree matrix is sum of all outgoing edges
-        # J. Mol. Biol. (1999) 292, 441-464
+        A = np.ones(dims)*0.001
+        for i in range(0,num_graphs):
+            A[i][i] = 0.0
         for i in range(0, len(all_graphs)):
             for j in range(i + 1, len(all_graphs)):
                 G1 = all_graphs[i]
@@ -220,29 +220,29 @@ class FrequentSubgraph():
                                 G2.nodes[node2]['aligned_resnum']).isdigit():
                             distance += np.absolute(G1.nodes[node1]['aligned_resnum'] -
                                                     G2.nodes[node2]['aligned_resnum'])
-                if distance < 10:
+                if distance < len(G2nodes)+1:
                     A[i][j] = 1 / (distance + 1)
                     A[j][i] = 1 / (distance + 1)
-                else:
-                    A[i][j] = 0.001
-                    A[j][i] = 0.001
             D[i][i] = np.sum(A[i])
+        D[-1][-1] = np.sum(A[-1])
         return D, A
-
+    # J. Mol. Biol. (1999) 292, 441-464
+    # This is known as Fiedler eigenvalue, or Spectral Graph Partitioning
     def _structural_clustering(self, all_graphs):
-        dims = (len(all_graphs), len(all_graphs))
+        num_graphs = len(all_graphs)
+        dims = (num_graphs+1, num_graphs+1)
         D = np.zeros(dims)
-        A = np.zeros(dims)
-        for i in range(0, len(all_graphs)):
-            for j in range(i + 1, len(all_graphs)):
+        A = np.ones(dims)*0.001
+        for i in range(0,num_graphs):
+            A[i][i] = 0.0
+        for i in range(0, num_graphs):
+            for j in range(i + 1, num_graphs):
                 distance = self._subgraph_rmsd(all_graphs[i], all_graphs[j])
                 if distance < 1:
                     A[i][j] = 1 / (distance + 1)
                     A[j][i] = 1 / (distance + 1)
-                else:
-                    A[i][j] = 0.001
-                    A[j][i] = 0.001
             D[i][i] = np.sum(A[i])
+        D[-1][-1] = np.sum(A[-1])
         return D, A
 
     def subgraph_rmsd(self,sg1,sg2):
