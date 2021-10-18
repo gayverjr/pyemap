@@ -143,7 +143,7 @@ class PDBGroup():
                     else:
                         residue.aligned_residue_number = 'X'
 
-    def process_emaps(self, chains=None, eta_moieties=None, sdef=None, include_residues=["TYR", "TRP"], **kwargs):
+    def process_emaps(self, chains={}, eta_moieties={}, sdef=None, include_residues=["TYR", "TRP"], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 
         
         For a list of accepted kwargs, see the documentation for :func:`~pyemap.process_data.process`.
@@ -166,20 +166,16 @@ class PDBGroup():
         '''
         start_time = time.time()
         self._reset_process()
-        if chains == None:
-            chains = {}
-            for pdb_id in self.emaps:
-                chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
         remove_pdbs = []
         for pdb_id in self.emaps:
-            if not eta_moieties == None:
-                cur_eta_moieties = eta_moieties[pdb_id]
-            else:
-                cur_eta_moieties = None
+            if pdb_id not in eta_moieties:
+                eta_moieties[pdb_id] = list(self.emaps[pdb_id].eta_moieties.keys())
+            if pdb_id not in chains:
+                chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
             try:
                 process(self.emaps[pdb_id],
                         chains=chains[pdb_id],
-                        eta_moieties=cur_eta_moieties,
+                        eta_moieties=eta_moieties[pdb_id],
                         include_residues=include_residues,
                         sdef = sdef,
                         **kwargs) 

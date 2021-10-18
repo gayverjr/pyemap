@@ -43,6 +43,7 @@ class FrequentSubgraph():
         self.support = support
         self.protein_subgraphs = {}
         self.eigenvector_sorted = {}
+        self.L = []
         self.res_to_num_label = res_to_num_label
         self.edge_thresholds = edge_thresholds
         self.support_number = len(support)
@@ -159,6 +160,7 @@ class FrequentSubgraph():
             self.clustering_option = clustering_option
             print("Finished generating laplacian.")
             L = D - A
+            self.L = L
             eigv, eigvc = LA.eig(L)
             eigv = np.real(eigv)
             eigvc = np.real(eigvc)
