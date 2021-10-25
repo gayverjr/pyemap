@@ -3,13 +3,16 @@ from networkx.algorithms import isomorphism
 
 def get_edge_label(G, edge, edge_thresholds):
     dist = G.edges[edge]['distance']
-    label = 2
-    for thresh in edge_thresholds:
-        if dist < thresh:
-            break
-        else:
-            label += 1
-    return label
+    try:
+        label = 2
+        for thresh in edge_thresholds:
+            if dist < thresh:
+                break
+            else:
+                label += 1
+        return label
+    except:
+        return 2
 
 def strip_insertion_code(u):
     for i in range(0, len(u)):

@@ -80,7 +80,7 @@ class PDBGroup():
         self.graph_database_parameters = {}
         self.included_eta_moieties = {}
         self.included_chains = {}
-        self.included_standard_residues = []
+        self.include_residues = []
         self.sequences = {}
         self.aligned_sequences = {}
 
@@ -100,7 +100,7 @@ class PDBGroup():
         self.emap_parameters = {}
         self.included_eta_moieties = {}
         self.included_chains = {}
-        self.included_standard_residues = []
+        self.include_residues = []
         self.sequences = {}
         self.aligned_sequences = {}
         self._clean_graph_database()
@@ -143,7 +143,7 @@ class PDBGroup():
                     else:
                         residue.aligned_residue_number = 'X'
 
-    def process_emaps(self, chains={}, eta_moieties={}, sdef=None, include_residues=["TYR", "TRP"], **kwargs):
+    def process_emaps(self, chains={}, eta_moieties={}, include_residues=["TYR", "TRP"], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 
         
         For a list of accepted kwargs, see the documentation for :func:`~pyemap.process_data.process`.
@@ -177,7 +177,6 @@ class PDBGroup():
                         chains=chains[pdb_id],
                         eta_moieties=eta_moieties[pdb_id],
                         include_residues=include_residues,
-                        sdef = sdef,
                         **kwargs) 
                 print("Finished:"+str(pdb_id))
             except Exception as e:
@@ -190,8 +189,7 @@ class PDBGroup():
         self.emap_parameters = kwargs
         self.included_chains = chains
         self.included_eta_moieties = eta_moieties
-        self.included_standard_residues = include_residues
-        print("Processing took:" + str(time.time() - start_time) + " seconds.")
+        self.include_residues = include_residues
 
     def _apply_num_labels(self):
         for emap in self.emaps.values():
@@ -283,7 +281,7 @@ class PDBGroup():
             self.node_labels = labels
         '''
         if nodes is None:
-            nodes = [res_name_to_char[x] for x in self.included_standard_residues]
+            nodes = [res_name_to_char[x] for x in self.include_residues]
         assert all(x in char_to_res_name for x in nodes)
         num_label = 2
         for res in nodes:
@@ -309,7 +307,7 @@ class PDBGroup():
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
-    def generate_graph_database(self,node_categories=None,edge_thresholds=[10,15]):
+    def generate_graph_database(self,node_categories=None,edge_thresholds=None):
         ''' Generates graph database for analysis by GSpan using specified node labels, node categories, and edge thresholds.
 
         Parameters
@@ -327,9 +325,10 @@ class PDBGroup():
         '''
         # check if we need to regenerate database
         self._clean_graph_database()
-        assert (float(x) for x in edge_thresholds)
-        assert all(edge_thresholds[i] <= edge_thresholds[i+1] for i in range(len(edge_thresholds)-1))
-        self.edge_thresholds = edge_thresholds.copy()
+        if edge_thresholds is not None:
+            assert (float(x) for x in edge_thresholds)
+            assert all(edge_thresholds[i] <= edge_thresholds[i+1] for i in range(len(edge_thresholds)-1))
+            self.edge_thresholds = edge_thresholds.copy()
         self._set_node_labels(node_categories)
         f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
         for i, key in enumerate(self.emaps):

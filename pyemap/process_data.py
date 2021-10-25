@@ -700,7 +700,7 @@ def process(emap,
         dmatrix = com_dmatrix(aromatic_residues)
     else:
         dmatrix = closest_atom_dmatrix(aromatic_residues)
-    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff,percent_edges, max_degree,
+    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff,percent_edges, int(max_degree),
                      emap.eta_moieties.keys(),include_residues)
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
