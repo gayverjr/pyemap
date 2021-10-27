@@ -7,6 +7,44 @@ import warnings
 from .utils import get_edge_label, get_numerical_node_label, strip_res_number, get_graph_matcher, write_graph_smiles
 import networkx as nx
 
+
+def _do_fiedler_clustering(D,A,all_graphs):
+    L = D - A
+    eigv, eigvc = LA.eig(L)
+    eigv = np.real(eigv)
+    eigvc = np.real(eigvc)
+    idx = eigv.argsort()
+    eigv = eigv[idx]
+    eigvc = eigvc[:, idx]
+    # second lowest eigenvector
+    eigvc2 = eigvc[:, 1][:-1]
+    groups = {}
+    protein_subgraphs = {}
+    for i, val in enumerate(eigvc2):
+        rounded_val = np.round(val, decimals=4)
+        if rounded_val not in groups:
+            groups[rounded_val] = [all_graphs[i]]
+        else:
+            graphs = groups[rounded_val]
+            graphs.append(all_graphs[i])
+            groups[rounded_val] = graphs
+    tuples = []
+    for key, val in groups.items():
+        tuples.append((key, val))
+    # largest groups first
+    groups = {}
+    tuples.sort(key=lambda x: len(x[1]), reverse=True)
+    for idx, tuple1 in enumerate(tuples):
+        key, group = tuple1
+        pdb_list = []
+        for graph in group:
+            pdb_list.append(graph.graph['pdb_id'])
+            id = graph.graph['pdb_id'] + "(" + str(idx + 1) + ")-" + str(
+                pdb_list.count(graph.graph['pdb_id']))
+            protein_subgraphs[id] = graph
+        groups[idx + 1] = group
+    return groups,protein_subgraphs
+
 class FrequentSubgraph():
     '''
     Stores all information regarding a subgraph pattern identified by the gSpan algorithm.
@@ -42,7 +80,7 @@ class FrequentSubgraph():
         self.generic_subgraph = G.copy()
         self.support = support
         self.protein_subgraphs = {}
-        self.eigenvector_sorted = {}
+        self.groups = {}
         self.L = []
         self.res_to_num_label = res_to_num_label
         self.edge_thresholds = edge_thresholds
@@ -81,8 +119,8 @@ class FrequentSubgraph():
             return full_str
         full_str += str(len(self.protein_subgraphs)) + " subgraphs matching this pattern were found.\n"
         full_str += "Graphs are classified using " + self.clustering_option + " clustering.\n\n"
-        for key in self.eigenvector_sorted:
-            graphs = self.eigenvector_sorted[key]
+        for key in self.groups:
+            graphs = self.groups[key]
             full_str += "Group " + str(key) + ": " + str(len(graphs)) + " members\n---------------\n"
             for graph in graphs:
                 full_str += self._report_for_graph(graph) + "\n"
@@ -142,64 +180,36 @@ class FrequentSubgraph():
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
 
-    def find_protein_subgraphs(self, clustering_option="structural"):
-        self.eigenvector_sorted = {}
+    def find_protein_subgraphs(self,clustering_option="structural"):
+        self.groups = {}
         self.protein_subgraphs = {}
         all_graphs = []
         for pdb_id in self.support:
             all_graphs += self._find_subgraph_in_pdb(pdb_id)
-        dims = (len(all_graphs), len(all_graphs))
-        print(str(dims[0])+" graphs found.")
         if len(all_graphs) > 1:
-            if clustering_option == "structural":
-                D, A = self._structural_clustering(all_graphs)
-            elif clustering_option == "sequence":
-                D, A = self._sequence_clustering(all_graphs)
-            else:
-                raise Exception("Either structural or sequence.")
-            self.clustering_option = clustering_option
-            print("Finished generating laplacian.")
-            L = D - A
-            self.L = L
-            eigv, eigvc = LA.eig(L)
-            eigv = np.real(eigv)
-            eigvc = np.real(eigvc)
-            idx = eigv.argsort()
-            eigv = eigv[idx]
-            eigvc = eigvc[:, idx]
-            # second lowest eigenvector
-            eigvc2 = eigvc[:, 1][:-1]
-            eigenvector_sorted = {}
-            for i, val in enumerate(eigvc2):
-                rounded_val = np.round(val, decimals=4)
-                if rounded_val not in eigenvector_sorted:
-                    eigenvector_sorted[rounded_val] = [all_graphs[i]]
-                else:
-                    graphs = eigenvector_sorted[rounded_val]
-                    graphs.append(all_graphs[i])
-                    eigenvector_sorted[rounded_val] = graphs
-            tuples = []
-            for key, val in eigenvector_sorted.items():
-                tuples.append((key, val))
-            # largest groups first
-            tuples.sort(key=lambda x: len(x[1]), reverse=True)
-            for idx, tuple1 in enumerate(tuples):
-                key, group = tuple1
-                pdb_list = []
-                for graph in group:
-                    pdb_list.append(graph.graph['pdb_id'])
-                    # ID is PDB_ID(group number)-index IN PDB e.g. 1U3D(1)-2 is the second subgraph from 1u3d which belongs to the first group
-                    graph.graph['id'] = graph.graph['pdb_id'] + "(" + str(idx + 1) + ")-" + str(
-                        pdb_list.count(graph.graph['pdb_id']))
-                    graph.graph['group_val'] = key
-                    self.protein_subgraphs[graph.graph['id']] = graph
-                self.eigenvector_sorted[idx + 1] = group
+            D,A = self._structural_clustering(all_graphs)
+            self._structural_groups,self._structural_ids = _do_fiedler_clustering(D,A,all_graphs)
+            D,A = self._sequence_clustering(all_graphs)
+            self._sequence_groups,self._sequence_ids = _do_fiedler_clustering(D,A,all_graphs)
+            self.set_clustering(clustering_option)
         else:
             graph = all_graphs[0]
             graph.graph['id'] = graph.graph['pdb_id'] + "(" + str(1) + ")-" + str(1)
             graph.graph['group_val'] = 0.0
             self.protein_subgraphs[graph.graph['id']] = graph
-            self.eigenvector_sorted[1] = all_graphs
+            self.groups[1] = all_graphs
+            self.clustering_option=clustering_option
+
+    def set_clustering(self,clustering_option):
+        if clustering_option=="structural":
+            self.groups,self.protein_subgraphs = (self._structural_groups,self._structural_ids)
+        elif clustering_option=="sequence":
+            self.groups,self.protein_subgraphs = (self._sequence_groups,self._sequence_ids)
+        else:
+            raise Exception("Either structural or sequence.")
+        self.clustering_option = clustering_option
+        for id,graph in self.protein_subgraphs.items():
+            graph.graph['id']=id
 
     def _sequence_clustering(self, all_graphs):
         num_graphs = len(all_graphs)
@@ -307,3 +317,7 @@ class FrequentSubgraph():
             for key in protein_graph.edges[edge]:
                 protein_subgraph.edges[edge][key] = protein_graph.edges[edge][key]
         return protein_subgraph
+
+
+        
+
