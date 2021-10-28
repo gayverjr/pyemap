@@ -2,8 +2,6 @@ import numpy as np
 from ..data import char_to_res_name, res_name_to_char
 from numpy import linalg as LA
 from Bio.PDB import Superimposer
-import matplotlib.pyplot as plt
-import warnings
 from .utils import get_edge_label, get_numerical_node_label, strip_res_number, get_graph_matcher, write_graph_smiles
 import networkx as nx
 
