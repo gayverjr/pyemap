@@ -77,6 +77,7 @@ class FrequentSubgraph():
         '''
         self.generic_subgraph = G.copy()
         self.support = support
+        self.total_support = {}
         self.protein_subgraphs = {}
         self.groups = {}
         self.L = []
@@ -296,10 +297,12 @@ class FrequentSubgraph():
         degree_dicts = []
         for mapping in subgraph_isos:
             sg = self._generate_protein_subgraph(mapping, self.support[pdb_id].init_graph, self.generic_subgraph, self.support[pdb_id])
+            # eliminate redundant subgraphs
             degree_dict = dict(sg.degree)
             if degree_dict not in degree_dicts:
                 degree_dicts.append(degree_dict)
                 sgs.append(sg)
+        self.total_support[pdb_id] =  len(sgs) 
         return sgs
 
     def _generate_protein_subgraph(self, mapping, protein_graph, generic_subgraph, emap_obj):

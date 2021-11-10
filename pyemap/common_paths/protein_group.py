@@ -202,11 +202,23 @@ class PDBGroup():
     def report_header(self):
         full_str = ""
         full_str += "Generated:\n" + str(datetime.datetime.now()) + "\n"
-        full_str += "Parameters:\n"
+        full_str += "Graph Parameters:\n"
         if not self.emap_parameters:
             full_str += "Custom.\n"
         else:
             full_str += str(self.emap_parameters)
+            full_str += "\n"
+        full_str += "Included residues:\n"
+        if not self.include_residues:
+            full_str += "Custom.\n"
+        else:
+            full_str += str(self.include_residues)
+            full_str += "\n"
+        full_str+= "Mining parameters:\n"
+        if not self.gspan_parameters:
+            full_str += "Custom.\n"
+        else:
+            full_str += str(self.gspan_parameters)
             full_str += "\n"
         full_str += "Chains:\n"
         if not self.included_chains:
