@@ -180,11 +180,12 @@ class PDBGroup():
                         **kwargs) 
                 print("Finished:"+str(pdb_id))
             except Exception as e:
-                print(e)
                 remove_pdbs.append(pdb_id)
                 warnings.warn("Could not generate graph for: "+ pdb_id + ". It will not be included in the analysis.")
         for pdb_id in remove_pdbs:
             self.emaps.pop(pdb_id)
+        if len(self.emaps) < 2:
+            raise Exception("Not enough graphs could be generated for mining.")
         self._align_sequences(chains)
         self.emap_parameters = kwargs
         self.included_chains = chains
@@ -300,7 +301,8 @@ class PDBGroup():
             self.node_labels[res] = num_label
             self.residue_categories[num_label] = res
             num_label+=1
-        num_label = max(self.node_labels.values()) + 1
+        if len(self.node_labels) > 1:
+            num_label = max(self.node_labels.values()) + 1
         self.residue_categories[num_label] = "X"
         self.node_labels["X"] = num_label
         self.residue_categories[num_label+1] = "#"

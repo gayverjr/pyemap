@@ -491,7 +491,6 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
     '''
     G2 = G.copy()
     edge_types = [[[] for i in range(len(include_residues))] for j in range(len(include_residues))]
-    edge_dist_dict = {}
     letter_codes = [res_name_to_char[res.upper()] for res in include_residues]
     minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
     # should never happen, but just in case
@@ -693,6 +692,8 @@ def process(emap,
     for res in user_residues:
         emap.user_residues[res.resname] = res
     aromatic_residues += user_residues
+    if len(aromatic_residues) < 2:
+        raise Exception("Not enough residues to construct a graph.")
     node_labels = {}
     for i in range(0, len(aromatic_residues)):
         node_labels[i] = aromatic_residues[i].node_label

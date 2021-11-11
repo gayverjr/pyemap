@@ -179,12 +179,14 @@ class FrequentSubgraph():
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
 
-    def find_protein_subgraphs(self,clustering_option="structural"):
+    def find_protein_subgraphs(self,clustering_option="structural", PROC=None):
         self.groups = {}
         self.protein_subgraphs = {}
         all_graphs = []
         for pdb_id in self.support:
             all_graphs += self._find_subgraph_in_pdb(pdb_id)
+        if PROC != None:
+            PROC.update_status()
         if len(all_graphs) > 1:
             D,A = self._structural_clustering(all_graphs)
             self._structural_groups,self._structural_ids = _do_fiedler_clustering(D,A,all_graphs)
