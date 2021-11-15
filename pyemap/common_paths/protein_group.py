@@ -105,9 +105,7 @@ class PDBGroup():
         self.aligned_sequences = {}
         self._clean_graph_database()
 
-    def _align_sequences(self, chains):
-        records = []
-        valid_ids = []
+    def _align_sequences(self):
         inp = os.path.join(self.temp_dir, "data.fasta")
         with open(inp, 'w') as handle:
             for pdb_id, emap in self.emaps.items():
@@ -118,30 +116,33 @@ class PDBGroup():
         try:
             muscle_cline = MuscleCommandline(input=inp, out=out, log=log)
             muscle_cline()
+            seqIO = SeqIO.parse(out, "fasta")
+            for record in seqIO:
+                self.aligned_sequences[record.id.upper()] = record.seq
+            # now lets save the updated sequence numbers
+            for pdb_id, emap in self.emaps.items():
+                for chain, residues in emap.active_chains.items():
+                    original_idx = emap.chain_start[chain]
+                    aligned_idx = 1
+                    seq_map = {}
+                    if pdb_id + ":" + chain in self.aligned_sequences:
+                        aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
+                        for res in aligned_seq:
+                            if not res == "-":
+                                seq_map[original_idx] = aligned_idx
+                                original_idx += 1
+                            aligned_idx += 1
+                    for residue in residues:
+                        resnum = residue.id[1]
+                        if int(resnum) in seq_map:
+                            residue.aligned_residue_number = seq_map[int(resnum)]
+                        else:
+                            residue.aligned_residue_number = 'X'
         except Exception as e:
             shutil.copyfile(inp, out)
-        seqIO = SeqIO.parse(out, "fasta")
-        for record in seqIO:
-            self.aligned_sequences[record.id.upper()] = record.seq
-        # now lets save the updated sequence numbers
-        for pdb_id, emap in self.emaps.items():
-            for chain, residues in emap.active_chains.items():
-                original_idx = emap.chain_start[chain]
-                aligned_idx = 1
-                seq_map = {}
-                if pdb_id + ":" + chain in self.aligned_sequences:
-                    aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
-                    for res in aligned_seq:
-                        if not res == "-":
-                            seq_map[original_idx] = aligned_idx
-                            original_idx += 1
-                        aligned_idx += 1
-                for residue in residues:
-                    resnum = residue.id[1]
-                    if int(resnum) in seq_map:
-                        residue.aligned_residue_number = seq_map[int(resnum)]
-                    else:
-                        residue.aligned_residue_number = 'X'
+            warnings.warn("Warning: could not align sequences. Make sure that MUSCLE (https://www.drive5.com/muscle/manual/) is installed and "\
+            "accessible in the current path. Original residue numbers will be used for sequence alignment.")
+
 
     def process_emaps(self, chains={}, eta_moieties={}, include_residues=["TYR", "TRP"], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 
@@ -186,7 +187,7 @@ class PDBGroup():
             self.emaps.pop(pdb_id)
         if len(self.emaps) < 2:
             raise Exception("Not enough graphs could be generated for mining.")
-        self._align_sequences(chains)
+        self._align_sequences()
         self.emap_parameters = kwargs
         self.included_chains = chains
         self.included_eta_moieties = eta_moieties
