@@ -12,6 +12,7 @@ import itertools
 import string
 import networkx as nx
 from functools import total_ordering
+from .pyemap_exceptions import *
 
 @total_ordering
 class ShortestPath(object):
@@ -295,7 +296,7 @@ def dijkstras_shortest_paths(G, start, targets):
                     G.nodes[path[i + 1]]['fillcolor'] += '5F'
                     G.nodes[path[i + 1]]['color'] = '#7080905F'
     if len(shortestPaths) == 0:
-        raise RuntimeError("No paths to the surface found.")
+        raise PyeMapShortestPathException("No paths to the surface from "  + str(start) + " were found.")
     return branches
 
 
@@ -337,7 +338,10 @@ def yens_shortest_paths(G, start, target, max_paths=10):
     letters = list(string.ascii_letters)
     shortestPaths = []
     k = 0
-    paths = list(itertools.islice(nx.shortest_simple_paths(G, start, target), max_paths))
+    try:
+        paths = list(itertools.islice(nx.shortest_simple_paths(G, start, target), max_paths))
+    except:
+        raise PyeMapShortestPathException("No paths between " + str(start) + " and " + str(target) + " were found.")
     for k in range(0, len(paths)):
         path = paths[k]
         sum = 0
@@ -384,4 +388,4 @@ def yens_shortest_paths(G, start, target, max_paths=10):
             br.add_path(pt)
         return [br]
     else:  # no paths found
-        raise RuntimeError("No paths to target found.")
+        raise PyeMapShortestPathException("No paths between " + str(start) + " and " + str(target) + " were found.")

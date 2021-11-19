@@ -13,7 +13,6 @@ import tempfile
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from .process_data import get_atom_list
-from .png2svg import convert_to_svg
 # need to checkout https://github.com/IngJavierR/PngToSvg
 
 class emap():
@@ -48,7 +47,7 @@ class emap():
         Graph generated after the shortest paths step.
     '''
 
-    def __init__(self, file_path, eta_moieties, chain_list, sequences,chain_start):
+    def __init__(self, file_path, pdb_id, eta_moieties, chain_list, sequences,chain_start):
         '''Initializes emap object.
 
         Parameters
@@ -65,7 +64,7 @@ class emap():
             Key is chain id, value is residue number of first residue in record (which is generally not 1)
         '''
         self.file_path = file_path
-        self.pdb_id = file_path[-8:-4].upper()
+        self.pdb_id = pdb_id
         self.residues = {}
         self.chains = chain_list
         self.chain_start = chain_start
@@ -217,7 +216,6 @@ class emap():
         residue.ngl_string = self._get_ngl_string(residue)
         self.residues[residue.node_label] = residue
         self.ngl_strings[residue.node_label] = residue.ngl_string
-        resnum = str(residue.full_id[3][1])
         chain_id = residue.full_id[2]
         if chain_id in self.active_chains:
             self.active_chains[chain_id].append(residue)
@@ -256,7 +254,7 @@ class emap():
                 id[2]) + " and ^" + residue.id[2] + " and ." + atm.name + ")"
         return select_string
 
-    def residue_to_file(self, resname, dest="", size=(200, 200),convert_png_to_svg=False):
+    def residue_to_file(self, resname, dest="", size=(200, 200)):
         '''Saves image of residue to file in .svg format.
 
         Parameters
@@ -267,8 +265,6 @@ class emap():
             destination to save the image
         size: (float,float), optional
             dimensions of image saved to file
-        convert_png_to_svg, optional
-            Converts png to svg. Can be very slow.
         '''
         try:
             from rdkit import Chem

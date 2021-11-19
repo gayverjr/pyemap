@@ -54,6 +54,7 @@ setup(
                       'reportlab',
                       'pygraphviz',
                       'gspan_mining',
+                      'requests',
                       'svglib']
     				   # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',

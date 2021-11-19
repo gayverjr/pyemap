@@ -17,7 +17,7 @@ from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
 import warnings
 from .data import res_name_to_char, side_chain_atoms
-
+from .pyemap_exceptions import *
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
 def detach_parent(self):
@@ -26,8 +26,8 @@ def detach_parent(self):
     self.parent = None
 
 Bio.PDB.Atom.Atom.detach_parent = detach_parent
-# monkey patches mangling of disordered atoms
 
+# monkey patches mangling of disordered atoms
 def get_unpacked_list(self):
     """
      Returns all atoms from the residue,
@@ -68,7 +68,7 @@ def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     return mod_penalty
 
 
-def calculate_residue_depth(filename, aromatic_residues, rd_cutoff):
+def calculate_residue_depth(model, aromatic_residues, rd_cutoff):
     """Returns a list of surface exposed residues as determined by residue depth.
 
     Parameters
@@ -92,7 +92,7 @@ def calculate_residue_depth(filename, aromatic_residues, rd_cutoff):
             if (depth <= cutoff):
                 surface_exposed_res.append(residue.node_label)
         return surface_exposed_res
-    except Exception as e:
+    except Exception:
         warnings.warn(
             "Unable to calculate residue depth. Check that MSMS is installed.",
             RuntimeWarning,
@@ -133,7 +133,7 @@ def calculate_asa(filename, model, node_list, asa_cutoff):
             goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
             if goal_str in node_list and dssp[key][3] >= cutoff:
                 surface_exposed_res.append(goal_str)
-    except Exception as e:
+    except Exception:
         warnings.warn("Unable to calculate solvent accessibility. Check that DSSP is installed.",
                       RuntimeWarning,
                       stacklevel=2)
@@ -281,8 +281,6 @@ def process_standard_residues(standard_residue_list):
         chain = res.full_id[2]
         resnum = res.full_id[3][1]
         res.node_label = res_letter + str(resnum) + "(" + chain + ")"
-        atm_ids = []
-        atm_names = []
         valid = False
         for atm in res:
             sca = side_chain_atoms[res.resname]
@@ -292,9 +290,6 @@ def process_standard_residues(standard_residue_list):
         if valid:
             res_list.append(res)
         else:
-            def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
-                return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
-            warnings.formatwarning = warning_on_one_line
             warnings.warn("The record for residue " + res.node_label +
                           " did not contain any of the following side chain atoms: " + str(sca) +
                           " and therefore is not included in the graph.",
@@ -330,17 +325,15 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
     for atm in all_atoms:
         if atm.serial_number in serial_list:
             if atm.serial_number in used_atoms:
-                message = "Invalid atom serial number range. Atom " + str(
-                    atm.serial_number) + " is already included in another residue."
-                raise ValueError(message)
-            if atm.parent.parent.id not in chain_selected:
-                message = "Invalid atom serial number range. Atom " + str(atm.serial_number) + " is in chain " + str(
-                    atm.parent.parent.id) + "."
-                raise ValueError(message)
+                message = "Invalid atom serial number range. Atom " + str(atm.serial_number) + " is already included in another residue."
+                raise PyeMapUserResidueException(message)   
             atm.get_full_id()
             if not source_res:
                 source_res = atm.parent
-            atm.get_full_id()
+            elif atm not in source_res:
+                message = "Invalid atom serial number range. Atom " + str(atm.serial_number) + \
+                " is not part of residue " + source_res.resname + str(source_res.id[1]) +"."
+                raise PyeMapUserResidueException(message)
             atm_copy = atm.copy()
             atm_list.append(atm_copy)
     source_res.get_full_id()
@@ -449,7 +442,7 @@ def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
             if serial_number_list:
                 new_res = create_user_res(serial_number_list, all_atoms, chain_selected, used_atoms, user_res_names)
             else:
-                raise SyntaxError("Invalid atom serial number range. See the manual for proper syntax.")
+                raise UserResidueException("Invalid atom serial number range. See the manual for proper syntax.")
             res_list.append(new_res)
             for atm in new_res:
                 used_atoms.append(atm.serial_number)
@@ -479,7 +472,7 @@ def finish_graph(G, surface_exposed_res, chain_list):
         if G[node] == {}:
             G.remove_node(node)
 
-def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, max_degree, include_residues,eta_moieties):
+def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, max_degree):
     '''Applies distance based filters to edges, removing those edges which do not fit criteria.
 
     Parameters
@@ -489,9 +482,6 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
     distance_cutoff,percentile,max_degree: float
         Parameters that determine which edges are kept.
     '''
-    G2 = G.copy()
-    edge_types = [[[] for i in range(len(include_residues))] for j in range(len(include_residues))]
-    letter_codes = [res_name_to_char[res.upper()] for res in include_residues]
     minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
     # should never happen, but just in case
     if minval == 0:
@@ -505,39 +495,9 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
             d['distance'] = d['weight']
             d['weight'] = pathways_model(d['weight'],coef_alpha, exp_beta, r_offset)
             d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
-            if u not in eta_moieties and v not in eta_moieties:
-                idx1 = letter_codes.index(u[0])
-                idx2 = letter_codes.index(v[0])
-                edge_types[idx1][idx2].append(d['distance'])
     G.remove_edges_from(remove_edges)
-    '''
     remove_edges = []
-    # collect percentiles for each edge type
-    for i in range(0,len(edge_types)):
-        for j in range(i,len(edge_types)):
-            key = letter_codes[i]+letter_codes[j]
-            if(len(edge_types[i][j])) > 1:
-                value = np.percentile(edge_types[i][j],percentile)
-            else:
-                value = 0.0
-            edge_dist_dict[key] = value
-    default_cutoff = np.ma.masked_equal(list(edge_dist_dict.values()), 0.0, copy=False).max()
-    # remove edges which don't fit criteria
-    for u, v, d in G.edges(data=True):
-        if u in eta_moieties or v in eta_moieties:
-            cutoff = default_cutoff
-        else:
-            idx1 = letter_codes.index(u[0])
-            idx2 = letter_codes.index(v[0])
-            key = letter_codes[idx1]+letter_codes[idx2]
-            if key not in edge_dist_dict:
-                key = letter_codes[idx2]+letter_codes[idx1]
-            cutoff = edge_dist_dict[key]
-        if d['distance'] > cutoff:
-            remove_edges.append((u,v))
-    G.remove_edges_from(remove_edges)
-    '''
-    remove_edges = []
+    # greedy algorithm to prune edges to set maximum degree
     for node in G.nodes:
         if G.degree(node) > max_degree:
             for edge in sorted(list(G.edges(node)), key=lambda x: G.edges[x]['distance'])[max_degree:]:
@@ -549,7 +509,7 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, percentile, 
             G.remove_edge(u,v)
     
 
-def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,percentile,max_degree,eta_moieties,include_residues):
+def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,max_degree,eta_moieties,include_residues):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
@@ -579,7 +539,7 @@ def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_c
     np.set_printoptions(threshold=sys.maxsize)
     G = nx.from_numpy_matrix(dmatrix)
     G = nx.relabel_nodes(G, node_labels)
-    filter_edges(G,coef_alpha, exp_beta, r_offset,distance_cutoff,percentile,max_degree,include_residues,eta_moieties)
+    filter_edges(G,coef_alpha, exp_beta, r_offset,distance_cutoff,max_degree)
     for name_node in G.nodes():
         G.nodes[name_node]['style'] = 'filled'
         G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
@@ -620,7 +580,6 @@ def process(emap,
             include_residues=["TYR", "TRP"],
             custom="",
             distance_cutoff=20,
-            percent_edges=100,
             coef_alpha=1.0,
             max_degree = 4,
             exp_beta=2.3,
@@ -647,8 +606,6 @@ def process(emap,
         Custom atom string specified by user
     distance_cutoff: float
          Defines a pure distance threshold. PyeMap will only keep edges with distances less than or equal distance_cutoff.
-    percent_edges: float
-        Specifies a percentage of the shortest edges per edge type to keep.
     max_degree: int
         Maximum degree of any vertex.
     coef_alpha,exp_beta,r_offset: float, optional
@@ -670,20 +627,19 @@ def process(emap,
                 eta_moieties.append(resname)
     else:
         for resname in eta_moieties:
-            if resname[resname.index("(")+1:resname.index(")")] not in chains:
-                warnings.warn(str(resname) + " is not in a selected chain, so it will not be included in the analysis.")
-                eta_moieties.remove(resname)
+            if resname not in emap.eta_moieties:
+                PyeMapGraphException("Error: " + str(resname) + " is not a valid residue name.")
     for i, res in enumerate(include_residues):
         if res.upper() in res_name_to_char:
             include_residues[i] = res.upper()
         else:
-            raise RuntimeError("Error: " + str(res) + " is not a valid 3 letter amino acid code.")
+            raise PyeMapGraphException("Error: " + str(res) + " is not a valid 3 letter amino acid code.")
     model = emap._structure[0]
-    aromatic_residues = get_standard_residues(model.get_residues(), chains, include_residues)
+    all_residues = get_standard_residues(model.get_residues(), chains, include_residues)
     for resname in eta_moieties:
-        aromatic_residues.append(emap.eta_moieties[resname])
+        all_residues.append(emap.eta_moieties[resname])
     used_atoms = []
-    for res in aromatic_residues:
+    for res in all_residues:
         for atm in res:
             used_atoms.append(atm.serial_number)
     user_residues = []
@@ -691,30 +647,40 @@ def process(emap,
         user_residues = get_user_residues(custom, model.get_atoms(), chains, used_atoms)
     for res in user_residues:
         emap.user_residues[res.resname] = res
-    aromatic_residues += user_residues
-    if len(aromatic_residues) < 2:
-        raise Exception("Not enough residues to construct a graph.")
+    all_residues += user_residues
+    if len(all_residues) < 2:
+        raise PyeMapGraphException("Not enough residues to construct a graph.")
     node_labels = {}
-    for i in range(0, len(aromatic_residues)):
-        node_labels[i] = aromatic_residues[i].node_label
+    for i in range(0, len(all_residues)):
+        node_labels[i] = all_residues[i].node_label
     if int(dist_def) == 0:
-        dmatrix = com_dmatrix(aromatic_residues)
+        dmatrix = com_dmatrix(all_residues)
+    elif int(dist_def) == 1:
+        dmatrix = closest_atom_dmatrix(all_residues)
     else:
-        dmatrix = closest_atom_dmatrix(aromatic_residues)
-    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff,percent_edges, int(max_degree),
+        raise PyeMapGraphException("Invalid choice of dist_def. Must be set to 0 (COM) or 1 (closest atom).")
+    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff, int(max_degree),
                      emap.eta_moieties.keys(),include_residues)
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
-        raise RuntimeError("Not enough edges to construct a graph.")
+        raise PyeMapGraphException("Not enough edges to construct a graph.")
     # define surface exposed residues
-    if sdef and int(sdef) == 0:
-        surface_exposed_res = calculate_residue_depth(pdb_file,aromatic_residues,rd_thresh)
-    elif sdef and int(sdef) == 1:
-        surface_exposed_res = calculate_asa(pdb_file, model, node_labels.values(), asa_thresh)
-    else:
+    if sdef==None:
         surface_exposed_res = []
+    else:
+        try:
+            if int(sdef) == 0:
+                surface_exposed_res = calculate_residue_depth(model,all_residues,rd_thresh)
+            elif int(sdef) == 1:
+                surface_exposed_res = calculate_asa(pdb_file, model, node_labels.values(), asa_thresh)
+            else:
+                surface_exposed_res = []
+                warnings.warn("Invalid choice of surface definition. sdef must be set to 0 or 1.")
+        except:
+            warnings.warn("Invalid choice of surface definition. sdef must be set to 0 or 1. All residues will be classified as buried...")
+            surface_exposed_res = []
     finish_graph(G, surface_exposed_res, chains)
-    for res in aromatic_residues:
+    for res in all_residues:
         emap._add_residue(res)
     emap._store_initial_graph(G)
     return emap

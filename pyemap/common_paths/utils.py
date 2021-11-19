@@ -1,6 +1,9 @@
 from ..data import char_to_res_name
 from networkx.algorithms import isomorphism
 
+def extract_chain(resname):
+    return resname[resname.index('(')+1:resname.index(")")]
+
 def get_edge_label(G, edge, edge_thresholds):
     dist = G.edges[edge]['distance']
     try:

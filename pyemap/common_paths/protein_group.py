@@ -3,18 +3,25 @@ import os
 import shutil
 from ..process_data import process
 import networkx as nx
-import time
 import datetime
 from ..data import res_name_to_char, char_to_res_name
-import re
 from Bio import SeqIO
-from Bio.Seq import Seq
 from Bio.Align.Applications import MuscleCommandline
-from Bio.SeqRecord import SeqRecord
-from Bio.SeqUtils import seq1
 from .frequent_subgraph import FrequentSubgraph
 import warnings
-from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, strip_insertion_code
+from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain
+from ..pyemap_exceptions import *
+
+def moieties_on_chains(chains,moieties):
+    remove = False
+    for itm in moieties:
+        if extract_chain(itm) not in chains:
+            remove = True
+            warnings.warn(itm + " is not part of an included chain, and will not be included in the analysis.")
+    if remove:
+        return [item for item in moieties if extract_chain(item) in chains]
+    else:
+        return moieties
 
 def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
     graph_str = graph_str.replace(" ", "")
@@ -138,8 +145,12 @@ class PDBGroup():
                             residue.aligned_residue_number = seq_map[int(resnum)]
                         else:
                             residue.aligned_residue_number = 'X'
-        except Exception as e:
+        except:
             shutil.copyfile(inp, out)
+            for pdb_id, emap in self.emaps.items():
+                for chain, residues in emap.active_chains.items():
+                    for residue in residues:
+                        residue.aligned_residue_number = residue.id[1]
             warnings.warn("Warning: could not align sequences. Make sure that MUSCLE (https://www.drive5.com/muscle/manual/) is installed and "\
             "accessible in the current path. Original residue numbers will be used for sequence alignment.")
 
@@ -165,15 +176,15 @@ class PDBGroup():
         >>> my_pg.process_emaps(chains=chains,eta_moieties=eta_moieties)
 
         '''
-        start_time = time.time()
         self._reset_process()
         remove_pdbs = []
         for pdb_id in self.emaps:
-            if pdb_id not in eta_moieties:
-                eta_moieties[pdb_id] = list(self.emaps[pdb_id].eta_moieties.keys())
             if pdb_id not in chains:
                 chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
+            if pdb_id not in eta_moieties:
+                eta_moieties[pdb_id] =  [item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in chains]
             try:
+                eta_moieties[pdb_id] = moieties_on_chains(chains[pdb_id],eta_moieties[pdb_id])
                 process(self.emaps[pdb_id],
                         chains=chains[pdb_id],
                         eta_moieties=eta_moieties[pdb_id],
@@ -186,7 +197,7 @@ class PDBGroup():
         for pdb_id in remove_pdbs:
             self.emaps.pop(pdb_id)
         if len(self.emaps) < 2:
-            raise Exception("Not enough graphs could be generated for mining.")
+            raise PyeMapMiningException("Not enough graphs could be generated for mining.")
         self._align_sequences()
         self.emap_parameters = kwargs
         self.included_chains = chains
@@ -284,16 +295,6 @@ class PDBGroup():
         return full_str
 
     def _set_node_labels(self,nodes):
-        '''
-        assert (categories is None and labels is None) or  (categories is not None and labels is not None)
-        if categories is not None:
-            if "X" in labels or "X" in categories.values():
-                raise KeyError("X is reserved for unspecified residue type. Do not use X as a key.")
-            if not nodes==['H','W','F',"Y"]:
-                warnings.warn("Warning: 'nodes' keyword is incompatible and will be ignored.")
-            self.residue_categories = categories
-            self.node_labels = labels
-        '''
         if nodes is None:
             nodes = [res_name_to_char[x] for x in self.include_residues]
         assert all(x in char_to_res_name for x in nodes)
@@ -368,7 +369,6 @@ class PDBGroup():
         lower_bound: int, optional
             Minimum number of nodes for subgraphs in the search space
         '''
-        start_time = time.time()
         self._clean_subgraphs()
         self.gspan_parameters["support"] = support
         self.gspan_parameters["lower_bound"] = lower_bound
@@ -386,7 +386,6 @@ class PDBGroup():
         # give us our old standard output back
         sys.stdout = old_stdout
         f.close()
-        print("GSpan took:" + str(time.time() - start_time) + " seconds.")
         self._generate_subgraph_patterns()
 
     def _generate_subgraph_patterns(self):

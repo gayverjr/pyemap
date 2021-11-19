@@ -9,8 +9,12 @@ from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from .custom_residues import process_custom_residues
 from .data import res_name_to_char
 from .emap import emap
-import sys
+from . pyemap_exceptions import *
 import os
+from pathlib import Path
+import requests
+import os
+
 
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
     """
@@ -21,16 +25,17 @@ def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/
         `https://www.rcsb.org/pages/download/http#structures` for details
     :return: the full path to the downloaded PDB file or None if something went wrong
     """
-    import urllib
     pdbfn = pdbcode + ".pdb"
     url = downloadurl + pdbfn
     outfnm = os.path.join(datadir, pdbfn)
     try:
-        urllib.request.urlretrieve(url, outfnm)
+        R = requests.get(url, allow_redirects=True)
+        if R.status_code != 200:
+            raise ConnectionError('could not download {}\nerror code: {}'.format(url, R.status_code))
+        Path(outfnm).write_bytes(R.content)
         return outfnm
-    except Exception as err:
-        print(str(err), file=sys.stderr)
-        return None
+    except Exception as e:
+        raise PyeMapParseException("Could not fetch PDB " + pdbcode + " .") from e
 
 def fetch_and_parse(pdb_id, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
@@ -79,14 +84,17 @@ def parse(filename, quiet=True):
         parser = PDBParser()
         structure = parser.get_structure("protein", filename)
     except Exception as e:
-        parser = FastMMCIFParser()
-        structure = parser.get_structure("protein", filename)
-        io = PDBIO()
-        fn = filename[:-4] + ".pdb"
-        io.set_structure(structure)
-        io.save(fn)
-        parser = PDBParser()
-        structure = parser.get_structure("protein", fn)
+        try:
+            parser = FastMMCIFParser()
+            structure = parser.get_structure("protein", filename)
+            io = PDBIO()
+            fn = filename[:-4] + ".pdb"
+            io.set_structure(structure)
+            io.save(fn)
+            parser = PDBParser()
+            structure = parser.get_structure("protein", fn)
+        except:
+            raise PyeMapParseException("Error: could not parse file.")
     chain_list = []
     sequences = {}
     chain_start = {}
@@ -95,7 +103,7 @@ def parse(filename, quiet=True):
     for model in structure.get_models():
         num_models += 1
     if num_models < 1:
-        raise RuntimeError("Unable to parse file.")
+        raise PyeMapParseException("Error: structure " + structure.header['idcode'] +  " does not contain any models.")
     for chain in structure[0].get_chains():
         chain_list.append(chain.id)
         seq = []
@@ -112,6 +120,10 @@ def parse(filename, quiet=True):
     custom_residue_list = process_custom_residues(non_standard_residue_list)
     if not quiet:
         print("Identified " + str(len(custom_residue_list)) + " non-protein ET active moieties.")
-    my_emap = emap(filename, custom_residue_list, chain_list, sequences, chain_start)
+    if structure.header['idcode'] == "":
+        idcode = "CUST"
+    else:
+        idcode = structure.header['idcode']
+    my_emap = emap(filename, idcode, custom_residue_list, chain_list, sequences, chain_start)
     my_emap._structure = structure
     return my_emap
