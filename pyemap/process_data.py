@@ -15,6 +15,7 @@ import numpy as np
 from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
+from collections import OrderedDict
 import warnings
 from .data import res_name_to_char, side_chain_atoms
 from .pyemap_exceptions import *
@@ -298,7 +299,7 @@ def process_standard_residues(standard_residue_list):
     return res_list
 
 
-def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res_names):
+def create_user_res(serial_list, used_atoms, serial_dict, user_res_names):
     """Creates a customized BioPython Residue object corresponding to a user specified residue.
 
     Parameters
@@ -320,27 +321,19 @@ def create_user_res(serial_list, all_atoms, chain_selected, used_atoms, user_res
         Customized residue object corresponding to the atoms in serial_list
 
     """
-    source_res = []
-    atm_list = []
-    for atm in all_atoms:
-        if atm.serial_number in serial_list:
-            if atm.serial_number in used_atoms:
-                message = "Invalid atom serial number range. Atom " + str(atm.serial_number) + " is already included in another residue."
-                raise PyeMapUserResidueException(message)   
-            atm.get_full_id()
-            if not source_res:
-                source_res = atm.parent
-            elif atm not in source_res:
-                message = "Invalid atom serial number range. Atom " + str(atm.serial_number) + \
-                " is not part of residue " + source_res.resname + str(source_res.id[1]) +"."
-                raise PyeMapUserResidueException(message)
-            atm_copy = atm.copy()
-            atm_list.append(atm_copy)
+    source_res = serial_dict[serial_list[0]].parent
     source_res.get_full_id()
     user_res = source_res.copy()
-    for atm in source_res:
-        if atm not in atm_list:
-            user_res.detach_child(atm.id)
+    for atm in list(source_res.get_atoms()):
+        user_res.detach_child(atm.id)
+    for serial_number in serial_list:
+        if serial_number in used_atoms:
+            message = "Invalid atom serial number range. Atom " + str(serial_number) + " is already included in another residue."
+            raise PyeMapUserResidueException(message)
+        if serial_number not in serial_dict:
+            message = str(serial_number) + " is not a valid serial number."
+            raise PyeMapUserResidueException(message)  
+        user_res.add(serial_dict[serial_number])
     k = 1
     name = "CUST"
     name += "-"
@@ -385,7 +378,7 @@ def get_standard_residues(all_residues, chain_list, include_residues):
     return residue_list
 
 
-def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
+def get_user_residues(custom, used_atoms, serial_dict):
     """Generates customized Bio.PDB.Residue.Residue objects from a custom atom string.
 
     Users may not choose atoms that are already part of standard residues or eta moieties, nor those that are not
@@ -439,8 +432,9 @@ def get_user_residues(custom, all_atoms, chain_selected, used_atoms):
                         serial_number_list.append(i)
                 else:
                     serial_number_list.append(int(atm))
-            if serial_number_list:
-                new_res = create_user_res(serial_number_list, all_atoms, chain_selected, used_atoms, user_res_names)
+            if serial_number_list !=[]:
+                serial_number_list = sorted(list(OrderedDict.fromkeys(serial_number_list)))
+                new_res = create_user_res(serial_number_list, used_atoms, serial_dict, user_res_names)
             else:
                 raise UserResidueException("Invalid atom serial number range. See the manual for proper syntax.")
             res_list.append(new_res)
@@ -644,8 +638,11 @@ def process(emap,
             used_atoms.append(atm.serial_number)
     user_residues = []
     if custom:
-        user_residues = get_user_residues(custom, model.get_atoms(), chains, used_atoms)
-    for res in user_residues:
+        selection = Bio.PDB.Selection.unfold_entities(emap._structure, target_level='A')
+        serial_numbers = [atom.serial_number for atom in selection]
+        serial_dict = dict(zip(serial_numbers, selection))
+        user_residues = get_user_residues(custom, used_atoms, serial_dict)
+    for res in user_residues: 
         emap.user_residues[res.resname] = res
     all_residues += user_residues
     if len(all_residues) < 2:
