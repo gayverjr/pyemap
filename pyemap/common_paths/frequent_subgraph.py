@@ -6,6 +6,21 @@ from .utils import strip_res_number, get_graph_matcher, write_graph_smiles
 import networkx as nx
 
 
+def _get_sequence(G):
+    src = None
+    for node in G.nodes:
+        try:
+            if G.nodes[node]['aligned_resnum'] < G.nodes[src]['aligned_resnum']:
+                src = node
+        except:
+                src = node
+    seq = list(nx.dfs_preorder_nodes(G, source=src))
+    seq = [G.nodes[node]['aligned_resnum'] for node in seq]
+    seq = [0 if x=='X' else int(x) for x in seq]
+    return seq
+
+# J. Mol. Biol. (1999) 292, 441-464
+# This is known as Fiedler eigenvalue, or Spectral Graph Partitioning
 def _do_fiedler_clustering(D,A,all_graphs):
     L = D - A
     eigv, eigvc = LA.eig(L)
@@ -93,6 +108,7 @@ class FrequentSubgraph():
             if self.generic_subgraph.nodes[node]['label'] == "#":
                 self.generic_subgraph.nodes[node]['label'] = "NP"
 
+
     def general_report(self):
         ''' Generates general report which describes this subgraph pattern.
         '''
@@ -179,14 +195,12 @@ class FrequentSubgraph():
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
 
-    def find_protein_subgraphs(self,clustering_option="structural", PROC=None):
+    def find_protein_subgraphs(self,clustering_option="structural"):
         self.groups = {}
         self.protein_subgraphs = {}
         all_graphs = []
         for pdb_id in self.support:
             all_graphs += self._find_subgraph_in_pdb(pdb_id)
-        if PROC != None:
-            PROC.update_status()
         if len(all_graphs) > 1:
             D,A = self._structural_clustering(all_graphs)
             self._structural_groups,self._structural_ids = _do_fiedler_clustering(D,A,all_graphs)
@@ -212,7 +226,7 @@ class FrequentSubgraph():
         for id,graph in self.protein_subgraphs.items():
             graph.graph['id']=id
 
-    def _sequence_clustering(self, all_graphs):
+    def _sequence_clustering(self,all_graphs):
         num_graphs = len(all_graphs)
         dims = (num_graphs+1, num_graphs+1)
         D = np.zeros(dims)
@@ -221,26 +235,16 @@ class FrequentSubgraph():
             A[i][i] = 0.0
         for i in range(0, len(all_graphs)):
             for j in range(i + 1, len(all_graphs)):
-                G1 = all_graphs[i]
-                G2 = all_graphs[j]
-                G2nodes = list(G2.nodes())
-                distance = 0
-                for k, node1 in enumerate(G1.nodes):
-                    # only count for standard amino acid residues
-                    if strip_res_number(node1) in char_to_res_name:
-                        node2 = G2nodes[k]
-                        if str(G1.nodes[node1]['aligned_resnum']).isdigit() and str(
-                                G2.nodes[node2]['aligned_resnum']).isdigit():
-                            distance += np.absolute(G1.nodes[node1]['aligned_resnum'] -
-                                                    G2.nodes[node2]['aligned_resnum'])
-                if distance < len(G2nodes)+1:
-                    A[i][j] = 1 / (distance + 1)
-                    A[j][i] = 1 / (distance + 1)
+                seq1 = _get_sequence(all_graphs[i])
+                seq2 = _get_sequence(all_graphs[j])
+                dist = np.sum(np.absolute(np.array(seq1) - np.array(seq2)))
+                if dist < len(seq1)+1:
+                    A[i][j] = 1 / (dist + 1)
+                    A[j][i] = 1 / (dist + 1)
             D[i][i] = np.sum(A[i])
         D[-1][-1] = np.sum(A[-1])
         return D, A
-    # J. Mol. Biol. (1999) 292, 441-464
-    # This is known as Fiedler eigenvalue, or Spectral Graph Partitioning
+
     def _structural_clustering(self, all_graphs):
         num_graphs = len(all_graphs)
         dims = (num_graphs+1, num_graphs+1)

@@ -433,6 +433,7 @@ def get_user_residues(custom, used_atoms, serial_dict):
                 else:
                     serial_number_list.append(int(atm))
             if serial_number_list !=[]:
+                print(serial_number_list)
                 serial_number_list = sorted(list(OrderedDict.fromkeys(serial_number_list)))
                 new_res = create_user_res(serial_number_list, used_atoms, serial_dict, user_res_names)
             else:

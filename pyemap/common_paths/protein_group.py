@@ -11,6 +11,10 @@ from .frequent_subgraph import FrequentSubgraph
 import warnings
 from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain
 from ..pyemap_exceptions import *
+from gspan_mining import gSpan
+from tempfile import NamedTemporaryFile
+import sys
+from io import StringIO
 
 def moieties_on_chains(chains,moieties):
     remove = False
@@ -59,25 +63,20 @@ class PDBGroup():
         Title of PDB group 
     emaps: dict of str: :class:`~pyemap.emap`
         Dict of PDBs being analyzed by PyeMap. The keys are PDB IDs, meaning that only one :class:`~pyemap.emap` object per PDB ID is allowed.
-    temp_dir: str
-        Path where temporary files are to be stored   
     subgraph_patterns: dict of str: :class:`~pyemap.common_paths.FrequentSubgraph`
         Dict of subgraph patterns found by GSpan. Keys are the unique IDs of the :class:`~pyemap.common_paths.FrequentSubgraph` objects.
 
     '''
-    def __init__(self, title, temp_dir="."):
+    def __init__(self, title):
         ''' Initializes PDBGroup object
         
         Parameters
         ----------
         title: str
             Title of PDB group 
-        temp_dir: str
-            Path where temporary files are to be stored 
         '''
         self.title = title
         self.emaps = {}
-        self.temp_dir = temp_dir
         self.subgraph_patterns = {}
         self.node_labels = {}
         self.residue_categories = {}
@@ -90,6 +89,7 @@ class PDBGroup():
         self.include_residues = []
         self.sequences = {}
         self.aligned_sequences = {}
+        self._graph_database = ""
 
     def _clean_graph_database(self):
         self.graph_database_parameters = {}
@@ -97,6 +97,7 @@ class PDBGroup():
         self.residue_categories = {}
         self.edge_thresholds = []
         self.sep_buried_exposed = False
+        self._graph_database = ""
         self._clean_subgraphs()
     
     def _clean_subgraphs(self):
@@ -113,47 +114,73 @@ class PDBGroup():
         self._clean_graph_database()
 
     def _align_sequences(self):
-        inp = os.path.join(self.temp_dir, "data.fasta")
-        with open(inp, 'w') as handle:
+        inp = NamedTemporaryFile(mode='w',delete = False)
+        out = NamedTemporaryFile(mode='w+',delete = False)
+        try:
             for pdb_id, emap in self.emaps.items():
                 for chain in emap.active_chains:
-                    handle.write(emap.sequences[chain] + "\n")
-        out = os.path.join(self.temp_dir, "data_aligned.fasta")
-        log = os.path.join(self.temp_dir, "log.txt")
-        try:
-            muscle_cline = MuscleCommandline(input=inp, out=out, log=log)
-            muscle_cline()
-            seqIO = SeqIO.parse(out, "fasta")
-            for record in seqIO:
-                self.aligned_sequences[record.id.upper()] = record.seq
-            # now lets save the updated sequence numbers
-            for pdb_id, emap in self.emaps.items():
-                for chain, residues in emap.active_chains.items():
-                    original_idx = emap.chain_start[chain]
-                    aligned_idx = 1
-                    seq_map = {}
-                    if pdb_id + ":" + chain in self.aligned_sequences:
-                        aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
-                        for res in aligned_seq:
-                            if not res == "-":
-                                seq_map[original_idx] = aligned_idx
-                                original_idx += 1
-                            aligned_idx += 1
-                    for residue in residues:
-                        resnum = residue.id[1]
-                        if int(resnum) in seq_map:
-                            residue.aligned_residue_number = seq_map[int(resnum)]
-                        else:
-                            residue.aligned_residue_number = 'X'
-        except:
-            shutil.copyfile(inp, out)
-            for pdb_id, emap in self.emaps.items():
-                for chain, residues in emap.active_chains.items():
-                    for residue in residues:
-                        residue.aligned_residue_number = residue.id[1]
-            warnings.warn("Warning: could not align sequences. Make sure that MUSCLE (https://www.drive5.com/muscle/manual/) is installed and "\
-            "accessible in the current path. Original residue numbers will be used for sequence alignment.")
+                    inp.write(emap.sequences[chain] + "\n")
+            inp.close()
+            try:
+                muscle_cline = MuscleCommandline(input=inp.name, out=out.name)
+                muscle_cline()
+                seqIO = SeqIO.parse(out, "fasta")
+                for record in seqIO:
+                    self.aligned_sequences[record.id.upper()] = record.seq
+                # now lets save the updated sequence numbers
+                for pdb_id, emap in self.emaps.items():
+                    for chain, residues in emap.active_chains.items():
+                        original_idx = emap.chain_start[chain]
+                        aligned_idx = 1
+                        seq_map = {}
+                        if pdb_id + ":" + chain in self.aligned_sequences:
+                            aligned_seq = self.aligned_sequences[pdb_id + ":" + chain]
+                            for res in aligned_seq:
+                                if not res == "-":
+                                    seq_map[original_idx] = aligned_idx
+                                    original_idx += 1
+                                aligned_idx += 1
+                        for residue in residues:
+                            resnum = residue.id[1]
+                            if int(resnum) in seq_map:
+                                residue.aligned_residue_number = seq_map[int(resnum)]
+                            else:
+                                residue.aligned_residue_number = 'X'
+            except Exception:
+                shutil.copyfile(inp, out)
+                for pdb_id, emap in self.emaps.items():
+                    for chain, residues in emap.active_chains.items():
+                        for residue in residues:
+                            residue.aligned_residue_number = residue.id[1]
+                warnings.warn("Warning: could not align sequences. Make sure that MUSCLE (https://www.drive5.com/muscle/manual/) is installed and "\
+                "accessible in the current path. Original residue numbers will be used for sequence similarity.")
+        finally:
+            os.remove(inp.name)
+            os.remove(out.name)
 
+
+    def _setup_process(self, chains={}, eta_moieties={}, include_residues=["TYR", "TRP"], **kwargs):
+        self._reset_process()
+        for pdb_id in self.emaps:
+            if pdb_id not in chains:
+                chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
+            if pdb_id not in eta_moieties:
+                eta_moieties[pdb_id] =  [item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in chains]
+            eta_moieties[pdb_id] = moieties_on_chains(chains[pdb_id],eta_moieties[pdb_id])
+        self.emap_parameters = kwargs
+        self.included_chains = chains
+        self.included_eta_moieties = eta_moieties
+        self.include_residues = include_residues
+
+    def _process_emap(self, pdb_id):
+        '''Processes :class:`~pyemap.emap` object in order to generate protein graph. _setup process should be executed first if using this function.
+        '''
+        process(self.emaps[pdb_id],
+                        chains=self.included_chains[pdb_id],
+                        eta_moieties=self.included_eta_moieties[pdb_id],
+                        include_residues=self.include_residues,
+                        **self.emap_parameters) 
+        print("Finished:"+str(pdb_id))
 
     def process_emaps(self, chains={}, eta_moieties={}, include_residues=["TYR", "TRP"], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 
@@ -346,7 +373,7 @@ class PDBGroup():
             assert all(edge_thresholds[i] <= edge_thresholds[i+1] for i in range(len(edge_thresholds)-1))
             self.edge_thresholds = edge_thresholds.copy()
         self._set_node_labels(node_categories)
-        f = open(os.path.join(self.temp_dir, 'graphdatabase.txt'), "w")
+        f = StringIO("")
         for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph
             f.write("t # " + str(i) + "\n")
@@ -356,10 +383,11 @@ class PDBGroup():
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
                         str(get_edge_label(G, edge,self.edge_thresholds)) + "\n")
         f.write("t # -1")
+        self._graph_database = f.getvalue()
         f.close()
         self._apply_num_labels()
 
-    def run_gspan(self, support, lower_bound=4):
+    def run_gspan(self, min_support, min_num_vertices=4, interruptable=None, **kwargs):
         ''' Runs gSpan algorithm to mine for subgraph patterns, and then identifies each occurence of each subgraph pattern in each PDB which supports it.
         
         Parameters
@@ -368,69 +396,70 @@ class PDBGroup():
             Minimum support number of subgraphs in the search space 
         lower_bound: int, optional
             Minimum number of nodes for subgraphs in the search space
+        outfile: str, optional
+            Path to file where gspan output should be stored
         '''
         self._clean_subgraphs()
-        self.gspan_parameters["support"] = support
-        self.gspan_parameters["lower_bound"] = lower_bound
+        self.gspan_parameters["min_support"] = min_support
         self.gspan_parameters["graph_specification"] = ""
-        import sys
+        db = NamedTemporaryFile(mode='w',delete = False)
+        print(self._graph_database,file=db)
+        db.close()
         old_stdout = sys.stdout
-        f = open(os.path.join(self.temp_dir, 'gspan_results.out'), "w")
-        sys.stdout = f
-        from gspan_mining.config import parser
-        from gspan_mining.main import main
-        args_str = '-s ' + str(support) + ' -d False -l ' + str(lower_bound) + ' -p False -w True ' + str(
-            os.path.join(self.temp_dir, 'graphdatabase.txt'))
-        FLAGS, _ = parser.parse_known_args(args=args_str.split())
-        gs = main(FLAGS)
-        # give us our old standard output back
+        sys.stdout = mystdout = StringIO()
+        gs = gSpan(
+        database_file_name=db.name,
+        min_support=min_support,  
+        min_num_vertices = min_num_vertices,      
+        where=True,
+        **kwargs)
+        gs.run()
         sys.stdout = old_stdout
-        f.close()
+        self._gspan_results = mystdout.getvalue()
         self._generate_subgraph_patterns()
 
     def _generate_subgraph_patterns(self):
-        buff = open(os.path.join(self.temp_dir, 'gspan_results.out'), "r")
-        subgraphs = []
-        lines = buff.readlines()
-        line_idx = 0
-        while line_idx < len(lines):
-            line = lines[line_idx]
-            if len(line.split()) == 3 and line.split()[0] == "t" and line.split()[1] == "#":
-                graph_number = int(line.split()[2])
-                line_idx += 1
-                start_idx = line_idx - 1
-                G = nx.Graph()
+        with StringIO(self._gspan_results) as buff:
+            subgraphs = []
+            lines = buff.readlines()
+            line_idx = 0
+            while line_idx < len(lines):
                 line = lines[line_idx]
-                while "---" not in line:
-                    line = lines[line_idx]
-                    if len(line.split()) > 1 and line.split()[0] == "v":
-                        node_idx = int(line.split()[1])
-                        node_label = int(line.split()[2])
-                        G.add_node(node_idx)
-                        G.nodes[node_idx]['label'] = self.residue_categories[node_label]
-                        G.nodes[node_idx]['num_label'] = node_label
-                    if len(line.split()) > 1 and line.split()[0] == "e":
-                        idx1 = int(line.split()[1])
-                        idx2 = int(line.split()[2])
-                        edge_label = int(line.split()[3])
-                        G.add_edge(idx1, idx2, label=edge_label)
-                        G.edges[(idx1, idx2)]['num_label'] = edge_label
-                    if "where" in line:
-                        pdb_list_by_index = line[7:-2].strip('][').split(', ')
-                        pdb_list_by_index = list(np.array(pdb_list_by_index, dtype=int))
-                        pdb_list = list(self.emaps.keys())
-                        support = {}
-                        for idx in pdb_list_by_index:
-                            support[pdb_list[idx]] = self.emaps[pdb_list[idx]]
-                        subgraphs.append(FrequentSubgraph(G,graph_number,support,self.node_labels,self.edge_thresholds))
+                if len(line.split()) == 3 and line.split()[0] == "t" and line.split()[1] == "#":
+                    graph_number = int(line.split()[2])
                     line_idx += 1
-            line_idx += 1
-        buff.close()
+                    G = nx.Graph()
+                    line = lines[line_idx]
+                    while "---" not in line:
+                        line = lines[line_idx]
+                        if len(line.split()) > 1 and line.split()[0] == "v":
+                            node_idx = int(line.split()[1])
+                            node_label = int(line.split()[2])
+                            G.add_node(node_idx)
+                            G.nodes[node_idx]['label'] = self.residue_categories[node_label]
+                            G.nodes[node_idx]['num_label'] = node_label
+                        if len(line.split()) > 1 and line.split()[0] == "e":
+                            idx1 = int(line.split()[1])
+                            idx2 = int(line.split()[2])
+                            edge_label = int(line.split()[3])
+                            G.add_edge(idx1, idx2, label=edge_label)
+                            G.edges[(idx1, idx2)]['num_label'] = edge_label
+                        if "where" in line:
+                            pdb_list_by_index = line[7:-2].strip('][').split(', ')
+                            pdb_list_by_index = list(np.array(pdb_list_by_index, dtype=int))
+                            pdb_list = list(self.emaps.keys())
+                            support = {}
+                            for idx in pdb_list_by_index:
+                                support[pdb_list[idx]] = self.emaps[pdb_list[idx]]
+                            subgraphs.append(FrequentSubgraph(G,graph_number,support,self.node_labels,self.edge_thresholds))
+                        line_idx += 1
+                line_idx += 1
+            buff.close()
         subgraphs.sort(key=lambda x: x.support_number, reverse=True)
         for sg in subgraphs:
             self.subgraph_patterns[sg.id] = sg
 
-    def find_subgraph(self, graph_specification):
+    def find_subgraph(self, graph_specification, interrupt=None):
         self._clean_subgraphs()
         self.gspan_parameters["support"] = None
         self.gspan_parameters["lower_bound"] = None
@@ -449,9 +478,13 @@ class PDBGroup():
                 for j, edge in enumerate(G.edges):
                     G.edges[edge]['num_label'] = edge_comb[j]
                     G.edges[edge]['label'] = edge_comb[j]
-                protein_subgraphs = []
                 support = {}
                 for pdb_id in self.emaps:
+                    try:
+                        if interrupt():
+                            return
+                    except:
+                        pass
                     GM = get_graph_matcher(self.emaps[pdb_id].init_graph, G)
                     if GM.subgraph_is_monomorphic():
                         support[pdb_id] = self.emaps[pdb_id]
