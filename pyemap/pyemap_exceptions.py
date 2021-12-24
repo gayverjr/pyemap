@@ -1,14 +1,17 @@
-class PyeMapUserResidueException(Exception):
+class PyeMapException(Exception):
     pass
 
-class PyeMapGraphException(Exception):
+class PyeMapUserResidueException(PyeMapException):
     pass
 
-class PyeMapShortestPathException(Exception):
+class PyeMapGraphException(PyeMapException):
     pass
 
-class PyeMapMiningException(Exception):
+class PyeMapShortestPathException(PyeMapException):
     pass
 
-class PyeMapParseException(Exception):
+class PyeMapMiningException(PyeMapException):
+    pass
+
+class PyeMapParseException(PyeMapException):
     pass
