@@ -94,7 +94,7 @@ def parse(filename, quiet=True):
             parser = PDBParser()
             structure = parser.get_structure("protein", fn)
         except:
-            raise PyeMapParseException("Error: could not parse file {}.").format(filename) from e
+            raise PyeMapParseException("Error: could not parse file {}.".format(filename)) from e
     chain_list = []
     sequences = {}
     chain_start = {}

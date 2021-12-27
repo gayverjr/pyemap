@@ -17,7 +17,7 @@ from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
 from collections import OrderedDict
 import warnings
-from .data import res_name_to_char, side_chain_atoms
+from .data import res_name_to_char, side_chain_atoms, char_to_res_name
 from .pyemap_exceptions import *
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
@@ -78,11 +78,12 @@ def calculate_residue_depth(model, aromatic_residues, rd_cutoff):
         Name of pdb file to be analyzed
     aromatic_residues: list of :class:`Bio.PDB.Residue.Residue`
         residues included in the analysis
+    rd_cutoff: float
+        Cutoff for buried/surface exposed
     Returns
     -------
     surface_exposed_res: list of str
         List of residue names corresponding to the surface exposed residues
-
     """
     try:
         surface = get_surface(model)
@@ -111,15 +112,12 @@ def calculate_asa(filename, model, node_list, asa_cutoff):
     ---------
     filename: str
         Name of pdb file to be analyzed
+    model: :class:`Bio.PDB.Model.Model`
+        Model under analysis
     node_list : list of str
         List containing which standard residues are included in analysis
-    chain_list: list of str
-        Chains are included in analysis
-
-    Notes
-    -----
-    The relative accessible surface area (RSA) of each residue is calculated using the Bio.PDB.DSSP module. A residue
-    with an RSA value of 0.05 or higher is classified as surface exposed.
+    asa_cutoff: float
+        Cutoff for buried/surface exposed
 
     References
     ---------
@@ -172,6 +170,7 @@ def get_atom_list(res):
     -------
     atom_list: list of :class:`Bio.PDB.Atom.Atom`
         List of atoms to be used in distance matrix calculation
+
     """
     if res.resname in side_chain_atoms:
         atom_list = []
@@ -211,6 +210,7 @@ def closest_atom_dmatrix(residues):
     -------
     distance_matrix: numpy.array of float
         Distance matrix of residues
+
     """
     dmat, atoms_per_res = get_full_atom_distance_matrix(residues)
     distance_matrix = np.zeros((len(residues), len(residues)))
@@ -306,12 +306,10 @@ def create_user_res(serial_list, used_atoms, serial_dict, user_res_names):
     ----------
     serial_list: list of int
         List of atom serial numbers included in residue
-    all_atoms: iterator of :class:`Bio.PDB.Atom.Atom`
-        All atoms in protein on selected chains
-    chain_selected: list of str
-        Chains included in analysis
     used_atoms: list of :class:`Bio.PDB.Atom.Atom`
         Atoms already included in analysis
+    serial_dict: dict of int, :class:`Bio.PDB.Atom.Atom`
+        Dictionary of serial numbers and :class:`Bio.PDB.Atom.Atom` objects
     user_res_names: list of str
         User residue names already included in the analysis.
 
@@ -388,12 +386,10 @@ def get_user_residues(custom, used_atoms, serial_dict):
     ----------
     custom: str
         Specified by user to select atoms for custom residues
-    all_atoms: iterator of :class:`Bio.PDB.Atom.Atom`
-        All atoms in protein on selected chains
-    chain_selected: list of str
-        Chains included in analysis
     used_atoms: list of :class:`Bio.PDB.Atom.Atom`
         Atoms already included in analysis
+    serial_dict: dict of int, :class:`Bio.PDB.Atom.Atom`
+        Dictionary of serial numbers and :class:`Bio.PDB.Atom.Atom` objects
 
     Returns
     -------
@@ -445,7 +441,7 @@ def get_user_residues(custom, used_atoms, serial_dict):
     return []
 
 
-def finish_graph(G, surface_exposed_res, chain_list):
+def finish_graph(G, surface_exposed_res):
     """Sets surface exposed residues as boxes in graph and removes disconnected vertices.
 
     Parameters
@@ -454,9 +450,6 @@ def finish_graph(G, surface_exposed_res, chain_list):
         Graph object constructed from distance matrix of residues
     surface_exposed_res: list of str
         Names of surface exposed residues
-    chain_list: list of str
-        Names of chains included in analysis
-
     """
     for goal in surface_exposed_res:
         G.nodes[goal]['margin'] = '0.11'
@@ -474,6 +467,8 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, max_degree):
     ----------
     G: :class:`networkx.graph`
         protein graph
+    coef_alpha,exp_beta,r_offset: flaot, optional
+        Penalty function parameters
     distance_cutoff,percentile,max_degree: float
         Parameters that determine which edges are kept.
     '''
@@ -504,7 +499,7 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, max_degree):
             G.remove_edge(u,v)
     
 
-def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,max_degree,eta_moieties,include_residues):
+def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,max_degree,eta_moieties):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
@@ -515,7 +510,7 @@ def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_c
         Labels for residues in the graph.
     residue_numbers:
         res numbers
-    distance_cutoff,percentile, max_degree: float
+    distance_cutoff,max_degree: float
         Parameters that determine which edges are kept.
     eta_moieties: list of str
         Non standard residues that were automatically identified
@@ -572,7 +567,7 @@ def process(emap,
             eta_moieties=None,
             dist_def=1,
             sdef=1,
-            include_residues=["TYR", "TRP"],
+            include_residues=["Y", "W"],
             custom="",
             distance_cutoff=20,
             coef_alpha=1.0,
@@ -596,7 +591,7 @@ def process(emap,
     sdef: int, optional
         0 for residue depth, 1 for solvent accessibility
     include_residues: list of str
-        Included amino acids specified by 3 letter code
+        Included amino acids specified by 1 letter code
     custom: str, optional
         Custom atom string specified by user
     distance_cutoff: float
@@ -605,6 +600,10 @@ def process(emap,
         Maximum degree of any vertex.
     coef_alpha,exp_beta,r_offset: float, optional
         Penalty function parameters.
+    rd_thresh: float, optional
+        Threshold for buried/surface exposed for residue depth
+    asa_thresh: float, optional
+        Threshold for buried/surface exposed for solvent accessbility
     Raises
     ------
     RuntimeError:
@@ -625,10 +624,12 @@ def process(emap,
             if resname not in emap.eta_moieties:
                 PyeMapGraphException("Error: " + str(resname) + " is not a valid residue name.")
     for i, res in enumerate(include_residues):
-        if res.upper() in res_name_to_char:
+        if res.upper() in char_to_res_name:
+            include_residues[i] = char_to_res_name[res.upper()]
+        elif res.upper() in res_name_to_char:
             include_residues[i] = res.upper()
         else:
-            raise PyeMapGraphException("Error: " + str(res) + " is not a valid 3 letter amino acid code.")
+            raise PyeMapGraphException("Error: " + str(res) + " is not a valid 1-letter or 3-letter amino acid code.")
     model = emap._structure[0]
     all_residues = get_standard_residues(model.get_residues(), chains, include_residues)
     for resname in eta_moieties:
@@ -658,7 +659,7 @@ def process(emap,
     else:
         raise PyeMapGraphException("Invalid choice of dist_def. Must be set to 0 (COM) or 1 (closest atom).")
     G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff, int(max_degree),
-                     emap.eta_moieties.keys(),include_residues)
+                     emap.eta_moieties.keys())
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise PyeMapGraphException("Not enough edges to construct a graph.")
@@ -677,7 +678,7 @@ def process(emap,
         except:
             warnings.warn("Invalid choice of surface definition. sdef must be set to 0 or 1. All residues will be classified as buried...")
             surface_exposed_res = []
-    finish_graph(G, surface_exposed_res, chains)
+    finish_graph(G, surface_exposed_res)
     for res in all_residues:
         emap._add_residue(res)
     emap._store_initial_graph(G)
