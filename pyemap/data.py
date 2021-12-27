@@ -157,3 +157,5 @@ import os
 clusters = os.listdir(os.path.abspath(
     os.path.dirname(__file__)) + '/data/clusters')
 clusters = [cluster.replace('.svg', '') for cluster in clusters]
+
+metal_ligands = {'CU':2,'FE':3,'FE2':2,'MN':2,'CO':2,'NI':2,'MO':0,'4MO':4,'CU1':1}

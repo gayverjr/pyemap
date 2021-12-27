@@ -1,8 +1,9 @@
 # PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
 # Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 from .custom_residues import is_pi_bonded
-from .data import clusters
+from .data import clusters, metal_ligands
 import networkx as nx
+from .common_paths.utils import extract_resname
 from networkx.drawing.nx_agraph import to_agraph
 from .structures import getSimpleSmarts
 from collections import OrderedDict
@@ -72,6 +73,7 @@ class emap():
         self.active_chains = {}
         self.eta_moieties = {}
         self.user_residues = {}
+        self._include_residues = []
         self.smarts = {}
         self.paths = OrderedDict()
         self.paths_graph = []
@@ -139,6 +141,7 @@ class emap():
         self.paths_graph = []
         self.branches = OrderedDict()
         self.ngl_strings = {}
+        self._include_residues = []
 
     def _reset_paths(self):
         '''Returns emap object to state it was in after the process step.
@@ -171,11 +174,20 @@ class emap():
         residue: Bio.PDB.Residue.Residue
              Customized residue object generated for automatically detected eta moiety
         '''
-        if not residue.resname[:3] in clusters and "CUST" not in residue.resname:
+        if extract_resname(residue) not in clusters+list(metal_ligands.keys()) and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
             smarts_str = getSimpleSmarts(res_graph)
             residue.smarts = smarts_str
             self.smarts[residue.resname] = smarts_str
+        elif extract_resname(residue) in metal_ligands:
+            atm_name = next(residue.get_atoms()).name
+            atm_name = atm_name[0] + atm_name[1].lower()
+            charge = metal_ligands[extract_resname(residue)]
+            smarts_str = "["+atm_name
+            for i in range(0,charge):
+                smarts_str+='+'
+            smarts_str+=']'
+            self.smarts[residue.resname] = smarts_str     
         self.eta_moieties[residue.resname] = residue
 
     def _visualize_pathway(self, pathway, yens):
@@ -208,11 +220,6 @@ class emap():
     def _add_residue(self, residue):
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
         '''
-        if not residue.resname[:3] in clusters and "CUST" not in residue.resname and residue.resname[:3] in ["PHE","HIS","TYR","TRP"]:
-            res_graph = self._get_residue_graph(residue)
-            smarts_str = getSimpleSmarts(res_graph)
-            residue.Smarts = smarts_str
-            self.smarts[residue.node_label] = smarts_str
         residue.ngl_string = self._get_ngl_string(residue)
         self.residues[residue.node_label] = residue
         self.ngl_strings[residue.node_label] = residue.ngl_string
@@ -319,9 +326,9 @@ class emap():
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
-            elif resname[:3] in clusters:
+            elif strip_chain(resname) in clusters:
                 cluster_img_name = os.path.abspath(os.path.dirname(
-                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                    __file__)) + '/data/clusters/' + strip_chain(resname) + '.svg'
                 drawing = svg2rlg(cluster_img_name)
                 img = renderPM.drawToPIL(drawing)
                 return img

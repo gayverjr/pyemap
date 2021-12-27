@@ -2,7 +2,18 @@ from ..data import char_to_res_name
 from networkx.algorithms import isomorphism
 
 def extract_chain(resname):
-    return resname[resname.index('(')+1:resname.index(")")]
+    try:
+        return resname[resname.index('(')+1:resname.index(")")]
+    except:
+        return ''
+
+def extract_resname(residue):
+    try:
+        resname = residue.resname
+        resnum = str(residue.full_id[3][1])
+        return resname[:resname.rfind(resnum)]
+    except:
+        return resname
 
 def get_edge_label(G, edge, edge_thresholds):
     dist = G.edges[edge]['distance']

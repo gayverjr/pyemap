@@ -4,7 +4,7 @@
 """
 import networkx as nx
 import numpy as np
-from .data import SB_means,SB_std_dev, clusters
+from .data import SB_means,SB_std_dev, clusters, metal_ligands
 from .structures import cleanup_bonding, remove_side_chains
 
 def is_pi_bonded(cur_atom, next_atom):
@@ -156,7 +156,6 @@ def create_custom_residue(atm_list, res_name):
     for k in range(0, len(atm_list)):
         if atm_list[k].serial_number not in atm_serial_list:
             custom_res.detach_child(atm_list[k].id)
-
     return custom_res
 
 def process_custom_residues(non_standard_residue_list):
@@ -188,7 +187,7 @@ def process_custom_residues(non_standard_residue_list):
 
     # Clusters
     for residue in non_standard_residue_list:
-        if residue.resname in clusters:
+        if residue.resname in clusters or residue.resname.upper() in metal_ligands:
             atm_list = list(residue.get_atoms())
             res_name = str(atm_list[0].parent.get_resname()) + str(
                 atm_list[0].get_full_id()[3][1]) + "(" + str(

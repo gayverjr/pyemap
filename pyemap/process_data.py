@@ -682,4 +682,5 @@ def process(emap,
     for res in all_residues:
         emap._add_residue(res)
     emap._store_initial_graph(G)
+    emap._include_residues = include_residues
     return emap
