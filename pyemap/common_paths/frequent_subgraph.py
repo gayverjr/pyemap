@@ -69,7 +69,7 @@ def _do_fiedler_clustering(D,A,all_graphs):
     groups = {}
     protein_subgraphs = {}
     for i, val in enumerate(eigvc2):
-        rounded_val = np.round(val, decimals=4)
+        rounded_val = np.round(val, decimals=6)
         if rounded_val not in groups:
             groups[rounded_val] = [all_graphs[i]]
         else:
@@ -329,7 +329,7 @@ class FrequentSubgraph():
         num_graphs = len(all_graphs)
         dims = (num_graphs+1, num_graphs+1)
         D = np.zeros(dims)
-        A = np.ones(dims)*0.001
+        A = np.ones(dims)*0.0001
         for i in range(0,num_graphs):
             A[i][i] = 0.0
         for i in range(0, len(all_graphs)):
@@ -351,7 +351,7 @@ class FrequentSubgraph():
         num_graphs = len(all_graphs)
         dims = (num_graphs+1, num_graphs+1)
         D = np.zeros(dims)
-        A = np.ones(dims)*0.001
+        A = np.ones(dims)*0.0001
         for i in range(0,num_graphs):
             A[i][i] = 0.0
         for i in range(0, num_graphs):

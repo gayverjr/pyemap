@@ -176,7 +176,7 @@ class PDBGroup():
                 muscle_cline()
                 seqIO = SeqIO.parse(out, "fasta")
                 for record in seqIO:
-                    self._aligned_sequences[record.id.upper()] = record.seq
+                    self._aligned_sequences[record.id] = record.seq
                 # now lets save the updated sequence numbers
                 for pdb_id, emap in self.emaps.items():
                     for chain, residues in emap.active_chains.items():

@@ -104,6 +104,10 @@ def parse(filename, quiet=True):
         num_models += 1
     if num_models < 1:
         raise PyeMapParseException("Error: structure " + structure.header['idcode'] +  " does not contain any models.")
+    if structure.header['idcode'] == "":
+        idcode = "CUST"
+    else:
+        idcode = structure.header['idcode']
     for chain in structure[0].get_chains():
         chain_list.append(chain.id)
         seq = []
@@ -115,15 +119,11 @@ def parse(filename, quiet=True):
             else:
                 residue.get_full_id()
                 non_standard_residue_list.append(residue.copy())
-        seq_str = ">"+filename[-8:-4] + ":" + chain.id + "\n"+''.join(seq)
+        seq_str = ">"+ idcode + ":" + chain.id + "\n"+''.join(seq)
         sequences[chain.id] = seq_str
     custom_residue_list = process_custom_residues(non_standard_residue_list)
     if not quiet:
         print("Identified " + str(len(custom_residue_list)) + " non-protein ET active moieties.")
-    if structure.header['idcode'] == "":
-        idcode = "CUST"
-    else:
-        idcode = structure.header['idcode']
     my_emap = emap(filename, idcode, custom_residue_list, chain_list, sequences, chain_start)
     my_emap._structure = structure
     return my_emap
