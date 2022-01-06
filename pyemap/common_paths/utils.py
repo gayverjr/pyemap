@@ -18,7 +18,7 @@ def extract_resname(residue):
 def get_edge_label(G, edge, edge_thresholds):
     dist = G.edges[edge]['distance']
     try:
-        label = 2
+        label = 1
         for thresh in edge_thresholds:
             if dist < thresh:
                 break
@@ -26,7 +26,7 @@ def get_edge_label(G, edge, edge_thresholds):
                 label += 1
         return label
     except:
-        return 2
+        return 1
 
 def strip_insertion_code(u):
     for i in range(0, len(u)):

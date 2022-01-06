@@ -61,7 +61,7 @@ def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
         idx += 1
     l1 = []
     for i in range(0, len(edge_thresholds)):
-        l1.append(i + 2)
+        l1.append(i + 1)
     from itertools import product
     indices = [i for i, x in enumerate(node_list) if x == "*"]
     if len(indices) == 0:
@@ -180,7 +180,7 @@ class PDBGroup():
                 # now lets save the updated sequence numbers
                 for pdb_id, emap in self.emaps.items():
                     for chain, residues in emap.active_chains.items():
-                        original_idx = emap.chain_start[chain]
+                        original_idx = 1
                         aligned_idx = 1
                         seq_map = {}
                         if pdb_id + ":" + chain in self._aligned_sequences:
@@ -191,10 +191,17 @@ class PDBGroup():
                                     original_idx += 1
                                 aligned_idx += 1
                         for residue in residues:
-                            resnum = residue.id[1]
-                            if int(resnum) in seq_map:
+                            try:
+                                resnum = residue.sequence_index
                                 residue.aligned_residue_number = seq_map[int(resnum)]
-                            else:
+                                if pdb_id == '1U3D':
+                                    cur_seq = emap.sequences[chain][8:]
+                                    print(residue)
+                                    print(residue.sequence_index)
+                                    print(residue.aligned_residue_number)
+                                    print(cur_seq[residue.sequence_index-1])
+                                    print(aligned_seq[residue.aligned_residue_number-1])
+                            except:
                                 residue.aligned_residue_number = 'X'
             except Exception:
                 shutil.copyfile(inp, out)
@@ -498,7 +505,7 @@ class PDBGroup():
                 f.write("v " + str(i) + " " + str(get_numerical_node_label(node, self._node_labels)) + "\n")
             for i, edge in enumerate(G.edges):
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
-                        str(get_edge_label(G, edge, self._edge_thresholds)) + "\n")
+                        str(get_edge_label(G, edge, self._edge_thresholds)+1) + "\n")
         f.write("t # -1")
         self._graph_database = f.getvalue()
         f.close()
@@ -569,7 +576,7 @@ class PDBGroup():
                         if len(line.split()) > 1 and line.split()[0] == "e":
                             idx1 = int(line.split()[1])
                             idx2 = int(line.split()[2])
-                            edge_label = int(line.split()[3])
+                            edge_label = int(line.split()[3])-1
                             G.add_edge(idx1, idx2, label=edge_label)
                             G.edges[(idx1, idx2)]['num_label'] = edge_label
                         if "where" in line:

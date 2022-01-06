@@ -48,7 +48,7 @@ class emap():
         Graph generated after the shortest paths step.
     '''
 
-    def __init__(self, file_path, pdb_id, eta_moieties, chain_list, sequences,chain_start):
+    def __init__(self, file_path, pdb_id, eta_moieties, chain_list, sequences):
         '''Initializes emap object.
 
         Parameters
@@ -61,14 +61,11 @@ class emap():
             Chains identified by the parser
         sequences: dict of str:str
             Key is chain id, value is sequence in fasta format
-        chain_start: dict of str:int
-            Key is chain id, value is residue number of first residue in record (which is generally not 1)
         '''
         self.file_path = file_path
         self.pdb_id = pdb_id
         self.residues = {}
         self.chains = chain_list
-        self.chain_start = chain_start
         self.sequences = sequences
         self.active_chains = {}
         self.eta_moieties = {}
