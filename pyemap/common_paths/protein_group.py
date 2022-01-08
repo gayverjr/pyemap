@@ -46,7 +46,7 @@ def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
     ----------
     graph_str: str
         Specification of graph
-    edge_threshodls: list of float
+    edge_thresholds: list of float
         Edge thresholds
     residue_categories: list of str
         List of 1 letter amino acid codes
@@ -60,7 +60,7 @@ def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
         node_list.append(str(graph_str[idx]))
         idx += 1
     l1 = []
-    for i in range(0, len(edge_thresholds)):
+    for i in range(0, len(edge_thresholds)+1):
         l1.append(i + 1)
     from itertools import product
     indices = [i for i, x in enumerate(node_list) if x == "*"]
@@ -75,7 +75,7 @@ def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
             node_combs.append(node_list.copy())
     edge_combs = list(product(l1, repeat=len(node_list) - 1))
     if len(edge_combs) == 0:
-        edge_combs = [tuple([2 for x in range(0,len(graph_str)-1)])]
+        edge_combs = [tuple([1 for x in range(0,len(graph_str)-1)])]
     return node_combs, edge_combs
 
 
@@ -194,13 +194,6 @@ class PDBGroup():
                             try:
                                 resnum = residue.sequence_index
                                 residue.aligned_residue_number = seq_map[int(resnum)]
-                                if pdb_id == '1U3D':
-                                    cur_seq = emap.sequences[chain][8:]
-                                    print(residue)
-                                    print(residue.sequence_index)
-                                    print(residue.aligned_residue_number)
-                                    print(cur_seq[residue.sequence_index-1])
-                                    print(aligned_seq[residue.aligned_residue_number-1])
                             except:
                                 residue.aligned_residue_number = 'X'
             except Exception:
@@ -511,7 +504,7 @@ class PDBGroup():
         f.close()
         self._apply_num_labels()
 
-    def run_gspan(self, min_support, min_num_vertices=4, **kwargs):
+    def run_gspan(self, min_support, min_num_vertices=4, max_num_vertices=float('inf'), **kwargs):
         ''' Mines for common subgraphs using gSpan algorithm. Results are stored as :class:`~pyemap.common_paths.FrequentSubgraph` objects 
         in the `frequent_subgraphs` dictionary.
 
@@ -526,6 +519,8 @@ class PDBGroup():
             Minimum support number of subgraphs in the search space 
         min_num_vertices: int, optional
             Minimum number of nodes for subgraphs in the search space
+        max_num_vertices: int, optional
+            Maximum number of nodes for subgraphs in the search space
         **kwargs
             See https://github.com/betterenvi/gSpan for a list of accepted kwargs.
 
@@ -533,6 +528,7 @@ class PDBGroup():
         self._clean_subgraphs()
         self._gspan_parameters["min_support"] = min_support
         self._gspan_parameters['min_num_verticles'] = min_num_vertices
+        self._gspan_parameters['max_num_verticles'] = max_num_vertices
         self._gspan_parameters["graph_specification"] = ""
         db = NamedTemporaryFile(mode='w', delete=False)
         print(self._graph_database, file=db)
@@ -624,8 +620,12 @@ class PDBGroup():
         self._clean_subgraphs()
         self._gspan_parameters["support"] = None
         self._gspan_parameters["min_num_vertices"] = None
+        self._gspan_parameters["max_num_vertices"] = None
         self._gspan_parameters["graph_specification"] = graph_specification
-        node_combs, edge_combs = nodes_and_edges_from_string(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
+        try:
+            node_combs, edge_combs = nodes_and_edges_from_string(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
+        except:
+            raise PyeMapMiningException("Could not parse graph from string.")
         frequent_subgraphs = []
         for node_list in node_combs:
             G = nx.Graph()
