@@ -15,3 +15,6 @@ class PyeMapMiningException(PyeMapException):
 
 class PyeMapParseException(PyeMapException):
     pass
+
+class PyeMapGraphDatabaseException(PyeMapException):
+    pass

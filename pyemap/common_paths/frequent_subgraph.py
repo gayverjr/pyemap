@@ -296,6 +296,8 @@ class FrequentSubgraph():
             self.protein_subgraphs[graph.graph['id']] = graph
             self.groups[1] = all_graphs
             self.clustering_option=clustering_option
+            self._structural_groups,self._structural_ids = (self.groups,self.protein_subgraphs)
+            self._sequence_groups,self._sequence_ids = (self.groups,self.protein_subgraphs)
 
     def set_clustering(self,clustering_option):
         ''' Sets clustering option.

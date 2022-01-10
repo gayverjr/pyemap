@@ -15,6 +15,7 @@ import numpy as np
 from Bio.PDB.DSSP import DSSP
 from Bio.PDB.ResidueDepth import get_surface, residue_depth
 from scipy.spatial import distance_matrix
+import math
 from collections import OrderedDict
 import warnings
 from .data import res_name_to_char, side_chain_atoms, char_to_res_name
@@ -460,18 +461,48 @@ def finish_graph(G, surface_exposed_res):
         if G[node] == {}:
             G.remove_node(node)
 
-def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, max_degree):
-    '''Applies distance based filters to edges, removing those edges which do not fit criteria.
+def filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alpha,exp_beta,r_offset):
+    included_edges = []
+    minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
+    # should never happen, but just in case
+    if minval == 0:
+        minval = 1
+    for u, v, d in G.edges(data=True):
+        d['distance'] = d['weight']
+        d['weight'] = pathways_model(d['weight'],coef_alpha, exp_beta, r_offset)
+        d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
+    for node in G.nodes():
+        edge_length_per_node = []
+        weights = []
+        for neighbor in G[node]:
+            weights.append(G.edges[(node, neighbor)]['weight'])
+        weights = sorted(weights)
+        thresh_index = math.ceil(len(weights) * percent_edges / 100)
+        for neighbor in G[node]:
+            if weights.index(G.edges[(node, neighbor)]['weight']) <= thresh_index and \
+                    G.edges[(node, neighbor)]['weight'] <= distance_cutoff:
+                edge_length_per_node.append(
+                    G.edges[(node, neighbor)]['weight'])
+        len_average, len_st_dev = 0.0, 0.0
+        if edge_length_per_node != []:
+            edge_length_per_node = np.array(
+                edge_length_per_node, dtype='float64')
+            len_average = np.average(edge_length_per_node)
+            len_st_dev = np.std(edge_length_per_node)
+        for neighbor in G[node]:
+            if weights.index(G.edges[(node, neighbor)]['weight']) <= thresh_index and \
+                    G.edges[(node, neighbor)]['weight'] <= distance_cutoff and \
+                    np.round(G.edges[(node, neighbor)]['weight'], 8) <= np.round((len_average + num_st_dev_edges * len_st_dev), 8):
+                included_edges.append([node, neighbor])
+    excluded_edges = []
+    for edge in G.edges():
+        node1 = edge[0]
+        node2 = edge[1]
+        if ([node1, node2] not in included_edges) and ([node2, node1] not in included_edges):
+            excluded_edges.append(edge)
+    G.remove_edges_from(excluded_edges)
 
-    Parameters
-    ----------
-    G: :class:`networkx.graph`
-        protein graph
-    coef_alpha,exp_beta,r_offset: flaot, optional
-        Penalty function parameters
-    distance_cutoff,percentile,max_degree: float
-        Parameters that determine which edges are kept.
-    '''
+def filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset):
     minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
     # should never happen, but just in case
     if minval == 0:
@@ -487,7 +518,6 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, max_degree):
             d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
     G.remove_edges_from(remove_edges)
     remove_edges = []
-    # greedy algorithm to prune edges to set maximum degree
     for node in G.nodes:
         if G.degree(node) > max_degree:
             for edge in sorted(list(G.edges(node)), key=lambda x: G.edges[x]['distance'])[max_degree:]:
@@ -499,7 +529,7 @@ def filter_edges(G,coef_alpha, exp_beta, r_offset, distance_cutoff, max_degree):
             G.remove_edge(u,v)
     
 
-def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_cutoff,max_degree,eta_moieties):
+def create_graph(dmatrix,node_labels, edge_prune, coef_alpha, exp_beta,r_offset,distance_cutoff, percent_edges, num_st_dev_edges,max_degree,eta_moieties):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
@@ -508,6 +538,8 @@ def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_c
         Distance matrix of aromatic residues.
     node_label: list of str
         Labels for residues in the graph.
+    edge_prune: int
+        0 for degree, 1 for percent
     residue_numbers:
         res numbers
     distance_cutoff,max_degree: float
@@ -529,7 +561,10 @@ def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_c
     np.set_printoptions(threshold=sys.maxsize)
     G = nx.from_numpy_matrix(dmatrix)
     G = nx.relabel_nodes(G, node_labels)
-    filter_edges(G,coef_alpha, exp_beta, r_offset,distance_cutoff,max_degree)
+    if int(edge_prune) == 0:
+        filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset)
+    elif int(edge_prune) == 1:
+        filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alpha,exp_beta,r_offset)
     for name_node in G.nodes():
         G.nodes[name_node]['style'] = 'filled'
         G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
@@ -565,13 +600,16 @@ def create_graph(dmatrix,node_labels, coef_alpha, exp_beta, r_offset, distance_c
 def process(emap,
             chains=None,
             eta_moieties=None,
-            dist_def=1,
-            sdef=1,
+            dist_def=0,
+            sdef=None,
+            edge_prune = 1,
             include_residues=["Y", "W"],
             custom="",
             distance_cutoff=20,
             coef_alpha=1.0,
             max_degree = 4,
+            percent_edges=1.0,
+            num_st_dev_edges=1.0,
             exp_beta=2.3,
             r_offset=0.0,
             rd_thresh=3.03,
@@ -590,6 +628,8 @@ def process(emap,
         0 for center of mass, 1 for closest atom
     sdef: int, optional
         0 for residue depth, 1 for solvent accessibility
+    edge_prune: int, optional
+        Algorithm for pruning edges. 0 for degree, 1 for percent
     include_residues: list of str
         Included amino acids specified by 1 letter code
     custom: str, optional
@@ -658,8 +698,7 @@ def process(emap,
         dmatrix = closest_atom_dmatrix(all_residues)
     else:
         raise PyeMapGraphException("Invalid choice of dist_def. Must be set to 0 (COM) or 1 (closest atom).")
-    G = create_graph(dmatrix, node_labels, coef_alpha, exp_beta, r_offset,distance_cutoff, int(max_degree),
-                     emap.eta_moieties.keys())
+    G = create_graph(dmatrix,node_labels,edge_prune,coef_alpha,exp_beta,r_offset,distance_cutoff, percent_edges, num_st_dev_edges,max_degree,emap.eta_moieties.keys())
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise PyeMapGraphException("Not enough edges to construct a graph.")

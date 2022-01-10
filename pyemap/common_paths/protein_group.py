@@ -439,7 +439,10 @@ class PDBGroup():
         '''
         if nodes is None:
             nodes = [res_name_to_char[x] for x in self._include_residues]
-        assert all(x in char_to_res_name for x in nodes)
+        try:
+            assert all(x in char_to_res_name for x in nodes)
+        except Exception as e:
+            raise PyeMapGraphDatabaseException("Invalid specification of residue categories.") from e
         num_label = 2
         for res in nodes:
             self._node_labels[res] = num_label
@@ -486,9 +489,12 @@ class PDBGroup():
         '''
         self._clean_graph_database()
         if edge_thresholds is not None:
-            assert (float(x) for x in edge_thresholds)
-            assert all(edge_thresholds[i] <= edge_thresholds[i + 1] for i in range(len(edge_thresholds) - 1))
-            self._edge_thresholds = edge_thresholds.copy()
+            try:
+                assert (float(x) for x in edge_thresholds)
+                assert all(edge_thresholds[i] <= edge_thresholds[i + 1] for i in range(len(edge_thresholds) - 1))
+                self._edge_thresholds = edge_thresholds.copy()
+            except Exception as e:
+                raise PyeMapGraphDatabaseException("Invalid specification of edge thresholds.") from e
         self._set_node_labels(node_categories)
         f = StringIO("")
         for i, key in enumerate(self.emaps):
@@ -626,26 +632,29 @@ class PDBGroup():
             node_combs, edge_combs = nodes_and_edges_from_string(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
         except:
             raise PyeMapMiningException("Could not parse graph from string.")
-        frequent_subgraphs = []
-        for node_list in node_combs:
-            G = nx.Graph()
-            for node_idx, node in enumerate(node_list):
-                G.add_node(node_idx)
-                G.nodes[node_idx]['label'] = node
-                G.nodes[node_idx]['num_label'] = self._node_labels[node]
-                if node_idx > 0:
-                    G.add_edge(node_idx - 1, node_idx)
-            for edge_comb in edge_combs:
-                for j, edge in enumerate(G.edges):
-                    G.edges[edge]['num_label'] = edge_comb[j]
-                    G.edges[edge]['label'] = edge_comb[j]
-                support = {}
-                for pdb_id in self.emaps:
-                    GM = get_graph_matcher(self.emaps[pdb_id].init_graph, G)
-                    if GM.subgraph_is_monomorphic():
-                        support[pdb_id] = self.emaps[pdb_id]
-                if len(support) > 0:
-                    frequent_subgraphs.append(FrequentSubgraph(G,len(frequent_subgraphs),support,self._node_labels,self._edge_thresholds))
-        frequent_subgraphs.sort(key=lambda x: x.support_number, reverse=True)
-        for fs in frequent_subgraphs:
-            self.frequent_subgraphs[fs.id] = fs
+        try:
+            frequent_subgraphs = []
+            for node_list in node_combs:
+                G = nx.Graph()
+                for node_idx, node in enumerate(node_list):
+                    G.add_node(node_idx)
+                    G.nodes[node_idx]['label'] = node
+                    G.nodes[node_idx]['num_label'] = self._node_labels[node]
+                    if node_idx > 0:
+                        G.add_edge(node_idx - 1, node_idx)
+                for edge_comb in edge_combs:
+                    for j, edge in enumerate(G.edges):
+                        G.edges[edge]['num_label'] = edge_comb[j]
+                        G.edges[edge]['label'] = edge_comb[j]
+                    support = {}
+                    for pdb_id in self.emaps:
+                        GM = get_graph_matcher(self.emaps[pdb_id].init_graph, G)
+                        if GM.subgraph_is_monomorphic():
+                            support[pdb_id] = self.emaps[pdb_id]
+                    if len(support) > 0:
+                        frequent_subgraphs.append(FrequentSubgraph(G,len(frequent_subgraphs),support,self._node_labels,self._edge_thresholds))
+            frequent_subgraphs.sort(key=lambda x: x.support_number, reverse=True)
+            for fs in frequent_subgraphs:
+                self.frequent_subgraphs[fs.id] = fs
+        except Exception as e:
+            raise PyeMapMiningException("Could not generate graphs using the specified string.") from e
