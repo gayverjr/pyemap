@@ -301,10 +301,10 @@ def dijkstras_shortest_paths(G, start, targets):
 
 
 def yens_shortest_paths(G, start, target, max_paths=10):
-    """Returns top 5 shortest paths from source to target.
+    """Returns shortest paths from source to target.
 
     Uses Yen's algorithm to calculate the shortest paths from source to target, writes
-    out the ShortestPath objects to file, and returns the 5 pathway IDs. In the graph, nodes and
+    out the ShortestPath objects to file, and returns the 10 pathway IDs. In the graph, nodes and
     edges that are part of any pathways are made opaque, and the shortest path is highlighted.
 
 
@@ -331,7 +331,7 @@ def yens_shortest_paths(G, start, target, max_paths=10):
 
     Raises
     ------
-    RuntimeError:
+    PyeMapShortestPathException:
         No shortest paths to target found.
 
     """

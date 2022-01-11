@@ -39,7 +39,7 @@ For full functionality, install the following packages:
     - RDKit_: visualization of chemical stuctures
     - MSMS_: residue depth criterion for surface exposed residues (not available on MacOS Catalina)
     - DSSP_: solvent accessibility criterion for surface exposed residues
-    - wget_: fetching PDBs from RCSB_ database
+    - MUSCLE_: Multiple sequence alignment
 
 All of these packages can be downloaded free of charge from their respective owners, and build recipes are available on the
 Anaconda_ cloud for some platforms.
@@ -57,7 +57,7 @@ enables ipsep. Here's how to do it:
 .. _DSSP: https://github.com/cmbi/xssp/releases
 .. _Graphviz: https://graphviz.gitlab.io/
 .. _RDKit: https://www.rdkit.org/docs/Install.html
-.. _wget: https://www.gnu.org/software/wget/
+.. _MUSCLE: http://www.drive5.com/muscle/
 .. _RCSB: https://www.rcsb.org/
 
 First, remove any prior installations of Graphviz from your conda environment::

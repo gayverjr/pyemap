@@ -7,7 +7,7 @@ import datetime
 from ..data import res_name_to_char, char_to_res_name
 from Bio import SeqIO
 from Bio.Align.Applications import MuscleCommandline
-from .frequent_subgraph import FrequentSubgraph
+from .frequent_subgraph import SubgraphPattern
 import warnings
 from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain
 from ..pyemap_exceptions import *
@@ -90,8 +90,8 @@ class PDBGroup():
         Title of PDB group 
     emaps: dict of str: :class:`~pyemap.emap`
         Dict of PDBs being analyzed by PyeMap. The keys are PDB IDs, meaning that only one :class:`~pyemap.emap` object per PDB ID is allowed.
-    frequent_subgraphs: dict of str: :class:`~pyemap.common_paths.FrequentSubgraph`
-        Dict of subgraph patterns found by GSpan. Keys are the unique IDs of the :class:`~pyemap.common_paths.FrequentSubgraph` objects.
+    subgraph_patterns: dict of str: :class:`~pyemap.graph_mining.SubgraphPattern`
+        Dict of subgraph patterns found by GSpan. Keys are the unique IDs of the :class:`~pyemap.graph_mining.SubgraphPattern` objects.
 
     '''
     def __init__(self, title):
@@ -106,7 +106,7 @@ class PDBGroup():
         self.title = title
         self.emaps = {}
         self._emaps = {}
-        self.frequent_subgraphs = {}
+        self.subgraph_patterns = {}
         self._node_labels = {}
         self._residue_categories = {}
         self._edge_thresholds = []
@@ -134,7 +134,7 @@ class PDBGroup():
 
         '''
         self._gspan_parameters = {}
-        self.frequent_subgraphs = {}
+        self.subgraph_patterns = {}
 
     def _reset_process(self):
         ''' Cleans results of processing :class:`~pyemap.emap` objects.
@@ -276,7 +276,7 @@ class PDBGroup():
 
         Examples
         --------
-        >>> my_pg = pyemap.common_paths.PDBGroup()
+        >>> my_pg = pyemap.graph_mining.PDBGroup()
         >>> # Add pdbs 1u3d,1u3c,6PU0,4I6G,2J4D ...
         >>> eta_moieties = {'1u3d': ['FAD510(A)-2'], '1u3c': ['FAD510(A)-2'], '6PU0': ['FAD501(A)-2'], '4I6G': ['FAD900(A)-2'], '2J4D': ['FAD1498(A)-2']}
         >>> chains = {'1u3d': ['A'], '1u3c': ['A'], '6PU0': ['A'], '4I6G': ['A'], '2J4D': ['A']}
@@ -390,8 +390,8 @@ class PDBGroup():
         full_str = "Overview of all subgraphs:\n"
         full_str += self._report_header()
         full_str += "\nSubgraphs found:\n\n"
-        for fsg in self.frequent_subgraphs:
-            full_str += self.frequent_subgraphs[fsg].general_report() + "\n"
+        for fsg in self.subgraph_patterns:
+            full_str += self.subgraph_patterns[fsg].general_report() + "\n"
         if dest:
             fi = open(dest, "w")
             fi.write(full_str)
@@ -404,7 +404,7 @@ class PDBGroup():
         Parameters
         -----------
         sg_id: str
-            ID corresponding to a :class:`~pyemap.common_paths.FrequentSubgraph` object 
+            ID corresponding to a :class:`~pyemap.graph_mining.SubgraphPattern` object 
         dest: str, optional
             Destination to write report to file
 
@@ -414,7 +414,7 @@ class PDBGroup():
             Detailed report for a particular subgraph pattern.
 
         '''
-        sg = self.frequent_subgraphs[sg_id]
+        sg = self.subgraph_patterns[sg_id]
         full_str = "Full report for subgraph:" + str(sg_id) + "\n"
         full_str += self._report_header() + "\n"
         full_str += sg.full_report()
@@ -511,8 +511,8 @@ class PDBGroup():
         self._apply_num_labels()
 
     def run_gspan(self, min_support, min_num_vertices=4, max_num_vertices=float('inf'), **kwargs):
-        ''' Mines for common subgraphs using gSpan algorithm. Results are stored as :class:`~pyemap.common_paths.FrequentSubgraph` objects 
-        in the `frequent_subgraphs` dictionary.
+        ''' Mines for common subgraphs using gSpan algorithm. Results are stored as :class:`~pyemap.graph_mining.SubgraphPattern` objects 
+        in the `subgraph_patterns` dictionary.
 
         References
         ----------
@@ -549,11 +549,11 @@ class PDBGroup():
         gs.run()
         sys.stdout = old_stdout
         self._gspan_results = mystdout.getvalue()
-        self._generate_frequent_subgraphs()
+        self._generate_subgraph_patterns()
 
-    def _generate_frequent_subgraphs(self):
-        ''' Parses gSpan output and generates :class:`~pyemap.common_paths.FrequentSubgraph` objects. Results are stored in
-        `self.frequent_subgraphs`.
+    def _generate_subgraph_patterns(self):
+        ''' Parses gSpan output and generates :class:`~pyemap.graph_mining.SubgraphPattern` objects. Results are stored in
+        `self.subgraph_patterns`.
 
         '''
         with StringIO(self._gspan_results) as buff:
@@ -589,13 +589,13 @@ class PDBGroup():
                             for idx in pdb_list_by_index:
                                 support[pdb_list[idx]] = self.emaps[pdb_list[idx]]
                             subgraphs.append(
-                                FrequentSubgraph(G, graph_number, support, self._node_labels, self._edge_thresholds))
+                                SubgraphPattern(G, graph_number, support, self._node_labels, self._edge_thresholds))
                         line_idx += 1
                 line_idx += 1
             buff.close()
         subgraphs.sort(key=lambda x: x.support_number, reverse=True)
         for sg in subgraphs:
-            self.frequent_subgraphs[sg.id] = sg
+            self.subgraph_patterns[sg.id] = sg
 
     def find_subgraph(self, graph_specification):
         ''' Finds a specified subgraph by searching for monomorphisms in each protein graph.
@@ -652,9 +652,9 @@ class PDBGroup():
                         if GM.subgraph_is_monomorphic():
                             support[pdb_id] = self.emaps[pdb_id]
                     if len(support) > 0:
-                        frequent_subgraphs.append(FrequentSubgraph(G,len(frequent_subgraphs),support,self._node_labels,self._edge_thresholds))
+                        frequent_subgraphs.append(SubgraphPattern(G,len(frequent_subgraphs),support,self._node_labels,self._edge_thresholds))
             frequent_subgraphs.sort(key=lambda x: x.support_number, reverse=True)
             for fs in frequent_subgraphs:
-                self.frequent_subgraphs[fs.id] = fs
+                self.subgraph_patterns[fs.id] = fs
         except Exception as e:
             raise PyeMapMiningException("Could not generate graphs using the specified string.") from e

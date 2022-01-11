@@ -97,7 +97,6 @@ def parse(filename, quiet=True):
             raise PyeMapParseException("Error: could not parse file {}.".format(filename)) from e
     chain_list = []
     sequences = {}
-    chain_start = {}
     non_standard_residue_list = []
     num_models = 0
     for model in structure.get_models():

@@ -606,14 +606,14 @@ def process(emap,
             include_residues=["Y", "W"],
             custom="",
             distance_cutoff=20,
-            coef_alpha=1.0,
             max_degree = 4,
             percent_edges=1.0,
             num_st_dev_edges=1.0,
-            exp_beta=2.3,
-            r_offset=0.0,
             rd_thresh=3.03,
-            asa_thresh=0.2):
+            asa_thresh=0.2,
+            coef_alpha=1.0,
+            exp_beta=2.3,
+            r_offset=0.0,):
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
 
     Parameters
@@ -625,9 +625,9 @@ def process(emap,
     eta_moieties: list of str
         List of strings corresponding to residue names of eta moieties
     dist_def: int, optional
-        0 for center of mass, 1 for closest atom
+        Definition of distance matrix. 0 for center of mass, 1 for closest atom
     sdef: int, optional
-        0 for residue depth, 1 for solvent accessibility
+        Algorithm to use for surface exposure. 0 for residue depth, 1 for solvent accessibility
     edge_prune: int, optional
         Algorithm for pruning edges. 0 for degree, 1 for percent
     include_residues: list of str
@@ -638,12 +638,16 @@ def process(emap,
          Defines a pure distance threshold. PyeMap will only keep edges with distances less than or equal distance_cutoff.
     max_degree: int
         Maximum degree of any vertex.
-    coef_alpha,exp_beta,r_offset: float, optional
-        Penalty function parameters.
+    percent_edges: float
+        Percent of edges to keep for each node
+    num_std_dev_edges: int
+        Number of standard deviations of edges to keep
     rd_thresh: float, optional
         Threshold for buried/surface exposed for residue depth
     asa_thresh: float, optional
         Threshold for buried/surface exposed for solvent accessbility
+    coef_alpha,exp_beta,r_offset: float, optional
+        Penalty function parameters.
     Raises
     ------
     RuntimeError:

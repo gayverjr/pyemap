@@ -7,4 +7,4 @@ from .process_data import process
 from .pathway_analysis import find_paths
 from .emap import emap
 from .shortest_paths import ShortestPath, Branch
-from . import common_paths
+from . import graph_mining
