@@ -11,7 +11,6 @@ Overview of PyeMap
   :target: https://codecov.io/gh/gayverjr/pyemap/branch/master
 
 - Website:  https://emap.bu.edu
-- News:     https://twitter.com/eMap_protein
 
 PyeMap is a python package aimed at automatic identification of electron and hole transfer
 pathways in proteins. The analysis is based on a coarse-grained version of Beratan and
@@ -37,23 +36,29 @@ and can also be used as a fully functional Python package.
 
 Current Features
 ----------------
-* Identification of most probable electron/hole transfer pathways from a specified donor to the protein surface or a specified electron/hole acceptor
-* Accepts valid .pdb or .cif structures provided by the user or fetched from RCSB_ database
-* Automatic detection of non-protein aromatic moieties such as porphyrins, nucleobases, and other aromatic cofactors
-* Automatic detection of 60+ inorganic clusters such as iron-sulfur clusters and others
-* User specified custom fragments
-* Visualization of chemical structures and graphs
-* Automatic identification of surface exposed residues using residue depth or solvent accessibility criteria
-* Control over various parameters which determine connectivity of graph theory model
-* Tested on structures as large as 5350 residues (51599 atoms)
 
+**Single protein**
+   * Identification of most probable electron/hole transfer pathways from a specified donor to the protein surface or a specified electron/hole acceptor
+   * Accepts valid .pdb or .cif structures provided by the user or fetched from RCSB_ database
+   * Automatic detection of non-protein aromatic moieties such as porphyrins, nucleobases, and other aromatic cofactors
+   * Automatic detection of 60+ inorganic clusters such as iron-sulfur clusters and others
+   * Automatic detection of redox-active metal ions
+   * User specified custom fragments
+   * Visualization of chemical structures and graphs
+   * Automatic identification of surface exposed residues using residue depth or solvent accessibility criteria
+   * Control over various parameters which determine connectivity of graph theory model
+   * Tested on structures as large as 5350 residues (51599 atoms)
+
+**Graph Mining**
+   * Mining families of protein graphs for all patterns up to a given support threshold
+   * Mining families of protein graphs for specific patterns
+   * Classification of protein subgraphs based on similarity
 
 
 In Development
 ----------------
-* Tools for screening families of proteins for common electron/hole transfer pathways
-* Generalization to DNA, protein-DNA complexes etc.
 * Improving the physical model of electron transfer by incorporating information on geometry-dependent electronic couplings and site sensitive energetics
+* Generalization to DNA, protein-DNA complexes etc.
 
 
 .. toctree::
