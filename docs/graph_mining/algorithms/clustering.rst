@@ -59,7 +59,7 @@ We then construct the Laplacian L:
 where :math:`D=diag(d_1,...,d_n)` is the diagonal weighted degree matrix. The partitioning comes from analyzing the components of the `Fiedler Vector`_, which corresponds to the second lowest eigenvalue of the Laplacian. Protein subgraphs which belong to the same partition are associated with identical components of the Fiedler vector, resulting in a grouping of protein subgraphs which are similar to one another. See the graphic below for an example.
 
 .. figure:: images/Fiedler.png
-   :alt: Fiedler Partitioning
+   :class: with-shadow
 
    Example of Spectral Graph Partitioning for a group of subgraphs. Graphs 1,2 and 3 are partitioned into the same group, while 4 and 5 each belong to their own partition based on the components of the Fiedler eigenvector.
 
