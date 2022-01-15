@@ -1,5 +1,6 @@
 from ..data import char_to_res_name
 from networkx.algorithms import isomorphism
+import math
 
 def extract_chain(resname):
     try:
@@ -108,3 +109,54 @@ def edge_match(edge1, edge2):
 def get_graph_matcher(protein_graph, generic_subgraph):
     return isomorphism.GraphMatcher(protein_graph, generic_subgraph, node_match=node_match, edge_match=edge_match)
 
+def set_defaults(kwargs):
+    default = {'distance_cutoff':20,
+               'max_degree' : 4,
+                'dist_def':0,
+                'sdef':1,
+                'edge_prune' : 1,
+               'percent_edges':1.0,
+               'num_st_dev_edges':1.0,
+               'rd_thresh':3.03,
+               'asa_thresh':0.2,
+               'coef_alpha':1.0,
+               'exp_beta':2.3,
+               'r_offset':0.0}
+    for arg in default:
+        if arg not in kwargs:
+            kwargs[arg] = default[arg]
+    return kwargs
+
+def make_pretty_subgraph(sg):
+    for name_node in sg.nodes():
+        sg.nodes[name_node]['style'] = 'filled'
+        sg.nodes[name_node]['fontname'] = 'Helvetica-Bold'
+        sg.nodes[name_node]['fontsize'] = 14
+        sg.nodes[name_node]['margin'] = '0.04'
+        sg.nodes[name_node]['fontcolor'] = "#000000"
+        sg.nodes[name_node]['color'] = '#708090'
+        sg.nodes[name_node]['penwidth'] = 2.0
+        if (len(sg.nodes[name_node]['label']) == 1) or (len(sg.nodes[name_node]['label']) > 1 and sg.nodes[name_node]['label'][1].isdigit()):
+            if 'Y' == sg.nodes[name_node]['label'][0]:
+                sg.nodes[name_node]['fillcolor'] = '#96c8f0'
+            elif 'W' == sg.nodes[name_node]['label'][0]:
+                sg.nodes[name_node]['fillcolor'] = '#f07878'
+            elif 'F' == sg.nodes[name_node]['label'][0]:
+                sg.nodes[name_node]['fillcolor'] = '#f09664'
+            elif 'H' == sg.nodes[name_node]['label'][0]:
+                sg.nodes[name_node]['fillcolor'] = '#c8f0c8'
+            else:
+                sg.nodes[name_node]['fillcolor'] = '#FFC0CB'
+        else:
+            sg.nodes[name_node]['fillcolor'] = '#FFC0CB'
+    for edge in sg.edges:
+        try:
+            dist = '{0:.2f}'.format(sg.edges[edge]['distance'])
+            sg.edges[edge]['len'] = 1.0 + math.log10(float(dist))
+            sg.edges[edge]['label'] = dist
+        except:
+            pass
+        sg.edges[edge]['fontname'] = 'Helvetica'
+        sg.edges[edge]['color'] = '#778899'
+        sg.edges[edge]['penwidth'] = 1.5
+        sg.edges[edge]['style'] = 'dashed'

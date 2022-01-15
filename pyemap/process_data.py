@@ -344,7 +344,7 @@ def create_user_res(serial_list, used_atoms, serial_dict, user_res_names):
     return user_res
 
 
-def get_standard_residues(all_residues, chain_list, include_residues):
+def get_standard_residues(all_residues, chain_list, res_names):
     """Returns list of standard aromatic residues.
 
     Runs through every residue in the structure, keeping only the TRP, TYR
@@ -357,7 +357,7 @@ def get_standard_residues(all_residues, chain_list, include_residues):
         List of every residue in structure
     chain_list: list of str
         Chains to be included in analysis
-    include_residues: list of str
+    res_names: list of str
         Included amino acids specified by 3 letter code
 
     Returns
@@ -368,7 +368,7 @@ def get_standard_residues(all_residues, chain_list, include_residues):
     """
     residue_list = []
     for res in all_residues:
-        if res.resname in include_residues and res.parent.id in chain_list:
+        if res.resname in res_names and res.parent.id in chain_list:
             res.get_full_id()
             arom_res = res.copy()
             arom_res.get_full_id()
@@ -601,7 +601,7 @@ def process(emap,
             chains=None,
             eta_moieties=None,
             dist_def=0,
-            sdef=None,
+            sdef=1,
             edge_prune = 1,
             include_residues=["Y", "W"],
             custom="",
@@ -613,7 +613,7 @@ def process(emap,
             asa_thresh=0.2,
             coef_alpha=1.0,
             exp_beta=2.3,
-            r_offset=0.0,):
+            r_offset=0.0):
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
 
     Parameters
@@ -667,15 +667,19 @@ def process(emap,
         for resname in eta_moieties:
             if resname not in emap.eta_moieties:
                 PyeMapGraphException("Error: " + str(resname) + " is not a valid residue name.")
+    res_names = []
+    res_chars = []
     for i, res in enumerate(include_residues):
         if res.upper() in char_to_res_name:
-            include_residues[i] = char_to_res_name[res.upper()]
+            res_names.append(char_to_res_name[res.upper()])
+            res_chars.append(res.upper())
         elif res.upper() in res_name_to_char:
-            include_residues[i] = res.upper()
+            res_names.append(res.upper())
+            res_chars.append(res_name_to_char[res.upper()])
         else:
             raise PyeMapGraphException("Error: " + str(res) + " is not a valid 1-letter or 3-letter amino acid code.")
     model = emap._structure[0]
-    all_residues = get_standard_residues(model.get_residues(), chains, include_residues)
+    all_residues = get_standard_residues(model.get_residues(), chains, res_names)
     for resname in eta_moieties:
         all_residues.append(emap.eta_moieties[resname])
     used_atoms = []
@@ -708,6 +712,7 @@ def process(emap,
         raise PyeMapGraphException("Not enough edges to construct a graph.")
     # define surface exposed residues
     if sdef==None:
+        warnings.warn("Protein surface will not be computed. All residues will be classified as buried...")
         surface_exposed_res = []
     else:
         try:
@@ -719,11 +724,11 @@ def process(emap,
                 surface_exposed_res = []
                 warnings.warn("Invalid choice of surface definition. sdef must be set to 0 or 1.")
         except:
-            warnings.warn("Invalid choice of surface definition. sdef must be set to 0 or 1. All residues will be classified as buried...")
+            warnings.warn("Computing protein surface failed. All residues will be classified as buried...")
             surface_exposed_res = []
     finish_graph(G, surface_exposed_res)
     for res in all_residues:
         emap._add_residue(res)
     emap._store_initial_graph(G)
-    emap._include_residues = include_residues
+    emap._include_residues = res_chars
     return emap

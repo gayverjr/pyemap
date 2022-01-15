@@ -1,8 +1,13 @@
+from telnetlib import GA
 import numpy as np
 from numpy import linalg as LA
 from Bio.PDB import Superimposer
-from .utils import get_graph_matcher, write_graph_smiles
+from .utils import get_graph_matcher, write_graph_smiles, make_pretty_subgraph
+from reportlab.graphics import renderPM
+from networkx.drawing.nx_agraph import to_agraph
 import networkx as nx
+from PIL import Image
+import tempfile
 
 def _get_sequence(G):
     ''' Gets sequence for protein subgraph w.r.t multiple sequence alignment
@@ -447,6 +452,8 @@ class SubgraphPattern():
         self.total_support[pdb_id] =  len(sgs) 
         return sgs
 
+
+
     def _generate_protein_subgraph(self, mapping, protein_graph, G, emap_obj):
         ''' Generates protein subgraph for a given monomorphism
 
@@ -479,6 +486,56 @@ class SubgraphPattern():
             for key in protein_graph.edges[edge]:
                 protein_subgraph.edges[edge][key] = protein_graph.edges[edge][key]
         return protein_subgraph
+
+    def subgraph_to_Image(self,id=None):
+        '''Returns PIL image of subgraph pattern or protein subgraph
+
+        Parameters
+        -----------
+        id: str, optional
+            Protein subgraph ID. If not specified, generic subgraph pattern will be drawn
+
+        Returns
+        --------
+        img: :class:`PIL.Image.Image`
+        '''
+        if id==None:
+            G = self.G.copy()
+        else:
+            G= self.protein_subgraphs[id].copy()
+        make_pretty_subgraph(G)
+        agraph = to_agraph(G)
+        agraph.graph_attr.update()
+        agraph.edge_attr.update(len='1.0')
+        fout = tempfile.NamedTemporaryFile(suffix=".png")
+        agraph.draw(fout.name, prog='dot')
+        img = Image.open(fout.name)
+        return img
+
+    def subgraph_to_file(self,id=None,dest=""):
+        '''Saves image of subgraph pattern or protein subgraph to file
+
+        Parameters
+        -----------
+        id: str, optional
+            Protein subgraph ID. If not specified, generic subgraph pattern will be drawn
+        dest; str,optional
+            Destination to save the graph
+        '''
+        if id==None:
+            temp_G = make_pretty_subgraph(self.G.copy())
+            if dest=="":
+                dest = self.id+".png"
+        else:
+            temp_G = self.protein_subgraphs[id]
+            if dest=="":
+                dest = self.id + "_" + id + ".png"
+        agraph = to_agraph(temp_G)
+        agraph.graph_attr.update()
+        agraph.edge_attr.update(len='1.0')
+        agraph.draw(dest, prog='dot')
+
+
 
 
         

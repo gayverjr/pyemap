@@ -323,20 +323,17 @@ class emap():
         if resname in self.residues or resname in self.eta_moieties:
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
-            elif strip_chain(resname) in clusters:
+            elif resname[:3] in clusters:
                 cluster_img_name = os.path.abspath(os.path.dirname(
-                    __file__)) + '/data/clusters/' + strip_chain(resname) + '.svg'
+                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
                 drawing = svg2rlg(cluster_img_name)
                 img = renderPM.drawToPIL(drawing)
                 return img
             else:
-                try:
-                    mol = Chem.MolFromSmarts(self.smarts[resname])
-                    mol.UpdatePropertyCache()
-                    img = Draw.MolToImage(mol, kekulize=False, size=size)
-                    return img
-                except Exception as e:
-                    print("Warning: RDKIT couldn't draw: " + dest)
+                mol = Chem.MolFromSmarts(self.smarts[resname])
+                mol.UpdatePropertyCache()
+                img = Draw.MolToImage(mol, kekulize=False, size=size)
+                return img
         else:
             raise KeyError("No record of any residue by that name.")
 

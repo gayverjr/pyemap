@@ -4,12 +4,12 @@ import shutil
 from ..process_data import process
 import networkx as nx
 import datetime
-from ..data import res_name_to_char, char_to_res_name
+from ..data import char_to_res_name
 from Bio import SeqIO
 from Bio.Align.Applications import MuscleCommandline
 from .frequent_subgraph import SubgraphPattern
 import warnings
-from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain
+from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain, set_defaults
 from ..pyemap_exceptions import *
 from gspan_mining import gSpan
 from tempfile import NamedTemporaryFile
@@ -110,6 +110,7 @@ class PDBGroup():
         self._node_labels = {}
         self._residue_categories = {}
         self._edge_thresholds = []
+        self._substitutions = []
         self._emap_parameters = {}
         self._gspan_parameters = {}
         self._included_eta_moieties = {}
@@ -126,6 +127,7 @@ class PDBGroup():
         self._node_labels = {}
         self._residue_categories = {}
         self._edge_thresholds = []
+        self._substitutions = []
         self._graph_database = ""
         self._clean_subgraphs()
 
@@ -216,7 +218,7 @@ class PDBGroup():
         chains: dict of str: list of str, optional
             Chains to include for each PDB
         eta_moieties: dict of str: list of str, optional
-            Dict containing list of ETA moieties(specified by their residue label) to include for each PDB
+            Dict containing list of ETA moieties(specified by their residue label to include for each PDB
         include_residues: list of str, optional
             List of 1-letter standard AA codes to include in the graph
         **kwargs
@@ -285,6 +287,7 @@ class PDBGroup():
         '''
         self._reset_process()
         remove_pdbs = []
+        kwargs = set_defaults(kwargs)
         try:
             if chains.upper()=='ALL':
                 chains = {}
@@ -308,6 +311,7 @@ class PDBGroup():
                         **kwargs)
                 print("Finished:" + str(pdb_id))
             except Exception as e:
+                print(e)
                 remove_pdbs.append(pdb_id)
                 warnings.warn("Could not generate graph for: " + pdb_id + ". It will not be included in the analysis.")
         for pdb_id in remove_pdbs:
@@ -319,6 +323,7 @@ class PDBGroup():
         self._included_chains = chains
         self._included_eta_moieties = eta_moieties
         self._include_residues = include_residues
+
     def _apply_num_labels(self):
         ''' Adds numerical node labels to the :class:`networkx.Graph` objects as node attributes. 
 
@@ -373,7 +378,7 @@ class PDBGroup():
         full_str += "Residue categories:\n" + str(self._residue_categories) + "\n"
         return full_str
 
-    def general_report(self, dest=None):
+    def mining_report(self, dest=None):
         ''' Generates general report of all subgraph patterns found in the analysis.
 
         Parameters
@@ -424,7 +429,7 @@ class PDBGroup():
             fi.close()
         return full_str
 
-    def _set_node_labels(self, nodes):
+    def _set_node_labels(self):
         ''' Sets node labels for mining. 
 
         Specified AA residues will be given a unique category, all others will be labeled as 'X'. 
@@ -437,17 +442,12 @@ class PDBGroup():
             receive their own category.
 
         '''
-        if nodes is None:
-            nodes = [res_name_to_char[x] for x in self._include_residues]
-        try:
-            assert all(x in char_to_res_name for x in nodes)
-        except Exception as e:
-            raise PyeMapGraphDatabaseException("Invalid specification of residue categories.") from e
         num_label = 2
-        for res in nodes:
-            self._node_labels[res] = num_label
-            self._residue_categories[num_label] = res
-            num_label += 1
+        for res in self._include_residues:
+            if res not in self._substitutions:
+                self._node_labels[res] = num_label
+                self._residue_categories[num_label] = res
+                num_label += 1
         if len(self._node_labels) > 1:
             num_label = max(self._node_labels.values()) + 1
         self._residue_categories[num_label] = "X"
@@ -470,14 +470,13 @@ class PDBGroup():
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
-    def generate_graph_database(self, node_categories=None, edge_thresholds=None):
+    def generate_graph_database(self, sub=[], edge_thresh=[]):
         ''' Generates graph database for mining.
 
         Parameters
         ----------
-        nodes: list of str, optional
-            List of 1-character amino acid codes to be given their own category. The remaining
-            AA will be labeled as "X". Default is all standard amino acids receive their own category.
+        sub: list of str, optional
+            List of 1-character amino acid codes to be labeled as "X". All other included standard amino acids receive their own category.
         edge_thresholds: list of float, optional
             List of edge thresholds. Edges with weight below the first value will be given the label 2, edges
             between the 1st and second values will be labeled as 3, and so on. 
@@ -488,14 +487,18 @@ class PDBGroup():
 
         '''
         self._clean_graph_database()
-        if edge_thresholds is not None:
-            try:
-                assert (float(x) for x in edge_thresholds)
-                assert all(edge_thresholds[i] <= edge_thresholds[i + 1] for i in range(len(edge_thresholds) - 1))
-                self._edge_thresholds = edge_thresholds.copy()
-            except Exception as e:
-                raise PyeMapGraphDatabaseException("Invalid specification of edge thresholds.") from e
-        self._set_node_labels(node_categories)
+        try:
+            assert (float(x) for x in edge_thresh)
+            assert all(edge_thresh[i] <= edge_thresh[i + 1] for i in range(len(edge_thresh) - 1))
+            self._edge_thresholds = edge_thresh.copy()
+        except Exception as e:
+            raise PyeMapGraphDatabaseException("Invalid specification of edge thresholds.") from e
+        try:
+            assert (x in char_to_res_name for x in sub)
+            self._substitutions = sub.copy()
+            self._set_node_labels()
+        except Exception as e:
+            raise PyeMapGraphDatabaseException("Invalid specification of substitutions.") from e
         f = StringIO("")
         for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph
@@ -535,7 +538,7 @@ class PDBGroup():
         self._gspan_parameters["min_support"] = min_support
         self._gspan_parameters['min_num_verticles'] = min_num_vertices
         self._gspan_parameters['max_num_verticles'] = max_num_vertices
-        self._gspan_parameters["graph_specification"] = ""
+        self._gspan_parameters["graph_specification"] = []
         db = NamedTemporaryFile(mode='w', delete=False)
         print(self._graph_database, file=db)
         db.close()
