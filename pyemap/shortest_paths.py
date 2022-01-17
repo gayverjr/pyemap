@@ -69,9 +69,10 @@ class ShortestPath(object):
         return self.length < other.length
 
     def __str__(self):
+        rounded_edges = [np.round(x,2) for x in self.edges]
         printline = self.path_id + ": " + \
             str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2))) + "\n" + \
-            "Edge weights: {}".format(str(np.round(self.edges,2)))
+            "Edge weights: {}".format(str(rounded_edges))
         return printline
 
     def get_path_as_list(self):
