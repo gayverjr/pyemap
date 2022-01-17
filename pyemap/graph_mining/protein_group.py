@@ -347,7 +347,7 @@ class PDBGroup():
             for node in protein_graph.nodes:
                 protein_graph.nodes[node]['num_label'] = get_numerical_node_label(node, self._node_labels)
             for edge in protein_graph.edges:
-                protein_graph.edges[edge]['num_label'] = get_edge_label(protein_graph, edge, self._edge_thresholds)
+                protein_graph.edges[edge]['num_label'] = get_edge_label(protein_graph, edge, self._edge_thresholds)                
 
     def _report_header(self):
         ''' Generates header for reports.
@@ -502,13 +502,15 @@ class PDBGroup():
         '''
         self._clean_graph_database()
         try:
-            assert (float(x) for x in edge_thresh)
-            assert all(edge_thresh[i] <= edge_thresh[i + 1] for i in range(len(edge_thresh) - 1))
+            for i in range(0,len(edge_thresh)-1):
+                assert float(edge_thresh[i]) <= float(edge_thresh[i + 1])
             self._edge_thresholds = edge_thresh.copy()
         except Exception as e:
             raise PyeMapGraphDatabaseException("Invalid specification of edge thresholds.") from e
         try:
-            assert (x in char_to_res_name for x in sub)
+            for x in sub:
+              assert x in char_to_res_name  
+              assert x.upper() in self._include_residues
             self._substitutions = sub.copy()
             self._set_node_labels()
         except Exception as e:
@@ -610,8 +612,9 @@ class PDBGroup():
                         line_idx += 1
                 line_idx += 1
             buff.close()
-        subgraphs.sort(key=lambda x: x.support_number, reverse=True)
-        for sg in subgraphs:
+        subgraphs.sort(reverse=True)
+        for graph_number,sg in enumerate(subgraphs):
+            sg._update_id(graph_number)
             self.subgraph_patterns[sg.id] = sg
 
     def find_subgraph(self, graph_specification):
@@ -670,8 +673,9 @@ class PDBGroup():
                             support[pdb_id] = self.emaps[pdb_id]
                     if len(support) > 0:
                         frequent_subgraphs.append(SubgraphPattern(G,len(frequent_subgraphs),support,self._node_labels,self._edge_thresholds))
-            frequent_subgraphs.sort(key=lambda x: x.support_number, reverse=True)
-            for fs in frequent_subgraphs:
+            frequent_subgraphs.sort(reverse=True)
+            for graph_number,fs in enumerate(frequent_subgraphs):
+                fs._update_id(graph_number)
                 self.subgraph_patterns[fs.id] = fs
         except Exception as e:
             raise PyeMapMiningException("Could not generate graphs using the specified string.") from e

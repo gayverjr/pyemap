@@ -7,6 +7,7 @@ from reportlab.graphics import renderPM
 from networkx.drawing.nx_agraph import to_agraph
 import networkx as nx
 from PIL import Image
+from functools import total_ordering
 import tempfile
 
 def _get_sequence(G):
@@ -98,6 +99,7 @@ def _do_fiedler_clustering(D,A,all_graphs):
         groups[idx + 1] = group
     return groups,protein_subgraphs
 
+@total_ordering
 class SubgraphPattern():
     '''
     Stores all information regarding an identified subgraph pattern.
@@ -156,6 +158,23 @@ class SubgraphPattern():
             if self.G.nodes[node]['label'] == "#":
                 self.G.nodes[node]['label'] = "NP"
 
+    def __lt__(self, other):
+        if self.support_number != other.support_number:
+            return self.support_number < other.support_number
+        elif str(write_graph_smiles(self.G)) != str(write_graph_smiles(other.G)):
+            return str(write_graph_smiles(self.G)) < str(write_graph_smiles(other.G))
+        else:
+            return self.G.size(weight="num_label") < other.G.size(weight="num_label")       
+
+    def __eq__(self,other):
+        return self.G == other.G
+
+    def _update_id(self,graph_number):
+        self.id = str(graph_number+1) + self.id[self.id.index('_'):]
+        if "#" in self.id:
+            self.file_id = self.id.replace("#","NP")
+        else:
+            self.file_id = self.id
 
     def general_report(self):
         ''' Generates general report which describes this subgraph pattern.
@@ -449,6 +468,7 @@ class SubgraphPattern():
             if degree_dict not in degree_dicts:
                 degree_dicts.append(degree_dict)
                 sgs.append(sg)
+        sgs.sort(key=lambda x: x.size(weight="weight"))
         self.total_support[pdb_id] =  len(sgs) 
         return sgs
 
