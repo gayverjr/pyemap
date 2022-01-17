@@ -35,7 +35,8 @@ def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/
         Path(outfnm).write_bytes(R.content)
         return outfnm
     except Exception as e:
-        raise PyeMapParseException("Could not fetch PDB " + pdbcode + " .") from e
+        print(e)
+        raise PyeMapParseException("Could not fetch PDB {}.".format(pdbcode)) from e
 
 def fetch_and_parse(pdb_id, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.

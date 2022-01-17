@@ -14,6 +14,7 @@ import tempfile
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from .process_data import get_atom_list
+import datetime
 # need to checkout https://github.com/IngJavierR/PngToSvg
 
 class emap():
@@ -71,6 +72,7 @@ class emap():
         self.eta_moieties = {}
         self.user_residues = {}
         self._include_residues = []
+        self._process_params = {}
         self.smarts = {}
         self.paths = OrderedDict()
         self.paths_graph = []
@@ -139,6 +141,7 @@ class emap():
         self.branches = OrderedDict()
         self.ngl_strings = {}
         self._include_residues = []
+        self._process_params = {}
 
     def _reset_paths(self):
         '''Returns emap object to state it was in after the process step.
@@ -409,6 +412,27 @@ class emap():
             raise RuntimeError(
                 "No graph found. Please run pyemap.process(my_emap) to generate the graph.")
 
+
+    def _report_header(self):
+        full_str = ""
+        full_str += "Generated:\n" + str(datetime.datetime.now()) + "\n"
+        full_str += "Parameters:\n{}\n".format(str(self._process_params))
+        full_str += "Included residues:\n"
+        full_str += str(self._include_residues) + "\n"
+        full_str += "Active chains:\n"
+        full_str += str(list(self.active_chains.keys())) + "\n"
+        full_str += "Included non protein moieties:\n"
+        full_str += str(list(self.eta_moieties.keys())) + "\n"
+        custom_res_atms = []
+        custom_res_names = []
+        for key,val in self.user_residues.items():
+            custom_res_names.append(key)
+            custom_res_atms.append([atm.serial_number for atm in val])
+        custom_res_dict = dict(zip(custom_res_names,custom_res_atms))
+        full_str += "User defined residues:\n{}\n".format(custom_res_dict)
+        return full_str
+
+
     def report(self, dest=""):
         '''Returns report of most probable pathways. Writes to file if destination is specified.
 
@@ -428,9 +452,9 @@ class emap():
             Nothing to report
         '''
         if self.branches:
-            output = ""
+            output = self._report_header() + "\nPathways:\n"
             for br in self.branches.values():
-                output += str(br)
+                output += str(br) + "\n"
             if dest:
                 fi = open(dest, "w")
                 fi.write(output)

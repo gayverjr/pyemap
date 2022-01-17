@@ -92,6 +92,10 @@ class PDBGroup():
         Dict of PDBs being analyzed by PyeMap. The keys are PDB IDs, meaning that only one :class:`~pyemap.emap` object per PDB ID is allowed.
     subgraph_patterns: dict of str: :class:`~pyemap.graph_mining.SubgraphPattern`
         Dict of subgraph patterns found by GSpan. Keys are the unique IDs of the :class:`~pyemap.graph_mining.SubgraphPattern` objects.
+    fasta: str
+        List of unaligned sequences in FASTA format
+    aligned_fasta: str
+        List of sequences in FASTA format after multiple sequence alignment
 
     '''
     def __init__(self, title):
@@ -105,8 +109,10 @@ class PDBGroup():
         '''
         self.title = title
         self.emaps = {}
-        self._emaps = {}
         self.subgraph_patterns = {}
+        self.fasta=""
+        self.aligned_fasta=""
+        self._emaps = {}
         self._node_labels = {}
         self._residue_categories = {}
         self._edge_thresholds = []
@@ -148,6 +154,8 @@ class PDBGroup():
         self._include_residues = []
         self._sequences = {}
         self._aligned_sequences = {}
+        self.fasta=""
+        self.aligned_fasta=""
         self._clean_graph_database()
 
     def _align_sequences(self):
@@ -168,17 +176,24 @@ class PDBGroup():
         '''
         inp = NamedTemporaryFile(mode='w', delete=False)
         out = NamedTemporaryFile(mode='w+', delete=False)
+        orig_fasta = ""
         try:
             for pdb_id, emap in self.emaps.items():
                 for chain in emap.active_chains:
                     inp.write(emap.sequences[chain] + "\n")
+                    orig_fasta+=emap.sequences[chain] + "\n"
             inp.close()
             try:
                 muscle_cline = MuscleCommandline(input=inp.name, out=out.name)
                 muscle_cline()
                 seqIO = SeqIO.parse(out, "fasta")
+                aligned_fasta=""
                 for record in seqIO:
                     self._aligned_sequences[record.id] = record.seq
+                    aligned_fasta+='>'+str(record.id)+'\n'
+                    aligned_fasta+=str(record.seq)+'\n'
+                self.fasta = orig_fasta
+                self.aligned_fasta = aligned_fasta
                 # now lets save the updated sequence numbers
                 for pdb_id, emap in self.emaps.items():
                     for chain, residues in emap.active_chains.items():
@@ -199,7 +214,6 @@ class PDBGroup():
                             except:
                                 residue.aligned_residue_number = 'X'
             except Exception:
-                shutil.copyfile(inp, out)
                 for pdb_id, emap in self.emaps.items():
                     for chain, residues in emap.active_chains.items():
                         for residue in residues:
@@ -536,8 +550,8 @@ class PDBGroup():
         '''
         self._clean_subgraphs()
         self._gspan_parameters["min_support"] = min_support
-        self._gspan_parameters['min_num_verticles'] = min_num_vertices
-        self._gspan_parameters['max_num_verticles'] = max_num_vertices
+        self._gspan_parameters['min_num_vertices'] = min_num_vertices
+        self._gspan_parameters['max_num_vertices'] = max_num_vertices
         self._gspan_parameters["graph_specification"] = []
         db = NamedTemporaryFile(mode='w', delete=False)
         print(self._graph_database, file=db)

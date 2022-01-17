@@ -13,6 +13,7 @@ import string
 import networkx as nx
 from functools import total_ordering
 from .pyemap_exceptions import *
+import numpy as np
 
 @total_ordering
 class ShortestPath(object):
@@ -26,6 +27,8 @@ class ShortestPath(object):
     ----------
     path: list of str
         List of residue names that make up the shortest path
+    edges: list of float
+        List of edge weights that make up the shortest path
     path_id: list of str
         List of residues that make up the shortest path
     length: float
@@ -40,7 +43,7 @@ class ShortestPath(object):
         Labels of residues in NGL visualization
     """
 
-    def __init__(self, path, length):
+    def __init__(self, path, edges, length):
         '''Initializes ShortestPath object.
 
         Parameters
@@ -52,6 +55,7 @@ class ShortestPath(object):
         '''
         self.path = path
         self.length = length
+        self.edges = edges
         self.path_id = "none"
         self.selection_strs = []
         self.color_list = []
@@ -66,7 +70,8 @@ class ShortestPath(object):
 
     def __str__(self):
         printline = self.path_id + ": " + \
-            str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2)))
+            str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2))) + "\n" + \
+            "Edge weights: {}".format(str(np.round(self.edges,2)))
         return printline
 
     def get_path_as_list(self):
@@ -250,10 +255,12 @@ def dijkstras_shortest_paths(G, start, targets):
         except Exception as e:
             path = []
         if not path == []:
+            weights = []
             sum = 0
             for i in range(0, len(path) - 1):  # sum up edge weights
                 sum += (G[path[i]][path[i + 1]]['weight'])
-            shortestPaths.append(ShortestPath(path, sum))
+                weights.append(G[path[i]][path[i + 1]]['weight'])
+            shortestPaths.append(ShortestPath(path, weights, sum))
     shortestPaths = sorted(shortestPaths)
     branches = []
     # find the parent pathways
@@ -345,9 +352,11 @@ def yens_shortest_paths(G, start, target, max_paths=10):
     for k in range(0, len(paths)):
         path = paths[k]
         sum = 0
+        weights = []
         for i in range(0, len(path) - 1):  # sum up edge weights
             sum += (G[path[i]][path[i + 1]]['weight'])
-        path = ShortestPath(path, sum)
+            weights.append(G[path[i]][path[i + 1]]['weight'])
+        path = ShortestPath(path, weights, sum)
         shortestPaths.append(path)
     if shortestPaths:
         shortestPaths = sorted(shortestPaths)

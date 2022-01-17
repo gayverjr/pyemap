@@ -430,7 +430,6 @@ def get_user_residues(custom, used_atoms, serial_dict):
                 else:
                     serial_number_list.append(int(atm))
             if serial_number_list !=[]:
-                print(serial_number_list)
                 serial_number_list = sorted(list(OrderedDict.fromkeys(serial_number_list)))
                 new_res = create_user_res(serial_number_list, used_atoms, serial_dict, user_res_names)
             else:
@@ -597,6 +596,13 @@ def create_graph(dmatrix,node_labels, edge_prune, coef_alpha, exp_beta,r_offset,
         G[name_node1][name_node2]['style'] = 'dashed'
     return G
 
+def store_params(emap,params):
+    params.pop('chains')
+    params.pop('eta_moieties')
+    params.pop('emap')
+    params.pop('include_residues')
+    emap._process_params = params
+
 def process(emap,
             chains=None,
             eta_moieties=None,
@@ -654,6 +660,7 @@ def process(emap,
         Not enough residues to construct a graph
 
     """
+    emap_params = locals().copy()
     emap._reset_process()
     pdb_file = emap.file_path
     if chains == None:
@@ -692,8 +699,6 @@ def process(emap,
         serial_numbers = [atom.serial_number for atom in selection]
         serial_dict = dict(zip(serial_numbers, selection))
         user_residues = get_user_residues(custom, used_atoms, serial_dict)
-    for res in user_residues: 
-        emap.user_residues[res.resname] = res
     all_residues += user_residues
     if len(all_residues) < 2:
         raise PyeMapGraphException("Not enough residues to construct a graph.")
@@ -729,6 +734,9 @@ def process(emap,
     finish_graph(G, surface_exposed_res)
     for res in all_residues:
         emap._add_residue(res)
+    for res in user_residues: 
+        emap.user_residues[res.resname] = res
     emap._store_initial_graph(G)
     emap._include_residues = res_chars
+    store_params(emap,emap_params)
     return emap
