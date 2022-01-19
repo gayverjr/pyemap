@@ -7,8 +7,9 @@ import unittest
 class PathwaysTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/2oal.pdb")) 
-        pyemap.process(cls.my_emap)
+        cls.my_emap = pyemap.fetch_and_parse("2oal")
+        pyemap.process(cls.my_emap,chains=["A","B"])
+        os.remove("2oal.pdb") 
 
     def test_dijkstras_paths(self):
         pyemap.find_paths(self.my_emap,"Y167(B)")

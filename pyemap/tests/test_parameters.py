@@ -8,7 +8,7 @@ from math import isclose
 class SingleChainParams(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/1u3d.pdb")) 
+        cls.my_emap = pyemap.fetch_and_parse("1u3d") 
 
     def test_eta_moities(self):
         assert len(self.my_emap.eta_moieties) >= 3
@@ -21,44 +21,37 @@ class SingleChainParams(unittest.TestCase):
             resnames.append(residue.resname)
         assert "TYR" in resnames
         assert "TRP" in resnames
-        assert "PHE" not in resnames
-        assert "HIS" not in resnames
         #phenylalanine on
-        pyemap.process(self.my_emap,phe=True)
+        pyemap.process(self.my_emap,include_residues=["W","Y","F"])
         resnames=[]
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" in resnames
         assert "TRP" in resnames
         assert "PHE" in resnames
-        assert "HIS" not in resnames
         #histidine on
         resnames=[]
-        pyemap.process(self.my_emap,his=True)
+        pyemap.process(self.my_emap,include_residues=["W","Y","H"])
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" in resnames
         assert "TRP" in resnames
-        assert "PHE" not in resnames
         assert "HIS" in resnames
         #tyrosine off
         resnames=[]
-        pyemap.process(self.my_emap,tyr=False)
+        pyemap.process(self.my_emap,include_residues=["W"])
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" not in resnames
         assert "TRP" in resnames
-        assert "PHE" not in resnames
-        assert "HIS" not in resnames
         #tryptophan off
         resnames=[]
-        pyemap.process(self.my_emap,trp=False)
+        pyemap.process(self.my_emap,include_residues=["C","Y","W"])
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" in resnames
-        assert "TRP" not in resnames
-        assert "PHE" not in resnames
-        assert "HIS" not in resnames
+        assert "TRP" in resnames
+        assert "CYS" in resnames
 
 
     def test_surface_options(self):
@@ -114,7 +107,7 @@ class SingleChainParams(unittest.TestCase):
     
     def test_custom_atom_range(self):
          #custom residues
-        pyemap.process(self.my_emap,eta_moieties=[], custom = "(134-140),(109-117)")
+        pyemap.process(self.my_emap,eta_moieties=[], custom = "(3960-3969),(3970-3980,3982,3984-3987")
         resnames=[]
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
@@ -160,11 +153,11 @@ class SingleChainParams(unittest.TestCase):
 class MultiChainParams(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/2oal.pdb")) 
+        cls.my_emap = pyemap.fetch_and_parse("2oal")
 
     def test_chains(self):
         #default all chains on
-        pyemap.process(self.my_emap)
+        pyemap.process(self.my_emap,chains=["A","B"])
         labels=[]
         for residue in self.my_emap.residues.values():
             labels.append(residue.node_label)

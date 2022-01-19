@@ -1,7 +1,7 @@
 # PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
 # Copyright(C) 2017-2022 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 from .custom_residues import is_pi_bonded
-from .data import clusters, metal_ligands
+from .data import clusters, metal_ligands, res_name_to_smarts
 import networkx as nx
 from .utils import extract_resname
 from networkx.drawing.nx_agraph import to_agraph
@@ -73,11 +73,9 @@ class emap():
         self.user_residues = {}
         self._include_residues = []
         self._process_params = {}
-        self.smarts = {}
         self.paths = OrderedDict()
         self.paths_graph = []
         self.init_graph = []
-        self.ngl_strings = {}
         self.branches = OrderedDict()
         for residue in eta_moieties:
             self._add_eta_moiety(residue)
@@ -139,7 +137,6 @@ class emap():
         self.paths = OrderedDict()
         self.paths_graph = []
         self.branches = OrderedDict()
-        self.ngl_strings = {}
         self._include_residues = []
         self._process_params = {}
 
@@ -178,7 +175,6 @@ class emap():
             res_graph = self._get_residue_graph(residue)
             smarts_str = getSimpleSmarts(res_graph)
             residue.smarts = smarts_str
-            self.smarts[residue.resname] = smarts_str
         elif extract_resname(residue) in metal_ligands:
             atm_name = next(residue.get_atoms()).name
             atm_name = atm_name[0] + atm_name[1].lower()
@@ -187,7 +183,7 @@ class emap():
             for i in range(0,charge):
                 smarts_str+='+'
             smarts_str+=']'
-            self.smarts[residue.resname] = smarts_str     
+            residue.smarts = smarts_str  
         self.eta_moieties[residue.resname] = residue
 
     def _visualize_pathway(self, pathway, yens):
@@ -221,8 +217,9 @@ class emap():
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
         '''
         residue.ngl_string = self._get_ngl_string(residue)
+        if residue.resname in res_name_to_smarts:
+            residue.smarts = res_name_to_smarts[residue.resname.upper()]
         self.residues[residue.node_label] = residue
-        self.ngl_strings[residue.node_label] = residue.ngl_string
         chain_id = residue.full_id[2]
         if chain_id in self.active_chains:
             self.active_chains[chain_id].append(residue)
@@ -291,20 +288,25 @@ class emap():
                 else:
                     target_name = resname + ".svg"
                 copyfile(cluster_img_name, target_name)
-            else:
-                mol = Chem.MolFromSmarts(self.smarts[resname])
+            elif resname in self.eta_moieties:
+                mol = Chem.MolFromSmarts(self.eta_moieties[resname].smarts)
                 mol.UpdatePropertyCache()
                 if dest:
                     Draw.MolToFile(mol, dest, kekulize=False, size=size)
                 else:
-                    Draw.MolToFile(mol, resname + ".png",kekulize=False, size=size)
- 
-                            
+                    Draw.MolToFile(mol, resname + ".png",kekulize=False, size=size)                 
+            else:
+                mol = Chem.MolFromSmarts(self.residues[resname].smarts)
+                mol.UpdatePropertyCache()
+                if dest:
+                    Draw.MolToFile(mol, dest, kekulize=False, size=size)
+                else:
+                    Draw.MolToFile(mol, resname + ".png",kekulize=False, size=size)                 
         else:
             raise KeyError("No record of any residue by that name.")
 
     def residue_to_Image(self, resname, size=(200, 200)):
-        '''Returns PIL image of chemical structure
+        '''Returns PIL image of chemical structure. 
 
         Parameters
         -----------
@@ -332,8 +334,13 @@ class emap():
                 drawing = svg2rlg(cluster_img_name)
                 img = renderPM.drawToPIL(drawing)
                 return img
+            elif resname in self.eta_moieties:
+                mol = Chem.MolFromSmarts(self.eta_moieties[resname].smarts)
+                mol.UpdatePropertyCache()
+                img = Draw.MolToImage(mol, kekulize=False, size=size)
+                return img               
             else:
-                mol = Chem.MolFromSmarts(self.smarts[resname])
+                mol = Chem.MolFromSmarts(self.residues[resname].smarts)
                 mol.UpdatePropertyCache()
                 img = Draw.MolToImage(mol, kekulize=False, size=size)
                 return img

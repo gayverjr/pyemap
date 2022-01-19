@@ -7,7 +7,7 @@ import pyemap
 import tempfile
 
 def test_save_functions():
-    my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/4DJA.pdb")) 
+    my_emap = pyemap.fetch_and_parse("4dja")
     #cluster
     fout = tempfile.NamedTemporaryFile(suffix=".png")
     my_emap.residue_to_Image("SF4603(A)")
@@ -29,4 +29,4 @@ def test_save_functions():
     my_emap.paths_graph_to_file(dest=fout.name)
     #check that report does something
     assert my_emap.report() != None
-    
+    os.remove("4dja.pdb") 

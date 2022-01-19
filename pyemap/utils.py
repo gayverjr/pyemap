@@ -1,6 +1,10 @@
+from .data import res_name_to_char
+
 def extract_resname(residue):
     try:
         resname = residue.resname
+        if resname.upper() in res_name_to_char:
+            return resname
         resnum = str(residue.full_id[3][1])
         return resname[:resname.rfind(resnum)]
     except:
