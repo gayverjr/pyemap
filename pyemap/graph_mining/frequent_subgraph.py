@@ -39,6 +39,7 @@ def _do_fiedler_clustering(D,A,all_graphs):
     eigv = np.real(eigv)
     eigvc = np.real(eigvc)
     idx = eigv.argsort()
+    eigv = eigv[idx]
     eigvc = eigvc[:, idx]
     # second lowest eigenvector
     eigvc2 = eigvc[:, 1][:-1]

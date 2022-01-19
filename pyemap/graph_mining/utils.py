@@ -23,7 +23,6 @@ def get_edge_label(G, edge, edge_thresholds):
         return 1
 
 
-
 def write_graph_smiles(generic_subgraph):
     G = generic_subgraph.copy()
     element_dict = {}
