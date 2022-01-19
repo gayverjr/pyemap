@@ -334,7 +334,7 @@ class SubgraphPattern():
                 dist = 0
                 for key,val in GM.mapping.items():
                     if all_graphs[i].nodes[key]['aligned_resnum'] == 'X':
-                        pass
+                        continue
                     else:
                         dist+=np.absolute(all_graphs[i].nodes[key]['aligned_resnum']-all_graphs[j].nodes[val]['aligned_resnum'])
                 if dist < num_nodes+1:

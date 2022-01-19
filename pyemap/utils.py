@@ -27,7 +27,7 @@ def validate_binary_params(dist_def,edge_prune,sdef):
         else:
             dist_def = dist_def.upper()
     try:
-        if sdef==None:
+        if sdef is None:
             pass
         elif int(sdef)==0:
             sdef = 'RD'

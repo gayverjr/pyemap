@@ -13,7 +13,6 @@ from . pyemap_exceptions import *
 import os
 from pathlib import Path
 import requests
-import os
 
 
 def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):

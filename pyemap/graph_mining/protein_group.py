@@ -8,7 +8,7 @@ from Bio import SeqIO
 from Bio.Align.Applications import MuscleCommandline
 from .frequent_subgraph import SubgraphPattern
 import warnings
-from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain, set_defaults
+from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain, set_defaults, nodes_and_edges_from_smiles
 from ..pyemap_exceptions import *
 from gspan_mining import gSpan
 from tempfile import NamedTemporaryFile
@@ -36,47 +36,6 @@ def moieties_on_chains(chains, moieties):
         return [item for item in moieties if extract_chain(item) in chains]
     else:
         return moieties
-
-
-def nodes_and_edges_from_string(graph_str, edge_thresholds, residue_categories):
-    ''' Returns all possible combinations of nodes and edges based on graph string and edge thresholds and residue categories.
-
-    Parameters
-    ----------
-    graph_str: str
-        Specification of graph
-    edge_thresholds: list of float
-        Edge thresholds
-    residue_categories: list of str
-        List of 1 letter amino acid codes
-
-    '''
-    graph_str = graph_str.replace(" ", "")
-    graph_str = list(graph_str)
-    node_list = []
-    idx = 0
-    while idx < len(graph_str):
-        node_list.append(str(graph_str[idx]))
-        idx += 1
-    l1 = []
-    for i in range(0, len(edge_thresholds)+1):
-        l1.append(i + 1)
-    from itertools import product
-    indices = [i for i, x in enumerate(node_list) if x == "*"]
-    if len(indices) == 0:
-        node_combs = [node_list]
-    else:
-        node_combs = []
-        wildcard_combs = list(product(residue_categories, repeat=len(indices)))
-        for comb in wildcard_combs:
-            for i, idx in enumerate(indices):
-                node_list[idx] = comb[i]
-            node_combs.append(node_list.copy())
-    edge_combs = list(product(l1, repeat=len(node_list) - 1))
-    if len(edge_combs) == 0:
-        edge_combs = [tuple([1 for x in range(0,len(graph_str)-1)])]
-    return node_combs, edge_combs
-
 
 class PDBGroup():
     '''
@@ -252,7 +211,7 @@ class PDBGroup():
                 _eta_moieties[pdb_id] = [
                     item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in chains
                 ]
-            eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
+            _eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
         self._emap_parameters = kwargs
         self._included_chains = _chains
         self._included_eta_moieties = _eta_moieties
@@ -323,7 +282,7 @@ class PDBGroup():
                     item for item in self._emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in _chains[pdb_id]
                 ]
             try:
-                eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
+                _eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
                 process(self.emaps[pdb_id],
                         chains=_chains[pdb_id],
                         eta_moieties=_eta_moieties[pdb_id],
@@ -597,10 +556,11 @@ class PDBGroup():
             sg._update_id(graph_number)
             self.subgraph_patterns[sg.id] = sg
 
+
     def find_subgraph(self, graph_specification):
         ''' Finds a specified subgraph by searching for monomorphisms in each protein graph.
 
-        Currently, only linear chains are supported. If edge thresholds are used, all possible combinations of 
+        Currently, only linear chains are officially supported. If edge thresholds are used, all possible combinations of 
         edges will be searched for.
 
         Parameters
@@ -629,7 +589,7 @@ class PDBGroup():
         self._gspan_parameters["max_num_vertices"] = None
         self._gspan_parameters["graph_specification"] = graph_specification
         try:
-            node_combs, edge_combs = nodes_and_edges_from_string(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
+            node_combs, edge_combs, edges = nodes_and_edges_from_smiles(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
         except Exception:
             raise PyeMapMiningException("Could not parse graph from string.")
         try:
@@ -640,8 +600,8 @@ class PDBGroup():
                     G.add_node(node_idx)
                     G.nodes[node_idx]['label'] = node
                     G.nodes[node_idx]['num_label'] = self._node_labels[node]
-                    if node_idx > 0:
-                        G.add_edge(node_idx - 1, node_idx)
+                for edge in edges:
+                    G.add_edge(edge[0],edge[1])
                 for edge_comb in edge_combs:
                     for j, edge in enumerate(G.edges):
                         G.edges[edge]['num_label'] = edge_comb[j]

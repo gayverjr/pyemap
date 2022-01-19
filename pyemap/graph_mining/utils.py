@@ -1,5 +1,6 @@
 from ..data import char_to_res_name
 from networkx.algorithms import isomorphism
+from pysmiles import write_smiles, read_smiles
 import math
 
 def extract_chain(resname):
@@ -21,50 +22,25 @@ def get_edge_label(G, edge, edge_thresholds):
     except Exception:
         return 1
 
-#adapted from: https://github.com/pckroon/pysmiles/
-def write_graph_smiles(generic_subgraph):
-    import networkx as nx
-    from collections import defaultdict
-    G = generic_subgraph.copy()
-    start = min(G.nodes, key=lambda x: G.degree(x))
-    dfs_successors = nx.dfs_successors(G, source=start)
-    predecessors = defaultdict(list)
-    for node_key, successors in dfs_successors.items():
-        for successor in successors:
-            predecessors[successor].append(node_key)
-    predecessors = dict(predecessors)
-    # We need to figure out which edges we won't cross when doing the dfs.
-    # These are the edges we'll need to add to the smiles using ring markers.
-    edges = set()
-    for n_idx, n_jdxs in dfs_successors.items():
-        for n_jdx in n_jdxs:
-            edges.add(frozenset((n_idx, n_jdx)))
-    #total_edges = set(map(frozenset, G.edges))
-    branch_depth = 0
-    branches = set()
-    to_visit = [start]
-    smiles = ''
-    while to_visit:
-        current = to_visit.pop()
-        if current in branches:
-            branch_depth += 1
-            smiles += '('
-            branches.remove(current)
-        smiles += G.nodes[current]['label']
-        if current in dfs_successors:
-            # Proceed to the next node in this branch
-            next_nodes = dfs_successors[current]
-            # ... and if needed, remember to return here later
-            branches.update(next_nodes[1:])
-            to_visit.extend(next_nodes)
-        elif branch_depth:
-            # We're finished with this branch.
-            smiles += ')'
-            branch_depth -= 1
-    smiles += ')' * branch_depth
-    return smiles
 
-# _exp denotes surface exposed residue
+
+def write_graph_smiles(generic_subgraph):
+    G = generic_subgraph.copy()
+    element_dict = {}
+    num_chars = 0
+    for i,node in enumerate(G.nodes):
+        G.nodes[node]['element'] = 'C'+str(i)
+        element_dict['C'+str(i)] = G.nodes[node]['label']
+        num_chars += len(G.nodes[node]['label'])
+    proper_smiles = write_smiles(G)
+    for key,val in element_dict.items():
+        proper_smiles = proper_smiles.replace(key,val)
+    # linear case
+    if len(proper_smiles.replace('[','').replace(']','')) == num_chars:
+        return proper_smiles.replace('[','').replace(']','')
+    else:
+        return proper_smiles
+
 def get_numerical_node_label(u, res_to_num_label):
     if strip_res_number(u) in char_to_res_name and strip_res_number(u) in res_to_num_label:
         res_name = strip_res_number(u)
@@ -141,3 +117,55 @@ def make_pretty_subgraph(sg):
         sg.edges[edge]['penwidth'] = 1.5
         sg.edges[edge]['style'] = 'dashed'
     return sg
+
+def nodes_and_edges_from_smiles(smiles_str,edge_thresholds=[],residue_categories=[]):
+    ''' Returns all possible combinations of nodes and edges based on graph string and edge thresholds and residue categories.
+
+    Parameters
+    ----------
+    graph_str: str
+        Specification of graph
+    edge_thresholds: list of float
+        Edge thresholds
+    residue_categories: list of str
+        List of 1 letter amino acid codes
+    '''
+    if '[' not in smiles_str:
+        new_smiles = ""
+        for char in smiles_str:
+            new_smiles += '[{}]'.format(char)
+        smiles_str = new_smiles
+    # replace some problematic characters
+    if 'H' in smiles_str:
+        smiles_str = smiles_str.replace('H','He')
+    if '#' in smiles_str:
+        smiles_str = smiles_str.replace('#','Np')
+    base_graph = read_smiles(smiles_str)
+    node_list = []
+    for node in base_graph.nodes:
+        try:
+            if base_graph.nodes[node]['element'] == 'He':
+                node_list.append('H')
+            elif base_graph.nodes[node]['element'] == 'Np':
+                node_list.append('#')
+            else:
+                node_list.append(base_graph.nodes[node]['element'])
+        except Exception:
+                node_list.append("*")
+    l1 = []
+    for i in range(0, len(edge_thresholds)+1):
+        l1.append(i + 1)
+    from itertools import product
+    edge_combs = list(product(l1, repeat=len(base_graph.edges)))
+    edges = list(base_graph.edges)
+    indices = [i for i, x in enumerate(node_list) if x == "*"]
+    if len(indices) == 0:
+        node_combs = [node_list]
+    else:
+        node_combs = []
+        wildcard_combs = list(product(residue_categories, repeat=len(indices)))
+        for comb in wildcard_combs:
+            for i, idx in enumerate(indices):
+                node_list[idx] = comb[i]
+            node_combs.append(node_list.copy())
+    return node_combs, edge_combs, edges

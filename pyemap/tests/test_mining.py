@@ -2,7 +2,6 @@ import unittest
 import pyemap
 from pyemap.graph_mining import PDBGroup
 import os
-from math import isclose
 
 class PDBGroupProcess(unittest.TestCase):
     @classmethod

@@ -1,8 +1,4 @@
 import os
-from os import path
-import sys
-import unittest
-import warnings
 import pyemap
 import tempfile
 from sys import platform

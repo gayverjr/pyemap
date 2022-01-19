@@ -17,7 +17,8 @@ substitutions = []
 edge_thresholds = [12] 
 pg.generate_graph_database(sub=substitutions,edge_thresh=edge_thresholds) 
 # Step 4: Mine for subgraphs 
-pg.find_subgraph('WWW#') 
+pg.find_subgraph('WWX*') 
+'''
 # Select subgraph pattern 
 sg = pg.subgraph_patterns['1_WWW#_18'] 
 # Final step: Find protein subgraphs 
@@ -30,3 +31,4 @@ sg.subgraph_to_Image(id='1DNP(1)-1').show()
 # Print reports
 print(pg.mining_report())
 print(sg.full_report())
+'''
