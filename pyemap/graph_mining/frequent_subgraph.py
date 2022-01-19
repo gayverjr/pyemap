@@ -388,26 +388,6 @@ class SubgraphPattern():
         D[-1][-1] = np.sum(A[-1])
         return D, A
 
-    def subgraph_rmsd(self,sg1,sg2):
-        ''' Computes RMSD between two protein subgraphs of this class given their IDs.
-
-        Parameters
-        ----------
-        sg1, sg2: str
-            IDs for protein subgraphs
-
-        Notes
-        ------
-        Only 'CA' are considered for standard residues. If two graphs cannot be superimposed, infinity is returned.
-        
-        Returns
-        --------
-        rmsd: float
-            RMSD between protein subgraphs
-
-        '''
-        return self._subgraph_rmsd(self.protein_subgraphs[sg1],self.protein_subgraphs[sg2])
-
     def _subgraph_rmsd(self, sg1, sg2):
         ''' Computes RMSD between two protein subgraphs
 

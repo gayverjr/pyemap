@@ -49,17 +49,24 @@ class PDBGroupProcess(unittest.TestCase):
         self.pg.process_emaps(edge_prune='DEGREE')
         self.pg.generate_graph_database()
         self.pg.find_subgraph('WWW#')
-        print(self.pg.subgraph_patterns)
         sg = self.pg.subgraph_patterns['1_WWW#_14']
         sg.find_protein_subgraphs(clustering_option="structural")
         assert len(sg.protein_subgraphs)==137
-        print(sg.groups)
         g1 = sg.groups[1]
         assert len(g1) == 12
         sg.set_clustering("sequence")
         g1 = sg.groups[1]
         assert len(g1) == 14
 
+    def test_reports(self):
+        self.pg.process_emaps(edge_prune='DEGREE')
+        self.pg.generate_graph_database()
+        self.pg.find_subgraph('WWW#')
+        sg = self.pg.subgraph_patterns['1_WWW#_14']
+        sg.find_protein_subgraphs()
+        assert self.pg.mining_report() != None
+        assert sg.general_report() != None
+        assert sg.full_report() != None
 
     
 
