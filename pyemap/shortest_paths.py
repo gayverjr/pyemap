@@ -348,7 +348,7 @@ def yens_shortest_paths(G, start, target, max_paths=10):
     k = 0
     try:
         paths = list(itertools.islice(nx.shortest_simple_paths(G, start, target), max_paths))
-    except:
+    except Exception:
         raise PyeMapShortestPathException("No paths between " + str(start) + " and " + str(target) + " were found.")
     for k in range(0, len(paths)):
         path = paths[k]

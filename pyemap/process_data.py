@@ -667,9 +667,9 @@ def process(emap,
     emap_params = locals().copy()
     emap._reset_process()
     pdb_file = emap.file_path
-    if chains == None:
+    if chains is None:
         chains = [emap.chains[0]]
-    if eta_moieties == None:
+    if eta_moieties is None:
         eta_moieties = []
         for resname,moiety in emap.eta_moieties.items():
             if moiety.get_full_id()[2] in chains:
@@ -677,7 +677,7 @@ def process(emap,
     else:
         for resname in eta_moieties:
             if resname not in emap.eta_moieties:
-                PyeMapGraphException("Error: " + str(resname) + " is not a valid residue name.")
+                raise PyeMapGraphException("Error: " + str(resname) + " is not a valid residue name.")
     res_names = []
     res_chars = []
     for i, res in enumerate(include_residues):
@@ -720,7 +720,7 @@ def process(emap,
     if len(G.edges()) == 0:
         raise PyeMapGraphException("Not enough edges to construct a graph.")
     # define surface exposed residues
-    if sdef==None:
+    if sdef is None:
         warnings.warn("Protein surface will not be computed. All residues will be classified as buried...")
         surface_exposed_res = []
     else:
@@ -732,7 +732,7 @@ def process(emap,
             else:
                 surface_exposed_res = []
                 warnings.warn("Invalid choice of surface definition. sdef must be set to 'RD' or 'RSA'.")
-        except:
+        except Exception:
             warnings.warn("Computing protein surface failed. All residues will be classified as buried...")
             surface_exposed_res = []
     finish_graph(G, surface_exposed_res)

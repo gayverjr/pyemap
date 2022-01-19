@@ -7,7 +7,7 @@ def extract_resname(residue):
             return resname
         resnum = str(residue.full_id[3][1])
         return resname[:resname.rfind(resnum)]
-    except:
+    except Exception:
         return resname
 
 

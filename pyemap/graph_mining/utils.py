@@ -5,7 +5,7 @@ import math
 def extract_chain(resname):
     try:
         return resname[resname.index('(')+1:resname.index(")")]
-    except:
+    except Exception:
         return ''
 
 def get_edge_label(G, edge, edge_thresholds):
@@ -18,7 +18,7 @@ def get_edge_label(G, edge, edge_thresholds):
             else:
                 label += 1
         return label
-    except:
+    except Exception:
         return 1
 
 #adapted from: https://github.com/pckroon/pysmiles/
@@ -39,7 +39,7 @@ def write_graph_smiles(generic_subgraph):
     for n_idx, n_jdxs in dfs_successors.items():
         for n_jdx in n_jdxs:
             edges.add(frozenset((n_idx, n_jdx)))
-    total_edges = set(map(frozenset, G.edges))
+    #total_edges = set(map(frozenset, G.edges))
     branch_depth = 0
     branches = set()
     to_visit = [start]
@@ -50,12 +50,6 @@ def write_graph_smiles(generic_subgraph):
             branch_depth += 1
             smiles += '('
             branches.remove(current)
-        if current in predecessors:
-            # It's not the first atom we're visiting, so we want to see if the
-            # edge we last crossed to get here is interesting.
-            previous = predecessors[current]
-            assert len(previous) == 1
-            previous = previous[0]
         smiles += G.nodes[current]['label']
         if current in dfs_successors:
             # Proceed to the next node in this branch
@@ -140,9 +134,10 @@ def make_pretty_subgraph(sg):
             dist = '{0:.2f}'.format(sg.edges[edge]['distance'])
             sg.edges[edge]['len'] = 1.0 + math.log10(float(dist))
             sg.edges[edge]['label'] = dist
-        except:
+        except Exception:
             pass
         sg.edges[edge]['fontname'] = 'Helvetica'
         sg.edges[edge]['color'] = '#778899'
         sg.edges[edge]['penwidth'] = 1.5
         sg.edges[edge]['style'] = 'dashed'
+    return sg

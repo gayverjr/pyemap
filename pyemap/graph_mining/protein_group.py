@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import shutil
 from ..process_data import process
 import networkx as nx
 import datetime
@@ -156,6 +155,7 @@ class PDBGroup():
         self._aligned_sequences = {}
         self.fasta=""
         self.aligned_fasta=""
+        self.emaps = self._emaps.copy()
         self._clean_graph_database()
 
     def _align_sequences(self):
@@ -211,7 +211,7 @@ class PDBGroup():
                             try:
                                 resnum = residue.sequence_index
                                 residue.aligned_residue_number = seq_map[int(resnum)]
-                            except:
+                            except Exception:
                                 residue.aligned_residue_number = 'X'
             except Exception:
                 for pdb_id, emap in self.emaps.items():
@@ -232,7 +232,8 @@ class PDBGroup():
         chains: dict of str: list of str, optional
             Chains to include for each PDB
         eta_moieties: dict of str: list of str, optional
-            Dict containing list of ETA moieties(specified by their residue label to include for each PDB
+            Dict containing list of ETA moieties(specified by their residue label to include for each PDB. By default, all on the 
+            included chains will be included.
         include_residues: list of str, optional
             List of 1-letter standard AA codes to include in the graph
         **kwargs
@@ -242,17 +243,19 @@ class PDBGroup():
           
         '''
         self._reset_process()
+        _chains = chains.copy()
+        _eta_moieties = eta_moieties.copy()
         for pdb_id in self.emaps:
-            if pdb_id not in chains:
-                chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
-            if pdb_id not in eta_moieties:
-                eta_moieties[pdb_id] = [
+            if pdb_id not in _chains:
+                _chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
+            if pdb_id not in _eta_moieties:
+                _eta_moieties[pdb_id] = [
                     item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in chains
                 ]
-            eta_moieties[pdb_id] = moieties_on_chains(chains[pdb_id], eta_moieties[pdb_id])
+            eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
         self._emap_parameters = kwargs
-        self._included_chains = chains
-        self._included_eta_moieties = eta_moieties
+        self._included_chains = _chains
+        self._included_eta_moieties = _eta_moieties
         self._include_residues = include_residues
 
 
@@ -284,7 +287,8 @@ class PDBGroup():
         chains: dict of str: list of str, optional
             Chains to include for each PDB. The special keyword 'All' is also accepted.
         eta_moieties: dict of str: list of str, optional
-            Dict containing list of ETA moieties(specified by their residue label) to include for each PDB
+            Dict containing list of ETA moieties(specified by their residue label) to include for each PDB. By default, all on the 
+            included chains will be included.
         include_residues: list of str, optional
             List of 1-letter standard AA codes to include in the graph
         **kwargs
@@ -302,30 +306,31 @@ class PDBGroup():
         self._reset_process()
         remove_pdbs = []
         kwargs = set_defaults(kwargs)
+        _chains = chains.copy()
+        _eta_moieties = eta_moieties.copy()
         try:
-            if chains.upper()=='ALL':
-                chains = {}
+            if _chains.upper()=='ALL':
+                _chains = {}
                 for pdb_id in self._emaps:
-                    chains[pdb_id] = self._emaps[pdb_id].chains
-        except:
+                    _chains[pdb_id] = self._emaps[pdb_id].chains
+        except Exception:
             pass
         for pdb_id in self._emaps:
-            if pdb_id not in chains:
-                chains[pdb_id] = [self._emaps[pdb_id].chains[0]]
-            if pdb_id not in eta_moieties:
-                eta_moieties[pdb_id] = [
-                    item for item in self._emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in chains[pdb_id]
+            if pdb_id not in _chains:
+                _chains[pdb_id] = [self._emaps[pdb_id].chains[0]]
+            if pdb_id not in _eta_moieties:
+                _eta_moieties[pdb_id] = [
+                    item for item in self._emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in _chains[pdb_id]
                 ]
             try:
-                eta_moieties[pdb_id] = moieties_on_chains(chains[pdb_id], eta_moieties[pdb_id])
-                process(self._emaps[pdb_id],
-                        chains=chains[pdb_id],
-                        eta_moieties=eta_moieties[pdb_id],
+                eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
+                process(self.emaps[pdb_id],
+                        chains=_chains[pdb_id],
+                        eta_moieties=_eta_moieties[pdb_id],
                         include_residues=include_residues,
                         **kwargs)
                 print("Finished:" + str(pdb_id))
             except Exception as e:
-                print(e)
                 remove_pdbs.append(pdb_id)
                 warnings.warn("Could not generate graph for: " + pdb_id + ". It will not be included in the analysis.")
         for pdb_id in remove_pdbs:
@@ -334,8 +339,8 @@ class PDBGroup():
             raise PyeMapMiningException("Not enough graphs could be generated for mining.")
         self._align_sequences()
         self._emap_parameters = kwargs
-        self._included_chains = chains
-        self._included_eta_moieties = eta_moieties
+        self._included_chains = _chains
+        self._included_eta_moieties = _eta_moieties
         self._include_residues = include_residues
 
     def _apply_num_labels(self):
@@ -490,12 +495,12 @@ class PDBGroup():
         except Exception as e:
             raise PyeMapGraphDatabaseException("Invalid specification of substitutions.") from e
         f = StringIO("")
-        for i, key in enumerate(self.emaps):
+        for i,key in enumerate(self.emaps):
             G = self.emaps[key].init_graph
             f.write("t # " + str(i) + "\n")
-            for i, node in enumerate(G.nodes):
-                f.write("v " + str(i) + " " + str(get_numerical_node_label(node, self._node_labels)) + "\n")
-            for i, edge in enumerate(G.edges):
+            for j, node in enumerate(G.nodes):
+                f.write("v " + str(j) + " " + str(get_numerical_node_label(node, self._node_labels)) + "\n")
+            for j, edge in enumerate(G.edges):
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
                         str(get_edge_label(G, edge, self._edge_thresholds)+1) + "\n")
         f.write("t # -1")
@@ -625,7 +630,7 @@ class PDBGroup():
         self._gspan_parameters["graph_specification"] = graph_specification
         try:
             node_combs, edge_combs = nodes_and_edges_from_string(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
-        except:
+        except Exception:
             raise PyeMapMiningException("Could not parse graph from string.")
         try:
             frequent_subgraphs = []

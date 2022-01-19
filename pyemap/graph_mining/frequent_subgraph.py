@@ -1,40 +1,11 @@
-from telnetlib import GA
 import numpy as np
-from numpy import linalg as LA
 from Bio.PDB import Superimposer
 from .utils import get_graph_matcher, write_graph_smiles, make_pretty_subgraph
-from reportlab.graphics import renderPM
 from networkx.drawing.nx_agraph import to_agraph
 import networkx as nx
 from PIL import Image
 from functools import total_ordering
 import tempfile
-
-def _get_sequence(G):
-    ''' Gets sequence for protein subgraph w.r.t multiple sequence alignment
-
-    Parameters
-    -----------
-    G: :class:`networkx.Graph`
-        Protein subgraph
-    
-    Returns
-    -------
-    seq: list of int
-        Returns list of aligned residue numbers
-
-    '''
-    src = None
-    for node in G.nodes:
-        try:
-            if G.nodes[node]['aligned_resnum'] < G.nodes[src]['aligned_resnum']:
-                src = node
-        except:
-                src = node
-    seq = list(nx.dfs_preorder_nodes(G, source=src))
-    seq = [G.nodes[node]['aligned_resnum'] for node in seq]
-    seq = [0 if x=='X' else int(x) for x in seq]
-    return seq
 
 def _do_fiedler_clustering(D,A,all_graphs):
     ''' Clusters list of graphs given a degree and adjacency matrix using the Fiedler eigenvector.
@@ -64,11 +35,10 @@ def _do_fiedler_clustering(D,A,all_graphs):
 
     '''
     L = D - A
-    eigv, eigvc = LA.eig(L)
+    eigv, eigvc = np.linalg.eig(L)
     eigv = np.real(eigv)
     eigvc = np.real(eigvc)
     idx = eigv.argsort()
-    eigv = eigv[idx]
     eigvc = eigvc[:, idx]
     # second lowest eigenvector
     eigvc2 = eigvc[:, 1][:-1]
@@ -354,14 +324,20 @@ class SubgraphPattern():
         dims = (num_graphs+1, num_graphs+1)
         D = np.zeros(dims)
         A = np.ones(dims)*0.0001
+        num_nodes = len(all_graphs[0].nodes)
         for i in range(0,num_graphs):
             A[i][i] = 0.0
         for i in range(0, len(all_graphs)):
             for j in range(i + 1, len(all_graphs)):
-                seq1 = _get_sequence(all_graphs[i])
-                seq2 = _get_sequence(all_graphs[j])
-                dist = np.sum(np.absolute(np.array(seq1) - np.array(seq2)))
-                if dist < len(seq1)+1:
+                GM = get_graph_matcher(all_graphs[i],all_graphs[j])
+                GM.is_isomorphic()
+                dist = 0
+                for key,val in GM.mapping.items():
+                    if all_graphs[i].nodes[key]['aligned_resnum'] == 'X':
+                        pass
+                    else:
+                        dist+=np.absolute(all_graphs[i].nodes[key]['aligned_resnum']-all_graphs[j].nodes[val]['aligned_resnum'])
+                if dist < num_nodes+1:
                     A[i][j] = 1 / (dist + 1)
                     A[j][i] = 1 / (dist + 1)
             D[i][i] = np.sum(A[i])
@@ -497,7 +473,7 @@ class SubgraphPattern():
         --------
         img: :class:`PIL.Image.Image`
         '''
-        if id==None:
+        if id is None:
             G = self.G.copy()
         else:
             G= self.protein_subgraphs[id].copy()
@@ -520,7 +496,7 @@ class SubgraphPattern():
         dest; str,optional
             Destination to save the graph
         '''
-        if id==None:
+        if id is None:
             temp_G = make_pretty_subgraph(self.G.copy())
             if dest=="":
                 dest = self.id+".png"
