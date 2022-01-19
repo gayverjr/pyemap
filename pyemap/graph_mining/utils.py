@@ -8,14 +8,6 @@ def extract_chain(resname):
     except:
         return ''
 
-def extract_resname(residue):
-    try:
-        resname = residue.resname
-        resnum = str(residue.full_id[3][1])
-        return resname[:resname.rfind(resnum)]
-    except:
-        return resname
-
 def get_edge_label(G, edge, edge_thresholds):
     dist = G.edges[edge]['distance']
     try:
@@ -112,13 +104,13 @@ def get_graph_matcher(protein_graph, generic_subgraph):
 def set_defaults(kwargs):
     default = {'distance_cutoff':20,
                'max_degree' : 4,
-                'dist_def':0,
-                'sdef':1,
-                'edge_prune' : 1,
-               'percent_edges':1.0,
+                'dist_def':'COM',
+                'sdef':'RSA',
+                'edge_prune' : 'PERCENT',
+                'percent_edges':1.0,
                'num_st_dev_edges':1.0,
                'rd_thresh':3.03,
-               'asa_thresh':0.2,
+               'rsa_thresh':0.2,
                'coef_alpha':1.0,
                'exp_beta':2.3,
                'r_offset':0.0}

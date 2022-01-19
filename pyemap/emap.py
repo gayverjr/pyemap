@@ -3,7 +3,7 @@
 from .custom_residues import is_pi_bonded
 from .data import clusters, metal_ligands
 import networkx as nx
-from .graph_mining.utils import extract_resname
+from .utils import extract_resname
 from networkx.drawing.nx_agraph import to_agraph
 from .structures import getSimpleSmarts
 from collections import OrderedDict

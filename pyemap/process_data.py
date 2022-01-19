@@ -20,6 +20,7 @@ from collections import OrderedDict
 import warnings
 from .data import res_name_to_char, side_chain_atoms, char_to_res_name
 from .pyemap_exceptions import *
+from .utils import validate_binary_params
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
 def detach_parent(self):
@@ -103,7 +104,7 @@ def calculate_residue_depth(model, aromatic_residues, rd_cutoff):
         return []
 
 
-def calculate_asa(filename, model, node_list, asa_cutoff):
+def calculate_rsa(filename, model, node_list, rsa_cutoff):
     """Returns a list of surface exposed residues as determined by relative solvent accessibility.
 
     Only standard protein residues are currently supported. Non-protein and user specified custom residues cannot be
@@ -117,7 +118,7 @@ def calculate_asa(filename, model, node_list, asa_cutoff):
         Model under analysis
     node_list : list of str
         List containing which standard residues are included in analysis
-    asa_cutoff: float
+    rsa_cutoff: float
         Cutoff for buried/surface exposed
 
     References
@@ -125,13 +126,12 @@ def calculate_asa(filename, model, node_list, asa_cutoff):
     Tien, M. Z.; Meyer, A. G.; Sydykova, D. K.; Spielman, S. J.; Wilke, C. O. PLoS ONE 2013, 8 (11).
         Reference for relative solvent accessibility cutoff of 0.05, and for MaxASA values
     """
-    cutoff = asa_cutoff
     surface_exposed_res = []
     try:
         dssp = DSSP(model, filename, acc_array="Wilke")
         for key in dssp.keys():
             goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
-            if goal_str in node_list and dssp[key][3] >= cutoff:
+            if goal_str in node_list and dssp[key][3] >= rsa_cutoff:
                 surface_exposed_res.append(goal_str)
     except Exception:
         warnings.warn("Unable to calculate solvent accessibility. Check that DSSP is installed.",
@@ -560,10 +560,12 @@ def create_graph(dmatrix,node_labels, edge_prune, coef_alpha, exp_beta,r_offset,
     np.set_printoptions(threshold=sys.maxsize)
     G = nx.from_numpy_matrix(dmatrix)
     G = nx.relabel_nodes(G, node_labels)
-    if int(edge_prune) == 0:
+    if edge_prune == 'DEGREE':
         filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset)
-    elif int(edge_prune) == 1:
+    elif edge_prune == 'PERCENT':
         filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alpha,exp_beta,r_offset)
+    else:
+        raise PyeMapGraphException("Invalid choice of edge_prune. Must be set to 'DEGREE' or 'PERCENT'.")
     for name_node in G.nodes():
         G.nodes[name_node]['style'] = 'filled'
         G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
@@ -603,12 +605,13 @@ def store_params(emap,params):
     params.pop('include_residues')
     emap._process_params = params
 
+
 def process(emap,
             chains=None,
             eta_moieties=None,
-            dist_def=0,
-            sdef=1,
-            edge_prune = 1,
+            dist_def='COM',
+            sdef='RSA',
+            edge_prune = 'PERCENT',
             include_residues=["Y", "W"],
             custom="",
             distance_cutoff=20,
@@ -616,7 +619,7 @@ def process(emap,
             percent_edges=1.0,
             num_st_dev_edges=1.0,
             rd_thresh=3.03,
-            asa_thresh=0.2,
+            rsa_thresh=0.2,
             coef_alpha=1.0,
             exp_beta=2.3,
             r_offset=0.0):
@@ -630,12 +633,12 @@ def process(emap,
         List of strings corresponding to chains included in analysis
     eta_moieties: list of str
         List of strings corresponding to residue names of eta moieties
-    dist_def: int, optional
-        Definition of distance matrix. 0 for center of mass, 1 for closest atom
-    sdef: int, optional
-        Algorithm to use for surface exposure. 0 for residue depth, 1 for solvent accessibility
-    edge_prune: int, optional
-        Algorithm for pruning edges. 0 for degree, 1 for percent
+    dist_def: str, optional
+        Definition of distance matrix. 'COM' for center of mass, 'CATM' for closest atom
+    sdef: str, optional
+        Algorithm to use for surface exposure. 'RD' for residue depth, 'RSA' for relative solvent accessibility
+    edge_prune: str, optional
+        Algorithm for pruning edges. 'DEGREE' for degree, 'PERCENT' for percent
     include_residues: list of str
         Included amino acids specified by 1 letter code
     custom: str, optional
@@ -650,8 +653,8 @@ def process(emap,
         Number of standard deviations of edges to keep
     rd_thresh: float, optional
         Threshold for buried/surface exposed for residue depth
-    asa_thresh: float, optional
-        Threshold for buried/surface exposed for solvent accessbility
+    rsa_thresh: float, optional
+        Threshold for buried/surface exposed for relative solvent accessbility
     coef_alpha,exp_beta,r_offset: float, optional
         Penalty function parameters.
     Raises
@@ -660,6 +663,7 @@ def process(emap,
         Not enough residues to construct a graph
 
     """
+    dist_def,edge_prune,sdef = validate_binary_params(dist_def,edge_prune,sdef)
     emap_params = locals().copy()
     emap._reset_process()
     pdb_file = emap.file_path
@@ -705,12 +709,12 @@ def process(emap,
     node_labels = {}
     for i in range(0, len(all_residues)):
         node_labels[i] = all_residues[i].node_label
-    if int(dist_def) == 0:
+    if dist_def == 'COM':
         dmatrix = com_dmatrix(all_residues)
-    elif int(dist_def) == 1:
+    elif dist_def == 'CATM':
         dmatrix = closest_atom_dmatrix(all_residues)
     else:
-        raise PyeMapGraphException("Invalid choice of dist_def. Must be set to 0 (COM) or 1 (closest atom).")
+        raise PyeMapGraphException("Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
     G = create_graph(dmatrix,node_labels,edge_prune,coef_alpha,exp_beta,r_offset,distance_cutoff, percent_edges, num_st_dev_edges,max_degree,emap.eta_moieties.keys())
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
@@ -721,13 +725,13 @@ def process(emap,
         surface_exposed_res = []
     else:
         try:
-            if int(sdef) == 0:
+            if sdef == 'RD':
                 surface_exposed_res = calculate_residue_depth(model,all_residues,rd_thresh)
-            elif int(sdef) == 1:
-                surface_exposed_res = calculate_asa(pdb_file, model, node_labels.values(), asa_thresh)
+            elif sdef == 'RSA':
+                surface_exposed_res = calculate_rsa(pdb_file, model, node_labels.values(), rsa_thresh)
             else:
                 surface_exposed_res = []
-                warnings.warn("Invalid choice of surface definition. sdef must be set to 0 or 1.")
+                warnings.warn("Invalid choice of surface definition. sdef must be set to 'RD' or 'RSA'.")
         except:
             warnings.warn("Computing protein surface failed. All residues will be classified as buried...")
             surface_exposed_res = []
