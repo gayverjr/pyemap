@@ -68,31 +68,6 @@ class SingleChainParams(unittest.TestCase):
         assert max(G3.degree, key=lambda x: x[1])[1] == 2
 
 
-    def test_surface_options(self):
-        #residue depth
-        asa_ser = []
-        rd_ser = []
-        pyemap.process(self.my_emap,sdef=0)
-        G = self.my_emap.init_graph
-        for n, d in G.nodes(data=True):
-            if d['shape'] == "box":
-                rd_ser.append(n)
-        #solvent accessibility
-        pyemap.process(self.my_emap,sdef=1)
-        G = self.my_emap.init_graph
-        for n, d in G.nodes(data=True):
-            if d['shape'] == "box":
-                asa_ser.append(n)
-        import subprocess
-        try:
-            cmd = "msms"
-            output = subprocess.check_output(cmd, shell=True)
-            assert rd_ser
-        except:
-            pass
-        assert asa_ser
-        assert rd_ser != asa_ser
-        
     def test_distance_options(self):   
         pyemap.process(self.my_emap)
         com_weight = self.my_emap.init_graph["W385(A)"]["Y53(A)"]['weight']

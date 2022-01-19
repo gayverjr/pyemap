@@ -1,6 +1,6 @@
 Installation
 =========================================================
-PyeMap officially supports Python versions 3.5 and later, and has been tested for Linux and OSX platforms.
+PyeMap officially supports Python versions 3.6 and later, and has been tested for Linux and OSX platforms.
 
 **Conda (recommended)**
 
@@ -20,12 +20,15 @@ Once you have a working copy of conda, create and activate a new virtual environ
 
 Now add conda channels in order to download dependencies::
 
-    $ conda config --add channels conda-forge --add channels bioconda --add channels gayverjr
+    $ conda config --add channels conda-forge --add channels gayverjr
     $ conda update --all
 
 And finally, install PyeMap::
 
     $ conda install pyemap
+
+Our conda recipe does not include MSMS_ or DSSP_, which are used to classify residues as surface 
+exposed or buried. Please install these packages separately if you need that functionality.
 
 **Pip**
 

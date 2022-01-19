@@ -15,7 +15,6 @@ from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from .process_data import get_atom_list
 import datetime
-# need to checkout https://github.com/IngJavierR/PngToSvg
 
 class emap():
     '''
@@ -258,7 +257,7 @@ class emap():
                 id[2]) + " and ^" + residue.id[2] + " and ." + atm.name + ")"
         return select_string
 
-    def residue_to_file(self, resname, dest="", size=(200, 200)):
+    def residue_to_file(self, resname, dest="", size=(100, 100)):
         '''Saves image of residue to file in .svg format.
 
         Parameters
@@ -294,7 +293,7 @@ class emap():
                 if dest:
                     Draw.MolToFile(mol, dest, kekulize=False, size=size)
                 else:
-                    Draw.MolToFile(mol, resname + ".png",kekulize=False, size=size)                 
+                    Draw.MolToFile(mol, resname + ".png", kekulize=False, size=size)                
             else:
                 mol = Chem.MolFromSmarts(self.residues[resname].smarts)
                 mol.UpdatePropertyCache()
@@ -513,3 +512,4 @@ class emap():
         img: :class:`PIL.Image.Image`
         '''
         return self._graph_to_Image(self.paths_graph)
+

@@ -3,6 +3,7 @@ import os
 import sys
 from math import isclose
 import unittest
+from sys import platform
 
 class PathwaysTest(unittest.TestCase):
     @classmethod
@@ -25,6 +26,11 @@ class PathwaysTest(unittest.TestCase):
             assert False
         except Exception as e:
             assert True
+
+    def test_dijkstras_paths(self):
+        pyemap.find_paths(self.my_emap,"Y167(B)")
+        assert len(self.my_emap.paths)>0
+
 
 
 
