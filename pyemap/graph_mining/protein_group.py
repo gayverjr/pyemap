@@ -417,32 +417,6 @@ class PDBGroup():
             fi.close()
         return full_str
 
-    def subgraph_report(self, sg_id, dest=None):
-        ''' Generates detailed report for a given subgraph pattern.
-
-        Parameters
-        -----------
-        sg_id: str
-            ID corresponding to a :class:`~pyemap.graph_mining.SubgraphPattern` object 
-        dest: str, optional
-            Destination to write report to file
-
-        Returns
-        -------
-        report: str
-            Detailed report for a particular subgraph pattern.
-
-        '''
-        sg = self.subgraph_patterns[sg_id]
-        full_str = "Full report for subgraph:" + str(sg_id) + "\n"
-        full_str += self._report_header() + "\n"
-        full_str += sg.full_report()
-        if dest:
-            fi = open(dest, "w")
-            fi.write(full_str)
-            fi.close()
-        return full_str
-
     def _set_node_labels(self):
         ''' Sets node labels for mining. 
 

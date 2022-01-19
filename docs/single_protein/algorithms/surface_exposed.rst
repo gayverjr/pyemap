@@ -71,5 +71,5 @@ Source
    :toctree: autosummary
 
    pyemap.process_data.calculate_residue_depth
-   pyemap.process_data.calculate_asa
+   pyemap.process_data.calculate_rsa
 

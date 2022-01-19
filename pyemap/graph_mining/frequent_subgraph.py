@@ -108,8 +108,6 @@ class SubgraphPattern():
     ----------
     id: str
         Unique identifier for subgraph pattern. 
-    file_id: str
-        Unique identifier where `#'s are swapped out for `NP's
     G: :class:`networkx.Graph`
         Graph representation of this subgraph pattern.
     support: list of str
@@ -151,9 +149,9 @@ class SubgraphPattern():
         self.support_number = len(support)
         self.id = str(graph_number+1) + "_" + str(write_graph_smiles(self.G)) + "_" + str(self.support_number)
         if "#" in self.id:
-            self.file_id = self.id.replace("#","NP")
+            self._file_id = self.id.replace("#","NP")
         else:
-            self.file_id = self.id
+            self._file_id = self.id
         for node in self.G.nodes:
             if self.G.nodes[node]['label'] == "#":
                 self.G.nodes[node]['label'] = "NP"
@@ -172,9 +170,9 @@ class SubgraphPattern():
     def _update_id(self,graph_number):
         self.id = str(graph_number+1) + self.id[self.id.index('_'):]
         if "#" in self.id:
-            self.file_id = self.id.replace("#","NP")
+            self._file_id = self.id.replace("#","NP")
         else:
-            self.file_id = self.id
+            self._file_id = self.id
 
     def general_report(self):
         ''' Generates general report which describes this subgraph pattern.
