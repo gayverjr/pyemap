@@ -56,7 +56,8 @@ setup(
                       'pygraphviz',
                       'gspan_mining',
                       'requests',
-                      'svglib'
+                      'svglib',
+                      'pysmiles'
                       ]
     				   # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',
