@@ -1,14 +1,16 @@
-import os
-import sys
 import unittest
-import warnings
 import pyemap
+import os
 from math import isclose
 
 class SingleChainParams(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.my_emap = pyemap.fetch_and_parse("1u3d") 
+    
+    @classmethod
+    def tearDownClass(cls):
+        os.remove("1u3d.pdb")
 
     def test_eta_moities(self):
         assert len(self.my_emap.eta_moieties) >= 3
@@ -52,6 +54,18 @@ class SingleChainParams(unittest.TestCase):
         assert "TYR" in resnames
         assert "TRP" in resnames
         assert "CYS" in resnames
+
+
+    def test_edge_prune_options(self):
+        pyemap.process(self.my_emap,edge_prune="DEGREE")
+        G = self.my_emap.init_graph.copy()
+        pyemap.process(self.my_emap,edge_prune="PERCENT")
+        G2 = self.my_emap.init_graph.copy()
+        pyemap.process(self.my_emap,edge_prune="DEGREE",max_degree=2)
+        G3 = self.my_emap.init_graph.copy()
+        assert G.size()!=G2.size() and G2.size()!=G.size() and G2.size()!=G3.size()
+        assert max(G.degree, key=lambda x: x[1])[1] == 4
+        assert max(G3.degree, key=lambda x: x[1])[1] == 2
 
 
     def test_surface_options(self):

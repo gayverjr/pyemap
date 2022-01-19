@@ -537,6 +537,7 @@ class PDBGroup():
         gs = gSpan(database_file_name=db.name,
                    min_support=min_support,
                    min_num_vertices=min_num_vertices,
+                   max_num_vertices=max_num_vertices,
                    where=True,
                    **kwargs)
         gs.run()
