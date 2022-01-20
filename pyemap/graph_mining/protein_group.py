@@ -288,7 +288,6 @@ class PDBGroup():
                         eta_moieties=_eta_moieties[pdb_id],
                         include_residues=include_residues,
                         **kwargs)
-                print("Finished:" + str(pdb_id))
             except Exception as e:
                 remove_pdbs.append(pdb_id)
                 warnings.warn("Could not generate graph for: " + pdb_id + ". It will not be included in the analysis.")

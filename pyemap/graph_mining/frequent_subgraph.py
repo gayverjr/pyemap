@@ -1,5 +1,5 @@
 import numpy as np
-from Bio.PDB import Superimposer
+from Bio.SVDSuperimposer import SVDSuperimposer
 from .utils import get_graph_matcher, write_graph_smiles, make_pretty_subgraph
 from networkx.drawing.nx_agraph import to_agraph
 import networkx as nx
@@ -7,67 +7,20 @@ from PIL import Image
 from functools import total_ordering
 import tempfile
 
-def _do_fiedler_clustering(D,A,all_graphs):
-    ''' Clusters list of graphs given a degree and adjacency matrix using the Fiedler eigenvector.
-
-        Each protein subgraph is assigned a unique ID based on it's grouping. 
-
-    Parameters
-    ----------
-    D: :class:`numpy.array` of float
-        Degree matrix
-    A :class:`numpy.array` of float
-        Adjacency matrix
-    all_graphs: list of :class:`networkx.Graph`
-        Graphs under consideration
-
-    Returns
-    --------
-    groups: dict of str: (list of class:`networkx.Graph`)
-        Sorted protein subgraphs
-    protein_subgraphs: dict of str: :class:`networkx.Graph`
-        Protein subgraphs and their corresponding IDs
-
-    Notes
-    ------
-    See https://en.wikipedia.org/wiki/Algebraic_connectivity.
-    For implementation in the context of protein graphs, see J. Mol. Biol. (1999) 292, 441-464.
-
-    '''
-    L = D - A
-    eigv, eigvc = np.linalg.eig(L)
-    eigv = np.real(eigv)
-    eigvc = np.real(eigvc)
-    idx = eigv.argsort()
-    eigv = eigv[idx]
-    eigvc = eigvc[:, idx]
-    # second lowest eigenvector
-    eigvc2 = eigvc[:, 1][:-1]
+def _gen_groups(cc,all_graphs):
     groups = {}
     protein_subgraphs = {}
-    for i, val in enumerate(eigvc2):
-        rounded_val = np.round(val, decimals=6)
-        if rounded_val not in groups:
-            groups[rounded_val] = [all_graphs[i]]
-        else:
-            graphs = groups[rounded_val]
-            graphs.append(all_graphs[i])
-            groups[rounded_val] = graphs
-    tuples = []
-    for key, val in groups.items():
-        tuples.append((key, val))
-    # largest groups first
-    groups = {}
-    tuples.sort(key=lambda x: len(x[1]), reverse=True)
-    for idx, tuple1 in enumerate(tuples):
-        key, group = tuple1
+    for group_idx, group in enumerate(cc):
         pdb_list = []
-        for graph in group:
+        graph_list = []
+        for graph_idx in group:
+            graph = all_graphs[graph_idx]
+            graph_list.append(graph)
             pdb_list.append(graph.graph['pdb_id'])
-            id = graph.graph['pdb_id'] + "(" + str(idx + 1) + ")-" + str(
+            id = graph.graph['pdb_id'] + "(" + str(group_idx + 1) + ")-" + str(
                 pdb_list.count(graph.graph['pdb_id']))
             protein_subgraphs[id] = graph
-        groups[idx + 1] = group
+        groups[group_idx + 1] = graph_list
     return groups,protein_subgraphs
 
 @total_ordering
@@ -276,11 +229,9 @@ class SubgraphPattern():
         all_graphs = []
         for pdb_id in self.support:
             all_graphs += self._find_subgraph_in_pdb(pdb_id)
+        all_graphs.sort(key=lambda x: x.size(weight="weight"))
         if len(all_graphs) > 1:
-            D,A = self._structural_clustering(all_graphs)
-            self._structural_groups,self._structural_ids = _do_fiedler_clustering(D,A,all_graphs)
-            D,A = self._sequence_clustering(all_graphs)
-            self._sequence_groups,self._sequence_ids = _do_fiedler_clustering(D,A,all_graphs)
+            self._do_clustering(all_graphs)
             self.set_clustering(clustering_option)
         else:
             graph = all_graphs[0]
@@ -317,55 +268,49 @@ class SubgraphPattern():
         for id,graph in self.protein_subgraphs.items():
             graph.graph['id']=id
 
-    def _sequence_clustering(self,all_graphs):
+    def _do_clustering(self,all_graphs):
         ''' Returns distance and adjacency matrices based on sequence clustering
 
         '''
         num_graphs = len(all_graphs)
-        dims = (num_graphs+1, num_graphs+1)
-        D = np.zeros(dims)
-        A = np.ones(dims)*0.0001
         num_nodes = len(all_graphs[0].nodes)
-        for i in range(0,num_graphs):
-            A[i][i] = 0.0
-        for i in range(0, len(all_graphs)):
-            for j in range(i + 1, len(all_graphs)):
-                GM = get_graph_matcher(all_graphs[i],all_graphs[j])
-                GM.is_isomorphic()
-                dist = 0
-                for key,val in GM.mapping.items():
-                    if all_graphs[i].nodes[key]['aligned_resnum'] == 'X':
-                        continue
-                    else:
-                        dist+=np.absolute(all_graphs[i].nodes[key]['aligned_resnum']-all_graphs[j].nodes[val]['aligned_resnum'])
-                if dist < num_nodes+1:
-                    A[i][j] = 1 / (dist + 1)
-                    A[j][i] = 1 / (dist + 1)
-            D[i][i] = np.sum(A[i])
-        D[-1][-1] = np.sum(A[-1])
-        return D, A
-
-    def _structural_clustering(self, all_graphs):
-        ''' Returns distance and adjacency matrices based on structural clustering
-
-        '''
-        num_graphs = len(all_graphs)
-        dims = (num_graphs+1, num_graphs+1)
-        D = np.zeros(dims)
-        A = np.ones(dims)*0.0001
-        for i in range(0,num_graphs):
-            A[i][i] = 0.0
+        G_seq =  nx.Graph()
+        G_struct = nx.Graph()
+        for i in range(0,len(all_graphs)):
+            G_seq.add_node(i)
+            G_struct.add_node(i)
+        seq_sum = 0
+        rmsd_sum = 0
         for i in range(0, num_graphs):
             for j in range(i + 1, num_graphs):
-                distance = self._subgraph_rmsd(all_graphs[i], all_graphs[j])
-                if distance < 1:
-                    A[i][j] = 1 / (distance + 1)
-                    A[j][i] = 1 / (distance + 1)
-            D[i][i] = np.sum(A[i])
-        D[-1][-1] = np.sum(A[-1])
-        return D, A
+                GM = get_graph_matcher(all_graphs[i], all_graphs[j])
+                rmsds = []
+                seq_dists = []
+                for mapping in GM.subgraph_isomorphisms_iter():
+                    seq_dists.append(self._subgraph_seq_dist(all_graphs[i], all_graphs[j],mapping))
+                    rmsds.append(self._subgraph_rmsd(all_graphs[i], all_graphs[j],mapping))
+                seq_dist = np.min(seq_dists)
+                rmsd = np.min(rmsds)
+                seq_sum += seq_dist
+                rmsd_sum += rmsd
+                if seq_dist < num_nodes:
+                    G_seq.add_edge(i,j)
+                if rmsd <= 0.5:
+                    G_struct.add_edge(i,j)
+        self._structural_groups, self._structural_ids = _gen_groups([c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)],all_graphs)
+        self._sequence_groups,self._sequence_ids = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],all_graphs)
 
-    def _subgraph_rmsd(self, sg1, sg2):
+    def _subgraph_seq_dist(self, sg1, sg2, mapping):
+        ''' Computes RMSD between two protein subgraphs
+
+        '''
+        total_dist = 0
+        for key,val in mapping.items():
+            if sg1.nodes[key]['aligned_resnum'] !="X":
+                total_dist+=np.absolute(sg1.nodes[key]['aligned_resnum']-sg2.nodes[val]['aligned_resnum'])
+        return total_dist
+
+    def _subgraph_rmsd(self, sg1, sg2, mapping):
         ''' Computes RMSD between two protein subgraphs
 
         '''
@@ -373,14 +318,12 @@ class SubgraphPattern():
         emap2 = self.support[sg2.graph['pdb_id']]
         atoms1 = []
         atoms2 = []
-        nodes1 = list(sg1.nodes)
-        nodes2 = list(sg2.nodes)
-        for i in range(0, len(nodes1)):
-            res1 = emap1.residues[nodes1[i]]
-            res2 = emap2.residues[nodes2[i]]
+        for key,val in mapping.items():
+            res1 = emap1.residues[key]
+            res2 = emap2.residues[val]
             if 'CA' in res1 and 'CA' in res2:
-                atoms1.append(res1['CA'])
-                atoms2.append(res2['CA'])
+                atoms1.append(res1['CA'].coord)
+                atoms2.append(res2['CA'].coord)
             else:
                 shared_id = None
                 for atm in res1:
@@ -388,16 +331,37 @@ class SubgraphPattern():
                         shared_id = atm.id
                         break
                 if shared_id is not None:
-                    atoms1.append(res1[shared_id])
-                    atoms2.append(res2[shared_id])
+                    atoms1.append(res1[shared_id].coord)
+                    atoms2.append(res2[shared_id].coord)
                 else:
-                    return float('inf')
-        if len(atoms1) == len(nodes1):
-            si = Superimposer()
-            si.set_atoms(atoms1, atoms2)
-            return si.rms
+                    return float("inf")
+        if len(atoms1) >= 2 and len(atoms1)==len(atoms2):
+            si = SVDSuperimposer()
+            si.set(np.array(atoms1), np.array(atoms2))
+            si.run()
+            return si.get_rms()
         else:
-            return float('inf')
+            return float("inf")
+
+    def _structural_clustering(self, all_graphs):
+        ''' Returns distance and adjacency matrices based on structural clustering
+
+        '''
+        num_graphs = len(all_graphs)
+        dims = (num_graphs, num_graphs)
+        D = np.zeros(dims)
+        A = np.zeros(dims)
+        for i in range(0,num_graphs):
+            A[i][i] = 0.0
+        for i in range(0, num_graphs):
+            for j in range(i + 1, num_graphs):
+                distance = self._subgraph_rmsd(all_graphs[i], all_graphs[j])
+                if distance <= 1:
+                    A[i][j] = 1
+                    A[j][i] = 1 
+            D[i][i] = np.sum(A[i])
+        return D, A
+        
 
     def _find_subgraph_in_pdb(self,pdb_id):
         ''' Finds all monomorphisms of this subgrpah class in a given PDB.
@@ -423,10 +387,8 @@ class SubgraphPattern():
             if degree_dict not in degree_dicts:
                 degree_dicts.append(degree_dict)
                 sgs.append(sg)
-        sgs.sort(key=lambda x: x.size(weight="weight"))
         self.total_support[pdb_id] =  len(sgs) 
         return sgs
-
 
 
     def _generate_protein_subgraph(self, mapping, protein_graph, G, emap_obj):
@@ -452,15 +414,21 @@ class SubgraphPattern():
         mapping = dict((v, k) for k, v in mapping.items())
         protein_subgraph = G.copy()
         protein_subgraph = nx.relabel_nodes(protein_subgraph, mapping)
-        for node in protein_subgraph.nodes():
-            protein_subgraph.nodes[node]['shape'] = protein_graph.nodes[node]['shape']
-            protein_subgraph.nodes[node]['label'] = str(node)
-            protein_subgraph.nodes[node]['aligned_resnum'] = emap_obj.residues[node].aligned_residue_number
-            protein_subgraph.graph['pdb_id'] = protein_graph.graph['pdb_id']
+        # the access order is determined by residue number, maybe this will help
+        sorted_graph = nx.Graph()
+        for node in sorted(protein_subgraph.nodes(), key=lambda n: emap_obj.residues[n].full_id[3][1]):
+            sorted_graph.add_node(node)
+            sorted_graph.nodes[node]['shape'] = protein_graph.nodes[node]['shape']
+            sorted_graph.nodes[node]['label'] = str(node)
+            sorted_graph.nodes[node]['num_label'] = protein_graph.nodes[node]['num_label']
+            sorted_graph.nodes[node]['aligned_resnum'] = emap_obj.residues[node].aligned_residue_number
+            sorted_graph.nodes[node]['resnum'] = emap_obj.residues[node].full_id[3][1]
+            sorted_graph.graph['pdb_id'] = protein_graph.graph['pdb_id']
         for edge in protein_subgraph.edges():
+            sorted_graph.add_edge(edge[0],edge[1])
             for key in protein_graph.edges[edge]:
-                protein_subgraph.edges[edge][key] = protein_graph.edges[edge][key]
-        return protein_subgraph
+                sorted_graph.edges[edge][key] = protein_graph.edges[edge][key]
+        return sorted_graph
 
     def subgraph_to_Image(self,id=None):
         '''Returns PIL image of subgraph pattern or protein subgraph

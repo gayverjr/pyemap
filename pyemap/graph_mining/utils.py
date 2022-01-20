@@ -1,6 +1,6 @@
 from ..data import char_to_res_name
-from networkx.algorithms import isomorphism
 from pysmiles import write_smiles, read_smiles
+import networkx as nx
 import math
 
 def extract_chain(resname):
@@ -21,7 +21,6 @@ def get_edge_label(G, edge, edge_thresholds):
         return label
     except Exception:
         return 1
-
 
 def write_graph_smiles(generic_subgraph):
     G = generic_subgraph.copy()
@@ -62,7 +61,7 @@ def edge_match(edge1, edge2):
     return edge1['num_label'] == edge2['num_label']
 
 def get_graph_matcher(protein_graph, generic_subgraph):
-    return isomorphism.GraphMatcher(protein_graph, generic_subgraph, node_match=node_match, edge_match=edge_match)
+    return nx.algorithms.isomorphism.GraphMatcher(protein_graph, generic_subgraph, node_match=node_match, edge_match=edge_match)
 
 def set_defaults(kwargs):
     default = {'distance_cutoff':20,
