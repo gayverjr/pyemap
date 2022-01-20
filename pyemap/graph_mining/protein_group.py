@@ -234,7 +234,6 @@ class PDBGroup():
                 eta_moieties=self._included_eta_moieties[pdb_id],
                 include_residues=self._include_residues,
                 **self._emap_parameters)
-        print("Finished:" + str(pdb_id))
 
     def process_emaps(self, chains={}, eta_moieties={}, include_residues=['Y', 'W'], **kwargs):
         ''' Processes :class:`~pyemap.emap` objects in order to generate protein graphs. 

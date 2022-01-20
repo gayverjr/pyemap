@@ -645,12 +645,12 @@ def process(emap,
         Custom atom string specified by user
     distance_cutoff: float
          Defines a pure distance threshold. PyeMap will only keep edges with distances less than or equal distance_cutoff.
-    max_degree: int
-        Maximum degree of any vertex.
-    percent_edges: float
-        Percent of edges to keep for each node
-    num_std_dev_edges: int
-        Number of standard deviations of edges to keep
+    max_degree: int, optional
+        Maximum degree of any vertex. Only used when edge_prune is set to 'DEGREE'.
+    percent_edges: float, optional
+        Percent of edges to keep for each node. Only used when edge_prune is set to 'PERCENT'.
+    num_st_dev_edges: float, optional
+        Number of standard deviations of edges to keep. Only used when edge_prune is set to 'PERCENT'.
     rd_thresh: float, optional
         Threshold for buried/surface exposed for residue depth
     rsa_thresh: float, optional
@@ -663,6 +663,7 @@ def process(emap,
         Not enough residues to construct a graph
 
     """
+    max_degree = int(max_degree)
     dist_def,edge_prune,sdef = validate_binary_params(dist_def,edge_prune,sdef)
     emap_params = locals().copy()
     emap._reset_process()
