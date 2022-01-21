@@ -9,19 +9,13 @@ import tempfile
 
 def _gen_groups(cc,all_graphs):
     groups = {}
-    protein_subgraphs = {}
     for group_idx, group in enumerate(cc):
-        pdb_list = []
         graph_list = []
         for graph_idx in group:
             graph = all_graphs[graph_idx]
             graph_list.append(graph)
-            pdb_list.append(graph.graph['pdb_id'])
-            id = graph.graph['pdb_id'] + "(" + str(group_idx + 1) + ")-" + str(
-                pdb_list.count(graph.graph['pdb_id']))
-            protein_subgraphs[id] = graph
         groups[group_idx + 1] = graph_list
-    return groups,protein_subgraphs
+    return groups
 
 @total_ordering
 class SubgraphPattern():
@@ -67,6 +61,7 @@ class SubgraphPattern():
         self.support = support
         self.total_support = {}
         self.protein_subgraphs = {}
+        self.unsorted_graphs = {}
         self.groups = {}
         self.res_to_num_label = res_to_num_label
         self.edge_thresholds = edge_thresholds
@@ -230,18 +225,19 @@ class SubgraphPattern():
         for pdb_id in self.support:
             all_graphs += self._find_subgraph_in_pdb(pdb_id)
         all_graphs.sort(key=lambda x: x.size(weight="weight"))
+        for i,graph in enumerate(all_graphs):
+            unique_id = graph.graph['pdb_id'] + "_"+ str(i+1)
+            graph.graph['id'] = unique_id
+            self.protein_subgraphs[unique_id] = graph
         if len(all_graphs) > 1:
             self._do_clustering(all_graphs)
             self.set_clustering(clustering_option)
         else:
             graph = all_graphs[0]
-            graph.graph['id'] = graph.graph['pdb_id'] + "(" + str(1) + ")-" + str(1)
-            graph.graph['group_val'] = 0.0
-            self.protein_subgraphs[graph.graph['id']] = graph
             self.groups[1] = all_graphs
             self.clustering_option=clustering_option
-            self._structural_groups,self._structural_ids = (self.groups,self.protein_subgraphs)
-            self._sequence_groups,self._sequence_ids = (self.groups,self.protein_subgraphs)
+            self._structural_groups = self.groups
+            self._sequence_groups = self.groups
 
     def set_clustering(self,clustering_option):
         ''' Sets clustering option.
@@ -259,14 +255,12 @@ class SubgraphPattern():
 
         '''
         if clustering_option=="structural":
-            self.groups,self.protein_subgraphs = (self._structural_groups,self._structural_ids)
+            self.groups = self._structural_groups
         elif clustering_option=="sequence":
-            self.groups,self.protein_subgraphs = (self._sequence_groups,self._sequence_ids)
+            self.groups = self._sequence_groups
         else:
             raise Exception("Either structural or sequence.")
         self.clustering_option = clustering_option
-        for id,graph in self.protein_subgraphs.items():
-            graph.graph['id']=id
 
     def _do_clustering(self,all_graphs):
         ''' Returns distance and adjacency matrices based on sequence clustering
@@ -297,8 +291,8 @@ class SubgraphPattern():
                     G_seq.add_edge(i,j)
                 if rmsd <= 0.5:
                     G_struct.add_edge(i,j)
-        self._structural_groups, self._structural_ids = _gen_groups([c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)],all_graphs)
-        self._sequence_groups,self._sequence_ids = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],all_graphs)
+        self._structural_groups = _gen_groups([c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)],all_graphs)
+        self._sequence_groups = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],all_graphs)
 
     def _subgraph_seq_dist(self, sg1, sg2, mapping):
         ''' Computes RMSD between two protein subgraphs
@@ -477,9 +471,5 @@ class SubgraphPattern():
         agraph.graph_attr.update()
         agraph.edge_attr.update(len='1.0')
         agraph.draw(dest, prog='dot')
-
-
-
-
         
 
