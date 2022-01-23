@@ -1,20 +1,20 @@
 # PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
 # Copyright(C) 2017-2022 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
 from .custom_residues import is_pi_bonded
-from .data import clusters, metal_ligands, res_name_to_smarts
+from .data import clusters, metal_ligands, res_name_to_smiles
 import networkx as nx
 from .utils import extract_resname
 from networkx.drawing.nx_agraph import to_agraph
-from .structures import getSimpleSmarts
 from collections import OrderedDict
 from PIL import Image
 import os
 from shutil import copyfile
 import tempfile
-from svglib.svglib import svg2rlg
-from reportlab.graphics import renderPM
+from cairosvg import svg2png
 from .process_data import get_atom_list
 import datetime
+from pysmiles import write_smiles
+from .pyemap_exceptions import *
 
 class emap():
     '''
@@ -30,8 +30,8 @@ class emap():
         Non-protein eta moieties automatically identified at the parsing step.
     chain_list: list of str
         List of chains identified at the parsing step.
-    smarts: dict of node label(str): smarts string(str)
-        List of SMARTS strings for non-protein eta moieties identified at the parsing step.
+    smiles: dict of node label(str): smiles string(str)
+        List of smiles strings for non-protein eta moieties identified at the parsing step.
     residues: dict of node label(str): :class:`Bio.PDB.Residue.Residue`
         Residues included in the graph after the process step.
     ngl_strings: dict of nodel label(str):ngl_string(str)
@@ -162,7 +162,7 @@ class emap():
         return res_graph
 
     def _add_eta_moiety(self, residue):
-        '''Gets the SMARTS string for an automatically identified non-protein eta moiety,
+        '''Gets the smiles string for an automatically identified non-protein eta moiety,
         and adds the residue to the eta_moieties dictionary.
 
         Parameters
@@ -172,17 +172,20 @@ class emap():
         '''
         if extract_resname(residue) not in clusters+list(metal_ligands.keys()) and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
-            smarts_str = getSimpleSmarts(res_graph)
-            residue.smarts = smarts_str
+            try:
+                smiles_str = write_smiles(res_graph)
+            except Exception as e:
+                smiles_str = "unknown"
+            residue.smiles = smiles_str
         elif extract_resname(residue) in metal_ligands:
             atm_name = next(residue.get_atoms()).name
             atm_name = atm_name[0] + atm_name[1].lower()
             charge = metal_ligands[extract_resname(residue)]
-            smarts_str = "["+atm_name
+            smiles_str = "["+atm_name
             for i in range(0,charge):
-                smarts_str+='+'
-            smarts_str+=']'
-            residue.smarts = smarts_str  
+                smiles_str+='+'
+            smiles_str+=']'
+            residue.smiles = smiles_str  
         self.eta_moieties[residue.resname] = residue
 
     def _visualize_pathway(self, pathway, yens):
@@ -216,8 +219,8 @@ class emap():
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
         '''
         residue.ngl_string = self._get_ngl_string(residue)
-        if residue.resname in res_name_to_smarts:
-            residue.smarts = res_name_to_smarts[residue.resname.upper()]
+        if residue.resname in res_name_to_smiles:
+            residue.smiles = res_name_to_smiles[residue.resname.upper()]
         self.residues[residue.node_label] = residue
         chain_id = residue.full_id[2]
         if chain_id in self.active_chains:
@@ -271,7 +274,7 @@ class emap():
         '''
         try:
             from rdkit import Chem
-            from rdkit.Chem import Draw
+            from rdkit.Chem.Draw import rdMolDraw2D
         except (ModuleNotFoundError, ImportError) as e:
             raise ModuleNotFoundError(
                 "RDKit is required for visualization of chemical structures. See https://www.rdkit.org/docs/Install.html"
@@ -287,62 +290,74 @@ class emap():
                 else:
                     target_name = resname + ".svg"
                 copyfile(cluster_img_name, target_name)
-            elif resname in self.eta_moieties:
-                mol = Chem.MolFromSmarts(self.eta_moieties[resname].smarts)
-                mol.UpdatePropertyCache()
-                if dest:
-                    Draw.MolToFile(mol, dest, kekulize=False, size=size)
-                else:
-                    Draw.MolToFile(mol, resname + ".png", kekulize=False, size=size)                
             else:
-                mol = Chem.MolFromSmarts(self.residues[resname].smarts)
-                mol.UpdatePropertyCache()
-                if dest:
-                    Draw.MolToFile(mol, dest, kekulize=False, size=size)
-                else:
-                    Draw.MolToFile(mol, resname + ".png",kekulize=False, size=size)                 
+                try:
+                    try:
+                        mol = Chem.MolFromSmiles(self.eta_moieties[resname].smiles)
+                    except Exception:
+                        mol = Chem.MolFromSmiles(self.residues[resname].smiles)
+                    d2d = rdMolDraw2D.MolDraw2DSVG(size[0],size[1])
+                    d2d.DrawMolecule(mol)
+                    d2d.FinishDrawing()
+                    if dest:
+                        with open(dest,'w') as f:
+                            f.write(d2d.GetDrawingText())
+                    else:
+                        with open(resname+'.svg','w') as f:
+                            f.write(d2d.GetDrawingText())       
+                except Exception as e:
+                    raise PyeMapException("Could not draw residue: {}".format(resname)) from e                       
         else:
             raise KeyError("No record of any residue by that name.")
 
-    def residue_to_Image(self, resname, size=(200, 200)):
+    def residue_to_Image(self, resname, scale=1.0):
         '''Returns PIL image of chemical structure. 
 
         Parameters
         -----------
         resname: str
             Name of residue
-        size: (float,float), optional
-            dimensions of image saved to file
+        scale: float, optional
+            Output scaling factor, default dimensions are (100,100)
         Returns
         --------
         img: :class:`PIL.Image.Image`
         '''
         try:
             from rdkit import Chem
-            from rdkit.Chem import Draw
+            from rdkit.Chem.Draw import rdMolDraw2D
         except (ModuleNotFoundError, ImportError) as e:
             raise ModuleNotFoundError(
                 "RDKit is required for visualization of chemical structures. See https://www.rdkit.org/docs/Install.html"
             ) from e
         if resname in self.residues or resname in self.eta_moieties:
+            dest = tempfile.NamedTemporaryFile(suffix=".png").name
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
+                dest = tempfile.NamedTemporaryFile(suffix=".png").name
                 cluster_img_name = os.path.abspath(os.path.dirname(
                     __file__)) + '/data/clusters/' + resname[:3] + '.svg'
-                drawing = svg2rlg(cluster_img_name)
-                img = renderPM.drawToPIL(drawing)
+                svg2png(url=cluster_img_name, write_to=dest, scale=scale)
+                img = Image.open(dest)
                 return img
-            elif resname in self.eta_moieties:
-                mol = Chem.MolFromSmarts(self.eta_moieties[resname].smarts)
-                mol.UpdatePropertyCache()
-                img = Draw.MolToImage(mol, kekulize=False, size=size)
-                return img               
-            else:
-                mol = Chem.MolFromSmarts(self.residues[resname].smarts)
-                mol.UpdatePropertyCache()
-                img = Draw.MolToImage(mol, kekulize=False, size=size)
+            try:
+                try:
+                    mol = Chem.MolFromSmiles(self.eta_moieties[resname].smiles)
+                except Exception:
+                    mol = Chem.MolFromSmiles(self.residues[resname].smiles)
+                d2d = rdMolDraw2D.MolDraw2DSVG(100,100)
+                d2d.DrawMolecule(mol)
+                d2d.FinishDrawing()
+                dest1 = tempfile.NamedTemporaryFile(suffix=".svg").name
+                dest2 = tempfile.NamedTemporaryFile(suffix=".png").name
+                with open(dest1,'w') as f:
+                    f.write(d2d.GetDrawingText()) 
+                svg2png(url=dest1, write_to=dest2, scale=scale)
+                img = Image.open(dest2)
                 return img
+            except Exception as e:
+                raise PyeMapException("Could not draw residue: {}".format(resname)) from e 
         else:
             raise KeyError("No record of any residue by that name.")
 

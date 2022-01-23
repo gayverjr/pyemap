@@ -52,11 +52,10 @@ setup(
     				  'biopython',
     			      'scipy',
     				  'pillow',
-                      'reportlab',
                       'pygraphviz',
                       'gspan_mining',
                       'requests',
-                      'svglib',
+                      'cairosvg',
                       'pysmiles'
                       ]
     				   # Required packages, pulls from pip if needed; do not use for Conda deployment

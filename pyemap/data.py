@@ -25,7 +25,7 @@ res_name_to_char = {
     "NME": "<",
 }
 
-res_name_to_smarts = {'ALA': '[CH3]', 
+res_name_to_smiles = {'ALA': '[CH3]', 
 'CYS': '*[CH2]', 
 'ASP': '*C([CH2])=O', 
 'GLU': '*C(=O)[CH2][CH2]', 
