@@ -242,14 +242,16 @@ def dijkstras_shortest_paths(G, start, targets):
         path = []
         try:
             path = nx.dijkstra_path(G, start, goal)
+            weights = []
+            sum = 0
+            for i in range(0, len(path) - 1):  # sum up edge weights
+                sum += (G[path[i]][path[i + 1]]['weight'])
+                weights.append(G[path[i]][path[i + 1]]['weight'])
+            shortestPaths.append(ShortestPath(path, weights, sum))
         except Exception as e:
-            raise PyeMapShortestPathException("No paths to the surface from "  + str(start) + " were found.")
-        weights = []
-        sum = 0
-        for i in range(0, len(path) - 1):  # sum up edge weights
-            sum += (G[path[i]][path[i + 1]]['weight'])
-            weights.append(G[path[i]][path[i + 1]]['weight'])
-        shortestPaths.append(ShortestPath(path, weights, sum))
+            pass
+    if len(shortestPaths) == 0:
+        raise PyeMapShortestPathException("No paths to the surface from "  + str(start) + " were found.")
     shortestPaths = sorted(shortestPaths)
     branches = []
     # find the parent pathways

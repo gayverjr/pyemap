@@ -429,7 +429,7 @@ class PDBGroup():
             for x in sub:
               assert x in char_to_res_name  
               assert x.upper() in self._include_residues
-            self._substitutions = sub.copy()
+            self._substitutions =[x.upper() for x in sub]
             self._set_node_labels()
         except Exception as e:
             raise PyeMapGraphDatabaseException("Invalid specification of substitutions.") from e
@@ -536,6 +536,20 @@ class PDBGroup():
             sg._update_id(graph_number)
             self.subgraph_patterns[sg.id] = sg
 
+    def save_fasta(self, dest=""):
+        ''' Saves fasta from multiple sequence alignment to file
+
+        Parameters
+        -----------
+        dest: str, optional
+            Destination to write aligned fasta to file
+        '''
+        if self.fasta == self.aligned_fasta:
+            warnings.warn("Warning: sequences have not been aligned.")
+        if dest=="":
+            dest = 'data_aligned.fasta'
+        with open(dest,'w') as f:
+            f.write(self.aligned_fasta)
 
     def find_subgraph(self, graph_specification):
         ''' Finds a specified subgraph by searching for monomorphisms in each protein graph.
@@ -569,6 +583,7 @@ class PDBGroup():
         self._gspan_parameters["max_num_vertices"] = None
         self._gspan_parameters["graph_specification"] = graph_specification
         try:
+            graph_specification = graph_specification.upper()
             node_combs, edge_combs, edges = nodes_and_edges_from_smiles(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
         except Exception:
             raise PyeMapMiningException("Could not parse graph from string.")
