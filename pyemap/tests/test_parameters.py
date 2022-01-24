@@ -96,11 +96,21 @@ class SingleChainParams(unittest.TestCase):
     
     def test_custom_atom_range(self):
          #custom residues
-        pyemap.process(self.my_emap,eta_moieties=[], custom = "(3960-3969),(3970-3980,3982,3984-3987")
+        pyemap.process(self.my_emap,eta_moieties=[], custom = "(3960-3969),(3970-3980,3982,3984-3987)")
         resnames=[]
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert all(elem in resnames for elem in ["CUST-1","CUST-2"])
+        try:
+            self.my_emap.residue_to_file('CUST-1')
+            assert False
+        except KeyError:
+            assert True
+        try:
+            self.my_emap.residue_to_Image('CUST-1')
+            assert False
+        except KeyError:
+            assert True
         #example for bad custom residues, shoud raise exception
         try:
             pyemap.process(self.my_emap, custom = "(28-41)")

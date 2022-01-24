@@ -196,21 +196,23 @@ class PDBGroup():
         include_residues: list of str, optional
             List of 1-letter standard AA codes to include in the graph
         **kwargs
-            For a list of accepted kwargs, see the documentation for :func:`~pyemap.process_data.process`.
-
-        This function should be used to set up :func:`_process_emap`.   
+            For a list of accepted kwargs, see the documentation for :func:`~pyemap.process_data.process`. 
           
         '''
         self._reset_process()
-        _chains = chains.copy()
+        try:
+            if chains.upper()=='ALL':
+                _chains = {}
+                for pdb_id in self._emaps:
+                    _chains[pdb_id] = self._emaps[pdb_id].chains
+        except Exception: 
+            _chains = chains.copy()
         _eta_moieties = eta_moieties.copy()
         for pdb_id in self.emaps:
             if pdb_id not in _chains:
                 _chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
             if pdb_id not in _eta_moieties:
-                _eta_moieties[pdb_id] = [
-                    item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in chains
-                ]
+                _eta_moieties[pdb_id] = [item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in _chains[pdb_id]]
             _eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
         self._emap_parameters = kwargs
         self._included_chains = _chains
@@ -261,31 +263,15 @@ class PDBGroup():
         >>> my_pg.process_emaps(chains=chains,eta_moieties=eta_moieties)
 
         '''
-        self._reset_process()
         remove_pdbs = []
         kwargs = set_defaults(kwargs)
-        _chains = chains.copy()
-        _eta_moieties = eta_moieties.copy()
-        try:
-            if _chains.upper()=='ALL':
-                _chains = {}
-                for pdb_id in self._emaps:
-                    _chains[pdb_id] = self._emaps[pdb_id].chains
-        except Exception:
-            pass
+        self._setup_process(chains, eta_moieties, include_residues, **kwargs)
         for pdb_id in self._emaps:
-            if pdb_id not in _chains:
-                _chains[pdb_id] = [self._emaps[pdb_id].chains[0]]
-            if pdb_id not in _eta_moieties:
-                _eta_moieties[pdb_id] = [
-                    item for item in self._emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in _chains[pdb_id]
-                ]
             try:
-                _eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
                 process(self.emaps[pdb_id],
-                        chains=_chains[pdb_id],
-                        eta_moieties=_eta_moieties[pdb_id],
-                        include_residues=include_residues,
+                        chains=self._included_chains[pdb_id],
+                        eta_moieties=self._included_eta_moieties[pdb_id],
+                        include_residues=self._include_residues,
                         **kwargs)
             except Exception as e:
                 remove_pdbs.append(pdb_id)
@@ -295,10 +281,6 @@ class PDBGroup():
         if len(self.emaps) < 2:
             raise PyeMapMiningException("Not enough graphs could be generated for mining.")
         self._align_sequences()
-        self._emap_parameters = kwargs
-        self._included_chains = _chains
-        self._included_eta_moieties = _eta_moieties
-        self._include_residues = include_residues
 
     def _apply_num_labels(self):
         ''' Adds numerical node labels to the :class:`networkx.Graph` objects as node attributes. 

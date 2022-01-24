@@ -147,17 +147,6 @@ class Branch(object):
         printline += "\n"
         return printline
 
-    def get_branch_as_list(self):
-        ''' List representation of Branch. First entry is: "Branch: `branch_id`" and the rest of the entries
-        are the string representations of each ShortestPath object comprising the Branch.
-        '''
-        branch_list = []
-        printline = "Branch: " + str(self.target)
-        branch_list.append([printline])
-        for pt in self.paths:
-            branch_list.append(pt.get_path_as_list())
-        return branch_list
-
 
 def _is_parent_pathway(shortest_path, targets):
     """Returns true if ShortestPath is a parent pathway, false if not.
@@ -254,14 +243,13 @@ def dijkstras_shortest_paths(G, start, targets):
         try:
             path = nx.dijkstra_path(G, start, goal)
         except Exception as e:
-            path = []
-        if not path == []:
-            weights = []
-            sum = 0
-            for i in range(0, len(path) - 1):  # sum up edge weights
-                sum += (G[path[i]][path[i + 1]]['weight'])
-                weights.append(G[path[i]][path[i + 1]]['weight'])
-            shortestPaths.append(ShortestPath(path, weights, sum))
+            raise PyeMapShortestPathException("No paths to the surface from "  + str(start) + " were found.")
+        weights = []
+        sum = 0
+        for i in range(0, len(path) - 1):  # sum up edge weights
+            sum += (G[path[i]][path[i + 1]]['weight'])
+            weights.append(G[path[i]][path[i + 1]]['weight'])
+        shortestPaths.append(ShortestPath(path, weights, sum))
     shortestPaths = sorted(shortestPaths)
     branches = []
     # find the parent pathways
@@ -303,8 +291,6 @@ def dijkstras_shortest_paths(G, start, targets):
                 if len(G.nodes[path[i + 1]]['fillcolor']) != 9:
                     G.nodes[path[i + 1]]['fillcolor'] += '5F'
                     G.nodes[path[i + 1]]['color'] = '#7080905F'
-    if len(shortestPaths) == 0:
-        raise PyeMapShortestPathException("No paths to the surface from "  + str(start) + " were found.")
     return branches
 
 
@@ -359,43 +345,40 @@ def yens_shortest_paths(G, start, target, max_paths=10):
             weights.append(G[path[i]][path[i + 1]]['weight'])
         path = ShortestPath(path, weights, sum)
         shortestPaths.append(path)
-    if shortestPaths:
-        shortestPaths = sorted(shortestPaths)
-        for i in range(0, len(shortestPaths)):
-            path = shortestPaths[i].path
-            if i == 0:  # shortest path gets bolder edges
-                for j in range(len(path) - 1):
-                    G[path[j]][path[j + 1]]['penwidth'] = 6.0
-                    G[path[j]][path[j + 1]]['style'] = 'solid'
-                    G.nodes[path[j]]['penwidth'] = 6.0
-                    G.nodes[path[j + 1]]['penwidth'] = 6.0
-                    G[path[j]][path[j + 1]]['color'] = '#778899FF'
-                    # make the nodes look opaque if they are connected to the source
-                    if len(G.nodes[path[j]]['fillcolor']) != 9:
-                        G.nodes[path[j]]['fillcolor'] += 'FF'
-                        G.nodes[path[j]]['color'] = '#708090FF'
-                    if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
-                        G.nodes[path[j + 1]]['fillcolor'] += 'FF'
-                        G.nodes[path[j + 1]]['color'] = '#708090FF'
-            else:
-                for j in range(len(path) - 1):
-                    G[path[j]][path[j + 1]]['penwidth'] = 6.0
-                    G[path[j]][path[j + 1]]['style'] = 'solid'
-                    G.nodes[path[j]]['penwidth'] = 6.0
-                    G.nodes[path[j + 1]]['penwidth'] = 6.0
-                    if G[path[j]][path[j + 1]]['color'] != '#778899FF':
-                        G[path[j]][path[j + 1]]['color'] = '#7788997F'
-                    # make the nodes look opaque if they are connected to the source
-                    if len(G.nodes[path[j]]['fillcolor']) != 9:
-                        G.nodes[path[j]]['fillcolor'] += '7F'
-                        G.nodes[path[j]]['color'] = '#7080907F'
-                    if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
-                        G.nodes[path[j + 1]]['fillcolor'] += '7F'
-                        G.nodes[path[j + 1]]['color'] = '#7080907F'
-            shortestPaths[i].set_id("1" + letters[i])
-        br = Branch(1, shortestPaths[0].path[-1])
-        for pt in shortestPaths:
-            br.add_path(pt)
-        return [br]
-    else:  # no paths found
-        raise PyeMapShortestPathException("No paths between " + str(start) + " and " + str(target) + " were found.")
+    shortestPaths = sorted(shortestPaths)
+    for i in range(0, len(shortestPaths)):
+        path = shortestPaths[i].path
+        if i == 0:  # shortest path gets bolder edges
+            for j in range(len(path) - 1):
+                G[path[j]][path[j + 1]]['penwidth'] = 6.0
+                G[path[j]][path[j + 1]]['style'] = 'solid'
+                G.nodes[path[j]]['penwidth'] = 6.0
+                G.nodes[path[j + 1]]['penwidth'] = 6.0
+                G[path[j]][path[j + 1]]['color'] = '#778899FF'
+                # make the nodes look opaque if they are connected to the source
+                if len(G.nodes[path[j]]['fillcolor']) != 9:
+                    G.nodes[path[j]]['fillcolor'] += 'FF'
+                    G.nodes[path[j]]['color'] = '#708090FF'
+                if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
+                    G.nodes[path[j + 1]]['fillcolor'] += 'FF'
+                    G.nodes[path[j + 1]]['color'] = '#708090FF'
+        else:
+            for j in range(len(path) - 1):
+                G[path[j]][path[j + 1]]['penwidth'] = 6.0
+                G[path[j]][path[j + 1]]['style'] = 'solid'
+                G.nodes[path[j]]['penwidth'] = 6.0
+                G.nodes[path[j + 1]]['penwidth'] = 6.0
+                if G[path[j]][path[j + 1]]['color'] != '#778899FF':
+                    G[path[j]][path[j + 1]]['color'] = '#7788997F'
+                # make the nodes look opaque if they are connected to the source
+                if len(G.nodes[path[j]]['fillcolor']) != 9:
+                    G.nodes[path[j]]['fillcolor'] += '7F'
+                    G.nodes[path[j]]['color'] = '#7080907F'
+                if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
+                    G.nodes[path[j + 1]]['fillcolor'] += '7F'
+                    G.nodes[path[j + 1]]['color'] = '#7080907F'
+        shortestPaths[i].set_id("1" + letters[i])
+    br = Branch(1, shortestPaths[0].path[-1])
+    for pt in shortestPaths:
+        br.add_path(pt)
+    return [br]

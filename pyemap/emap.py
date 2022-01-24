@@ -182,8 +182,10 @@ class emap():
             atm_name = atm_name[0] + atm_name[1].lower()
             charge = metal_ligands[extract_resname(residue)]
             smiles_str = "["+atm_name
-            for i in range(0,charge):
-                smiles_str+='+'
+            if charge > 0:
+                smiles_str+='+{}'.format(charge)
+            elif charge < 0:
+                smiles_str+='-{}'.format(charge)
             smiles_str+=']'
             residue.smiles = smiles_str  
         self.eta_moieties[residue.resname] = residue
@@ -331,7 +333,6 @@ class emap():
                 "RDKit is required for visualization of chemical structures. See https://www.rdkit.org/docs/Install.html"
             ) from e
         if resname in self.residues or resname in self.eta_moieties:
-            dest = tempfile.NamedTemporaryFile(suffix=".png").name
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:

@@ -558,7 +558,7 @@ def create_graph(dmatrix,node_labels, edge_prune, coef_alpha, exp_beta,r_offset,
         Reference for 20A filter on edges
     """
     np.set_printoptions(threshold=sys.maxsize)
-    G = nx.from_numpy_matrix(dmatrix)
+    G = nx.from_numpy_array(dmatrix)
     G = nx.relabel_nodes(G, node_labels)
     if edge_prune == 'DEGREE':
         filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset)

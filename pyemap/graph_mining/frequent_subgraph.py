@@ -233,7 +233,6 @@ class SubgraphPattern():
             self._do_clustering(all_graphs)
             self.set_clustering(clustering_option)
         else:
-            graph = all_graphs[0]
             self.groups[1] = all_graphs
             self.clustering_option=clustering_option
             self._structural_groups = self.groups
@@ -336,26 +335,6 @@ class SubgraphPattern():
             return si.get_rms()
         else:
             return float("inf")
-
-    def _structural_clustering(self, all_graphs):
-        ''' Returns distance and adjacency matrices based on structural clustering
-
-        '''
-        num_graphs = len(all_graphs)
-        dims = (num_graphs, num_graphs)
-        D = np.zeros(dims)
-        A = np.zeros(dims)
-        for i in range(0,num_graphs):
-            A[i][i] = 0.0
-        for i in range(0, num_graphs):
-            for j in range(i + 1, num_graphs):
-                distance = self._subgraph_rmsd(all_graphs[i], all_graphs[j])
-                if distance <= 1:
-                    A[i][j] = 1
-                    A[j][i] = 1 
-            D[i][i] = np.sum(A[i])
-        return D, A
-        
 
     def _find_subgraph_in_pdb(self,pdb_id):
         ''' Finds all monomorphisms of this subgrpah class in a given PDB.

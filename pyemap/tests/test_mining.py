@@ -2,6 +2,7 @@ import unittest
 import pyemap
 from pyemap.graph_mining import PDBGroup
 import os
+import numpy as np
 
 class PDBGroupProcess(unittest.TestCase):
     @classmethod
@@ -10,11 +11,32 @@ class PDBGroupProcess(unittest.TestCase):
         cls.pg = PDBGroup('My Group') 
         for pdb in cls.pdb_ids: 
             cls.pg.add_emap(pyemap.fetch_and_parse(pdb)) 
+        cls.pg.add_emap(pyemap.fetch_and_parse('1IQR')) 
+        assert len(cls.pg._emaps) == len(cls.pdb_ids)
     
     @classmethod
     def tearDownClass(cls):
         for pdb in cls.pdb_ids:
             os.remove(pdb+".pdb")
+
+    def test_default_chains_and_moieties(self):
+        self.pg.process_emaps(edge_prune='DEGREE')
+        total_length_chains = np.sum([len(x) for x in self.pg._included_chains.values()])
+        assert total_length_chains == 14
+        total_length_moieties = np.sum([len(x) for x in self.pg._included_eta_moieties.values()])
+        assert total_length_moieties == 40
+
+        self.pg.process_emaps(edge_prune='DEGREE',chains='ALL')
+        total_length_chains = np.sum([len(x) for x in self.pg._included_chains.values()])
+        assert total_length_chains == 25
+        total_length_moieties = np.sum([len(x) for x in self.pg._included_eta_moieties.values()])
+        assert total_length_moieties == 75
+
+        self.pg.process_emaps(edge_prune='DEGREE',eta_moieties={'2J4D':['MHF1502(B)-1']})
+        total_length_chains = np.sum([len(x) for x in self.pg._included_chains.values()])
+        assert total_length_chains == 14
+        total_length_moieties = np.sum([len(x) for x in self.pg._included_eta_moieties.values()])
+        assert total_length_moieties == 36
          
     def test_gspan(self):
         self.pg.process_emaps(edge_prune='DEGREE')
@@ -67,11 +89,15 @@ class PDBGroupProcess(unittest.TestCase):
         assert sg.general_report() != None
         assert sg.full_report() != None
 
-    
-
-
-
-
-
-
-
+    def test_visualize(self):
+        self.pg.process_emaps(edge_prune='DEGREE')
+        self.pg.generate_graph_database()
+        self.pg.find_subgraph('WWW#')
+        sg = self.pg.subgraph_patterns['1_WWW#_14']
+        sg.find_protein_subgraphs()
+        sg.subgraph_to_Image()
+        sg.subgraph_to_file(dest='test.png')
+        os.remove('test.png')
+        sg.subgraph_to_Image(id=next(iter(sg.protein_subgraphs)))
+        sg.subgraph_to_file(id=next(iter(sg.protein_subgraphs)),dest='test.png')
+        os.remove('test.png')
