@@ -3,6 +3,7 @@
 import numpy as np
 from .shortest_paths import yens_shortest_paths, dijkstras_shortest_paths
 
+
 def _finish_graph(G, original_shape_start, source):
     """Draws the graph with the shortest pathways highlighted.
 

@@ -16,6 +16,7 @@ import datetime
 from pysmiles import write_smiles
 from .pyemap_exceptions import *
 
+
 class emap():
     '''
     Manages the data generated at all stages of PyeMap analysis.
@@ -170,7 +171,7 @@ class emap():
         residue: Bio.PDB.Residue.Residue
              Customized residue object generated for automatically detected eta moiety
         '''
-        if extract_resname(residue) not in clusters+list(metal_ligands.keys()) and "CUST" not in residue.resname:
+        if extract_resname(residue) not in clusters + list(metal_ligands.keys()) and "CUST" not in residue.resname:
             res_graph = self._get_residue_graph(residue)
             try:
                 smiles_str = write_smiles(res_graph)
@@ -181,13 +182,13 @@ class emap():
             atm_name = next(residue.get_atoms()).name
             atm_name = atm_name[0] + atm_name[1].lower()
             charge = metal_ligands[extract_resname(residue)]
-            smiles_str = "["+atm_name
+            smiles_str = "[" + atm_name
             if charge > 0:
-                smiles_str+='+{}'.format(charge)
+                smiles_str += '+{}'.format(charge)
             elif charge < 0:
-                smiles_str+='-{}'.format(charge)
-            smiles_str+=']'
-            residue.smiles = smiles_str  
+                smiles_str += '-{}'.format(charge)
+            smiles_str += ']'
+            residue.smiles = smiles_str
         self.eta_moieties[residue.resname] = residue
 
     def _visualize_pathway(self, pathway, yens):
@@ -214,8 +215,7 @@ class emap():
         color_list[0] = "yellow"
         if yens:
             color_list[-1] = "turquoise"
-        pathway.set_visualization(
-            selection_strs, color_list, labeled_atoms, label_texts)
+        pathway.set_visualization(selection_strs, color_list, labeled_atoms, label_texts)
 
     def _add_residue(self, residue):
         '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
@@ -228,7 +228,7 @@ class emap():
         if chain_id in self.active_chains:
             self.active_chains[chain_id].append(residue)
         else:
-            self.active_chains[chain_id] = [residue] 
+            self.active_chains[chain_id] = [residue]
 
     def _get_ngl_string(self, residue):
         """Returns NGL selection string for residue
@@ -245,7 +245,7 @@ class emap():
         select_string = ""
         atm_list = list(residue.get_atoms())
         first_atm = atm_list[0]
-        if hasattr(first_atm,"original_id"):
+        if hasattr(first_atm, "original_id"):
             id = first_atm.original_id
         else:
             id = first_atm.full_id
@@ -253,7 +253,7 @@ class emap():
             id[2]) + " and ^" + residue.id[2] + " and ." + first_atm.name + ")"
         for i in range(1, len(atm_list)):
             atm = atm_list[i]
-            if hasattr(atm,"original_id"):
+            if hasattr(atm, "original_id"):
                 id = first_atm.original_id
             else:
                 id = atm.full_id
@@ -285,8 +285,8 @@ class emap():
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
-                cluster_img_name = os.path.abspath(os.path.dirname(
-                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                cluster_img_name = os.path.abspath(
+                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
                 if dest:
                     target_name = dest
                 else:
@@ -298,17 +298,17 @@ class emap():
                         mol = Chem.MolFromSmiles(self.eta_moieties[resname].smiles)
                     except Exception:
                         mol = Chem.MolFromSmiles(self.residues[resname].smiles)
-                    d2d = rdMolDraw2D.MolDraw2DSVG(size[0],size[1])
+                    d2d = rdMolDraw2D.MolDraw2DSVG(size[0], size[1])
                     d2d.DrawMolecule(mol)
                     d2d.FinishDrawing()
                     if dest:
-                        with open(dest,'w') as f:
+                        with open(dest, 'w') as f:
                             f.write(d2d.GetDrawingText())
                     else:
-                        with open(resname+'.svg','w') as f:
-                            f.write(d2d.GetDrawingText())       
+                        with open(resname + '.svg', 'w') as f:
+                            f.write(d2d.GetDrawingText())
                 except Exception as e:
-                    raise PyeMapException("Could not draw residue: {}".format(resname)) from e                       
+                    raise PyeMapException("Could not draw residue: {}".format(resname)) from e
         else:
             raise KeyError("No record of any residue by that name.")
 
@@ -337,8 +337,8 @@ class emap():
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
                 dest = tempfile.NamedTemporaryFile(suffix=".png").name
-                cluster_img_name = os.path.abspath(os.path.dirname(
-                    __file__)) + '/data/clusters/' + resname[:3] + '.svg'
+                cluster_img_name = os.path.abspath(
+                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
                 svg2png(url=cluster_img_name, write_to=dest, scale=scale)
                 img = Image.open(dest)
                 return img
@@ -347,18 +347,18 @@ class emap():
                     mol = Chem.MolFromSmiles(self.eta_moieties[resname].smiles)
                 except Exception:
                     mol = Chem.MolFromSmiles(self.residues[resname].smiles)
-                d2d = rdMolDraw2D.MolDraw2DSVG(100,100)
+                d2d = rdMolDraw2D.MolDraw2DSVG(100, 100)
                 d2d.DrawMolecule(mol)
                 d2d.FinishDrawing()
                 dest1 = tempfile.NamedTemporaryFile(suffix=".svg").name
                 dest2 = tempfile.NamedTemporaryFile(suffix=".png").name
-                with open(dest1,'w') as f:
-                    f.write(d2d.GetDrawingText()) 
+                with open(dest1, 'w') as f:
+                    f.write(d2d.GetDrawingText())
                 svg2png(url=dest1, write_to=dest2, scale=scale)
                 img = Image.open(dest2)
                 return img
             except Exception as e:
-                raise PyeMapException("Could not draw residue: {}".format(resname)) from e 
+                raise PyeMapException("Could not draw residue: {}".format(resname)) from e
         else:
             raise KeyError("No record of any residue by that name.")
 
@@ -372,8 +372,7 @@ class emap():
         '''
         if G:
             agraph = to_agraph(G)
-            agraph.graph_attr.update(
-                ratio=1.0, overlap="rc", mode="ipsep", splines="true")
+            agraph.graph_attr.update(ratio=1.0, overlap="rc", mode="ipsep", splines="true")
             if agraph.number_of_nodes() <= 200:
                 try:
                     agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
@@ -387,14 +386,13 @@ class emap():
             if dest:
                 svg_fn = dest + '.svg'
                 png_fn = dest + '.png'
-                agraph.draw(svg_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
-                agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
+                agraph.draw(svg_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                agraph.draw(png_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
             else:
                 png_fn = self.file_path[:-4] + "_graph.png"
-                agraph.draw(png_fn,prog='neato',args="-Gepsilon=0.01 -Gmaxiter=50")
+                agraph.draw(png_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
         else:
             raise RuntimeError("Nothing to draw.")
-
 
     def init_graph_to_file(self, dest=""):
         '''Saves image of graph generated by process step to file.
@@ -404,7 +402,7 @@ class emap():
         dest: str
             Destination for writing to file.
         '''
-        return self._graph_to_file(self.init_graph,dest)
+        return self._graph_to_file(self.init_graph, dest)
 
     def paths_graph_to_file(self, dest=""):
         '''Saves image of graph generated by pathways step to file.
@@ -414,7 +412,7 @@ class emap():
         dest:str
             Destination for writing to file.
         '''
-        return self._graph_to_file(self.paths_graph,dest)
+        return self._graph_to_file(self.paths_graph, dest)
 
     def get_surface_exposed_residues(self):
         '''Returns list of surface exposed residues.
@@ -431,9 +429,7 @@ class emap():
                     surface_exposed.append(n)
             return surface_exposed
         else:
-            raise RuntimeError(
-                "No graph found. Please run pyemap.process(my_emap) to generate the graph.")
-
+            raise RuntimeError("No graph found. Please run pyemap.process(my_emap) to generate the graph.")
 
     def _report_header(self):
         full_str = ""
@@ -447,13 +443,12 @@ class emap():
         full_str += str(list(self.eta_moieties.keys())) + "\n"
         custom_res_atms = []
         custom_res_names = []
-        for key,val in self.user_residues.items():
+        for key, val in self.user_residues.items():
             custom_res_names.append(key)
             custom_res_atms.append([atm.serial_number for atm in val])
-        custom_res_dict = dict(zip(custom_res_names,custom_res_atms))
+        custom_res_dict = dict(zip(custom_res_names, custom_res_atms))
         full_str += "User defined residues:\n{}\n".format(custom_res_dict)
         return full_str
-
 
     def report(self, dest=""):
         '''Returns report of most probable pathways. Writes to file if destination is specified.
@@ -510,7 +505,6 @@ class emap():
         else:
             raise RuntimeError("Nothing to draw.")
 
-
     def init_graph_to_Image(self):
         '''Returns PIL image of initial graph
 
@@ -528,4 +522,3 @@ class emap():
         img: :class:`PIL.Image.Image`
         '''
         return self._graph_to_Image(self.paths_graph)
-

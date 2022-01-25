@@ -22,13 +22,16 @@ from .data import res_name_to_char, side_chain_atoms, char_to_res_name
 from .pyemap_exceptions import *
 from .utils import validate_binary_params
 
+
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
 def detach_parent(self):
     if self.parent:
         self.original_id = self.parent.full_id
     self.parent = None
 
+
 Bio.PDB.Atom.Atom.detach_parent = detach_parent
+
 
 # monkey patches mangling of disordered atoms
 def get_unpacked_list(self):
@@ -48,6 +51,7 @@ def get_unpacked_list(self):
 
 
 Bio.PDB.Residue.Residue.get_unpacked_list = get_unpacked_list
+
 
 def pathways_model(dist, coef_alpha, exp_beta, r_offset):
     """Applies penalty function parameters and returns score.
@@ -97,10 +101,7 @@ def calculate_residue_depth(model, aromatic_residues, rd_cutoff):
                 surface_exposed_res.append(residue.node_label)
         return surface_exposed_res
     except Exception:
-        warnings.warn(
-            "Unable to calculate residue depth. Check that MSMS is installed.",
-            RuntimeWarning,
-            stacklevel=2)
+        warnings.warn("Unable to calculate residue depth. Check that MSMS is installed.", RuntimeWarning, stacklevel=2)
         return []
 
 
@@ -192,7 +193,7 @@ def get_full_atom_distance_matrix(residues):
         atoms = get_atom_list(res)
         num_atoms = 0
         for cur_atom in atoms:
-            num_atoms+=1
+            num_atoms += 1
             atm_d.append(np.array([cur_atom.coord[0], cur_atom.coord[1], cur_atom.coord[2]]))
         atoms_per_res.append(num_atoms)
     return distance_matrix(atm_d, atm_d), atoms_per_res
@@ -228,6 +229,7 @@ def closest_atom_dmatrix(residues):
             slice3_idx = slice4_idx
         slice1_idx = slice2_idx
     return distance_matrix
+
 
 def com_dmatrix(residues):
     """Constructs distance matrix based on distances between centers of mass.
@@ -327,11 +329,12 @@ def create_user_res(serial_list, used_atoms, serial_dict, user_res_names):
         user_res.detach_child(atm.id)
     for serial_number in serial_list:
         if serial_number in used_atoms:
-            message = "Invalid atom serial number range. Atom " + str(serial_number) + " is already included in another residue."
+            message = "Invalid atom serial number range. Atom " + str(
+                serial_number) + " is already included in another residue."
             raise PyeMapUserResidueException(message)
         if serial_number not in serial_dict:
             message = str(serial_number) + " is not a valid serial number."
-            raise PyeMapUserResidueException(message)  
+            raise PyeMapUserResidueException(message)
         user_res.add(serial_dict[serial_number])
     k = 1
     name = "CUST"
@@ -429,7 +432,7 @@ def get_user_residues(custom, used_atoms, serial_dict):
                         serial_number_list.append(i)
                 else:
                     serial_number_list.append(int(atm))
-            if serial_number_list !=[]:
+            if serial_number_list != []:
                 serial_number_list = sorted(list(OrderedDict.fromkeys(serial_number_list)))
                 new_res = create_user_res(serial_number_list, used_atoms, serial_dict, user_res_names)
             else:
@@ -460,7 +463,8 @@ def finish_graph(G, surface_exposed_res):
         if G[node] == {}:
             G.remove_node(node)
 
-def filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alpha,exp_beta,r_offset):
+
+def filter_by_percent(G, percent_edges, num_st_dev_edges, distance_cutoff, coef_alpha, exp_beta, r_offset):
     included_edges = []
     minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
     # should never happen, but just in case
@@ -468,7 +472,7 @@ def filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alph
         minval = 1
     for u, v, d in G.edges(data=True):
         d['distance'] = d['weight']
-        d['weight'] = pathways_model(d['weight'],coef_alpha, exp_beta, r_offset)
+        d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
         d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
     for node in G.nodes():
         edge_length_per_node = []
@@ -480,12 +484,10 @@ def filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alph
         for neighbor in G[node]:
             if weights.index(G.edges[(node, neighbor)]['weight']) <= thresh_index and \
                     G.edges[(node, neighbor)]['weight'] <= distance_cutoff:
-                edge_length_per_node.append(
-                    G.edges[(node, neighbor)]['weight'])
+                edge_length_per_node.append(G.edges[(node, neighbor)]['weight'])
         len_average, len_st_dev = 0.0, 0.0
         if edge_length_per_node != []:
-            edge_length_per_node = np.array(
-                edge_length_per_node, dtype='float64')
+            edge_length_per_node = np.array(edge_length_per_node, dtype='float64')
             len_average = np.average(edge_length_per_node)
             len_st_dev = np.std(edge_length_per_node)
         for neighbor in G[node]:
@@ -501,7 +503,8 @@ def filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alph
             excluded_edges.append(edge)
     G.remove_edges_from(excluded_edges)
 
-def filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset):
+
+def filter_by_degree(G, max_degree, distance_cutoff, coef_alpha, exp_beta, r_offset):
     minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
     # should never happen, but just in case
     if minval == 0:
@@ -510,10 +513,10 @@ def filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset):
     # impose hard cutoff, collect other edge weights
     for u, v, d in G.edges(data=True):
         if d['weight'] > distance_cutoff:
-            remove_edges.append((u,v))
+            remove_edges.append((u, v))
         else:
             d['distance'] = d['weight']
-            d['weight'] = pathways_model(d['weight'],coef_alpha, exp_beta, r_offset)
+            d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
             d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
     G.remove_edges_from(remove_edges)
     remove_edges = []
@@ -523,12 +526,13 @@ def filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset):
                 if edge not in remove_edges and edge[::-1] not in remove_edges:
                     remove_edges.append(edge)
     remove_edges = sorted(remove_edges, key=lambda x: G.edges[x]['distance'])
-    for u,v in remove_edges:
+    for u, v in remove_edges:
         if G.degree(u) > max_degree or G.degree(v) > max_degree:
-            G.remove_edge(u,v)
-    
+            G.remove_edge(u, v)
 
-def create_graph(dmatrix,node_labels, edge_prune, coef_alpha, exp_beta,r_offset,distance_cutoff, percent_edges, num_st_dev_edges,max_degree,eta_moieties):
+
+def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, distance_cutoff, percent_edges,
+                 num_st_dev_edges, max_degree, eta_moieties):
     """Constructs the graph from the distance matrix and node labels.
 
     Parameters
@@ -561,9 +565,9 @@ def create_graph(dmatrix,node_labels, edge_prune, coef_alpha, exp_beta,r_offset,
     G = nx.from_numpy_array(dmatrix)
     G = nx.relabel_nodes(G, node_labels)
     if edge_prune == 'DEGREE':
-        filter_by_degree(G,max_degree,distance_cutoff,coef_alpha,exp_beta,r_offset)
+        filter_by_degree(G, max_degree, distance_cutoff, coef_alpha, exp_beta, r_offset)
     elif edge_prune == 'PERCENT':
-        filter_by_percent(G,percent_edges,num_st_dev_edges,distance_cutoff,coef_alpha,exp_beta,r_offset)
+        filter_by_percent(G, percent_edges, num_st_dev_edges, distance_cutoff, coef_alpha, exp_beta, r_offset)
     else:
         raise PyeMapGraphException("Invalid choice of edge_prune. Must be set to 'DEGREE' or 'PERCENT'.")
     for name_node in G.nodes():
@@ -598,7 +602,8 @@ def create_graph(dmatrix,node_labels, edge_prune, coef_alpha, exp_beta,r_offset,
         G[name_node1][name_node2]['style'] = 'dashed'
     return G
 
-def store_params(emap,params):
+
+def store_params(emap, params):
     params.pop('chains')
     params.pop('eta_moieties')
     params.pop('emap')
@@ -611,11 +616,11 @@ def process(emap,
             eta_moieties=None,
             dist_def='COM',
             sdef='RSA',
-            edge_prune = 'PERCENT',
+            edge_prune='PERCENT',
             include_residues=["Y", "W"],
             custom="",
             distance_cutoff=20,
-            max_degree = 4,
+            max_degree=4,
             percent_edges=1.0,
             num_st_dev_edges=1.0,
             rd_thresh=3.03,
@@ -664,7 +669,7 @@ def process(emap,
 
     """
     max_degree = int(max_degree)
-    dist_def,edge_prune,sdef = validate_binary_params(dist_def,edge_prune,sdef)
+    dist_def, edge_prune, sdef = validate_binary_params(dist_def, edge_prune, sdef)
     emap_params = locals().copy()
     emap._reset_process()
     pdb_file = emap.file_path
@@ -672,7 +677,7 @@ def process(emap,
         chains = [emap.chains[0]]
     if eta_moieties is None:
         eta_moieties = []
-        for resname,moiety in emap.eta_moieties.items():
+        for resname, moiety in emap.eta_moieties.items():
             if moiety.get_full_id()[2] in chains:
                 eta_moieties.append(resname)
     else:
@@ -715,8 +720,10 @@ def process(emap,
     elif dist_def == 'CATM':
         dmatrix = closest_atom_dmatrix(all_residues)
     else:
-        raise PyeMapGraphException("Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
-    G = create_graph(dmatrix,node_labels,edge_prune,coef_alpha,exp_beta,r_offset,distance_cutoff, percent_edges, num_st_dev_edges,max_degree,emap.eta_moieties.keys())
+        raise PyeMapGraphException(
+            "Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
+    G = create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, distance_cutoff, percent_edges,
+                     num_st_dev_edges, max_degree, emap.eta_moieties.keys())
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise PyeMapGraphException("Not enough edges to construct a graph.")
@@ -727,7 +734,7 @@ def process(emap,
     else:
         try:
             if sdef == 'RD':
-                surface_exposed_res = calculate_residue_depth(model,all_residues,rd_thresh)
+                surface_exposed_res = calculate_residue_depth(model, all_residues, rd_thresh)
             elif sdef == 'RSA':
                 surface_exposed_res = calculate_rsa(pdb_file, model, node_labels.values(), rsa_thresh)
             else:
@@ -739,9 +746,9 @@ def process(emap,
     finish_graph(G, surface_exposed_res)
     for res in all_residues:
         emap._add_residue(res)
-    for res in user_residues: 
+    for res in user_residues:
         emap.user_residues[res.resname] = res
     emap._store_initial_graph(G)
     emap._include_residues = res_chars
-    store_params(emap,emap_params)
+    store_params(emap, emap_params)
     return emap

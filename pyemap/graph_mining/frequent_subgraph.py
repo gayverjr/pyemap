@@ -7,7 +7,8 @@ from PIL import Image
 from functools import total_ordering
 import tempfile
 
-def _gen_groups(cc,all_graphs):
+
+def _gen_groups(cc, all_graphs):
     groups = {}
     for group_idx, group in enumerate(cc):
         graph_list = []
@@ -16,6 +17,7 @@ def _gen_groups(cc,all_graphs):
             graph_list.append(graph)
         groups[group_idx + 1] = graph_list
     return groups
+
 
 @total_ordering
 class SubgraphPattern():
@@ -40,6 +42,7 @@ class SubgraphPattern():
         Number of PDBs this subgraph pattern was identified in 
     
     '''
+
     def __init__(self, G, graph_number, support, res_to_num_label, edge_thresholds):
         '''Initializes SubgraphPattern object.
 
@@ -66,9 +69,9 @@ class SubgraphPattern():
         self.res_to_num_label = res_to_num_label
         self.edge_thresholds = edge_thresholds
         self.support_number = len(support)
-        self.id = str(graph_number+1) + "_" + str(write_graph_smiles(self.G)) + "_" + str(self.support_number)
+        self.id = str(graph_number + 1) + "_" + str(write_graph_smiles(self.G)) + "_" + str(self.support_number)
         if "#" in self.id:
-            self._file_id = self.id.replace("#","NP")
+            self._file_id = self.id.replace("#", "NP")
         else:
             self._file_id = self.id
         for node in self.G.nodes:
@@ -81,15 +84,15 @@ class SubgraphPattern():
         elif str(write_graph_smiles(self.G)) != str(write_graph_smiles(other.G)):
             return str(write_graph_smiles(self.G)) < str(write_graph_smiles(other.G))
         else:
-            return self.G.size(weight="num_label") < other.G.size(weight="num_label")       
+            return self.G.size(weight="num_label") < other.G.size(weight="num_label")
 
-    def __eq__(self,other):
+    def __eq__(self, other):
         return self.G == other.G
 
-    def _update_id(self,graph_number):
-        self.id = str(graph_number+1) + self.id[self.id.index('_'):]
+    def _update_id(self, graph_number):
+        self.id = str(graph_number + 1) + self.id[self.id.index('_'):]
         if "#" in self.id:
-            self._file_id = self.id.replace("#","NP")
+            self._file_id = self.id.replace("#", "NP")
         else:
             self._file_id = self.id
 
@@ -160,15 +163,6 @@ class SubgraphPattern():
             full_str += "]\n"
         return full_str
 
-    def _gen_node_rep(self):
-        ''' Generates string representation of graph
-
-        '''
-        node_rep = ""
-        for node, node_data in self.G.nodes(data=True):
-            node_rep = ''.join([node_rep, node_data['label']])
-        return node_rep
-
     def _visualize_subgraph_in_ngl(self, emap, G):
         ''' Gets visualization of subgraph in NGL viewer
 
@@ -200,7 +194,7 @@ class SubgraphPattern():
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
 
-    def find_protein_subgraphs(self,clustering_option="structural"):
+    def find_protein_subgraphs(self, clustering_option="structural"):
         ''' Finds protein subgraphs which match this pattern.
 
         This function must be executed to analyze protein subgraphs.
@@ -225,8 +219,8 @@ class SubgraphPattern():
         for pdb_id in self.support:
             all_graphs += self._find_subgraph_in_pdb(pdb_id)
         all_graphs.sort(key=lambda x: x.size(weight="weight"))
-        for i,graph in enumerate(all_graphs):
-            unique_id = graph.graph['pdb_id'] + "_"+ str(i+1)
+        for i, graph in enumerate(all_graphs):
+            unique_id = graph.graph['pdb_id'] + "_" + str(i + 1)
             graph.graph['id'] = unique_id
             self.protein_subgraphs[unique_id] = graph
         if len(all_graphs) > 1:
@@ -234,11 +228,11 @@ class SubgraphPattern():
             self.set_clustering(clustering_option)
         else:
             self.groups[1] = all_graphs
-            self.clustering_option=clustering_option
+            self.clustering_option = clustering_option
             self._structural_groups = self.groups
             self._sequence_groups = self.groups
 
-    def set_clustering(self,clustering_option):
+    def set_clustering(self, clustering_option):
         ''' Sets clustering option.
 
         Parameters
@@ -253,23 +247,23 @@ class SubgraphPattern():
         gets shown in the output.
 
         '''
-        if clustering_option=="structural":
+        if clustering_option == "structural":
             self.groups = self._structural_groups
-        elif clustering_option=="sequence":
+        elif clustering_option == "sequence":
             self.groups = self._sequence_groups
         else:
             raise Exception("Either structural or sequence.")
         self.clustering_option = clustering_option
 
-    def _do_clustering(self,all_graphs):
+    def _do_clustering(self, all_graphs):
         ''' Returns distance and adjacency matrices based on sequence clustering
 
         '''
         num_graphs = len(all_graphs)
         num_nodes = len(all_graphs[0].nodes)
-        G_seq =  nx.Graph()
+        G_seq = nx.Graph()
         G_struct = nx.Graph()
-        for i in range(0,len(all_graphs)):
+        for i in range(0, len(all_graphs)):
             G_seq.add_node(i)
             G_struct.add_node(i)
         seq_sum = 0
@@ -280,27 +274,29 @@ class SubgraphPattern():
                 rmsds = []
                 seq_dists = []
                 for mapping in GM.subgraph_isomorphisms_iter():
-                    seq_dists.append(self._subgraph_seq_dist(all_graphs[i], all_graphs[j],mapping))
-                    rmsds.append(self._subgraph_rmsd(all_graphs[i], all_graphs[j],mapping))
+                    seq_dists.append(self._subgraph_seq_dist(all_graphs[i], all_graphs[j], mapping))
+                    rmsds.append(self._subgraph_rmsd(all_graphs[i], all_graphs[j], mapping))
                 seq_dist = np.min(seq_dists)
                 rmsd = np.min(rmsds)
                 seq_sum += seq_dist
                 rmsd_sum += rmsd
                 if seq_dist < num_nodes:
-                    G_seq.add_edge(i,j)
+                    G_seq.add_edge(i, j)
                 if rmsd <= 0.5:
-                    G_struct.add_edge(i,j)
-        self._structural_groups = _gen_groups([c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)],all_graphs)
-        self._sequence_groups = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],all_graphs)
+                    G_struct.add_edge(i, j)
+        self._structural_groups = _gen_groups(
+            [c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)], all_graphs)
+        self._sequence_groups = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],
+                                            all_graphs)
 
     def _subgraph_seq_dist(self, sg1, sg2, mapping):
         ''' Computes RMSD between two protein subgraphs
 
         '''
         total_dist = 0
-        for key,val in mapping.items():
-            if sg1.nodes[key]['aligned_resnum'] !="X":
-                total_dist+=np.absolute(sg1.nodes[key]['aligned_resnum']-sg2.nodes[val]['aligned_resnum'])
+        for key, val in mapping.items():
+            if sg1.nodes[key]['aligned_resnum'] != "X":
+                total_dist += np.absolute(sg1.nodes[key]['aligned_resnum'] - sg2.nodes[val]['aligned_resnum'])
         return total_dist
 
     def _subgraph_rmsd(self, sg1, sg2, mapping):
@@ -311,7 +307,7 @@ class SubgraphPattern():
         emap2 = self.support[sg2.graph['pdb_id']]
         atoms1 = []
         atoms2 = []
-        for key,val in mapping.items():
+        for key, val in mapping.items():
             res1 = emap1.residues[key]
             res2 = emap2.residues[val]
             if 'CA' in res1 and 'CA' in res2:
@@ -328,7 +324,7 @@ class SubgraphPattern():
                     atoms2.append(res2[shared_id].coord)
                 else:
                     return float("inf")
-        if len(atoms1) >= 2 and len(atoms1)==len(atoms2):
+        if len(atoms1) >= 2 and len(atoms1) == len(atoms2):
             si = SVDSuperimposer()
             si.set(np.array(atoms1), np.array(atoms2))
             si.run()
@@ -336,7 +332,7 @@ class SubgraphPattern():
         else:
             return float("inf")
 
-    def _find_subgraph_in_pdb(self,pdb_id):
+    def _find_subgraph_in_pdb(self, pdb_id):
         ''' Finds all monomorphisms of this subgrpah class in a given PDB.
 
         Parameters
@@ -354,15 +350,15 @@ class SubgraphPattern():
         sgs = []
         degree_dicts = []
         for mapping in subgraph_isos:
-            sg = self._generate_protein_subgraph(mapping, self.support[pdb_id].init_graph, self.G, self.support[pdb_id])
+            sg = self._generate_protein_subgraph(mapping, self.support[pdb_id].init_graph, self.G,
+                                                 self.support[pdb_id])
             # eliminate redundant subgraphs
             degree_dict = dict(sg.degree)
             if degree_dict not in degree_dicts:
                 degree_dicts.append(degree_dict)
                 sgs.append(sg)
-        self.total_support[pdb_id] =  len(sgs) 
+        self.total_support[pdb_id] = len(sgs)
         return sgs
-
 
     def _generate_protein_subgraph(self, mapping, protein_graph, G, emap_obj):
         ''' Generates protein subgraph for a given monomorphism
@@ -398,12 +394,12 @@ class SubgraphPattern():
             sorted_graph.nodes[node]['resnum'] = emap_obj.residues[node].full_id[3][1]
             sorted_graph.graph['pdb_id'] = protein_graph.graph['pdb_id']
         for edge in protein_subgraph.edges():
-            sorted_graph.add_edge(edge[0],edge[1])
+            sorted_graph.add_edge(edge[0], edge[1])
             for key in protein_graph.edges[edge]:
                 sorted_graph.edges[edge][key] = protein_graph.edges[edge][key]
         return sorted_graph
 
-    def subgraph_to_Image(self,id=None):
+    def subgraph_to_Image(self, id=None):
         '''Returns PIL image of subgraph pattern or protein subgraph
 
         Parameters
@@ -418,7 +414,7 @@ class SubgraphPattern():
         if id is None:
             G = self.G.copy()
         else:
-            G= self.protein_subgraphs[id].copy()
+            G = self.protein_subgraphs[id].copy()
         make_pretty_subgraph(G)
         agraph = to_agraph(G)
         agraph.graph_attr.update()
@@ -428,7 +424,7 @@ class SubgraphPattern():
         img = Image.open(fout.name)
         return img
 
-    def subgraph_to_file(self,id=None,dest=""):
+    def subgraph_to_file(self, id=None, dest=""):
         '''Saves image of subgraph pattern or protein subgraph to file
 
         Parameters
@@ -440,15 +436,13 @@ class SubgraphPattern():
         '''
         if id is None:
             temp_G = make_pretty_subgraph(self.G.copy())
-            if dest=="":
-                dest = self.id+".png"
+            if dest == "":
+                dest = self.id + ".png"
         else:
             temp_G = self.protein_subgraphs[id]
-            if dest=="":
+            if dest == "":
                 dest = self.id + "_" + id + ".png"
         agraph = to_agraph(temp_G)
         agraph.graph_attr.update()
         agraph.edge_attr.update(len='1.0')
         agraph.draw(dest, prog='dot')
-        
-

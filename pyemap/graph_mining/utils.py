@@ -3,11 +3,13 @@ from pysmiles import write_smiles, read_smiles
 import networkx as nx
 import math
 
+
 def extract_chain(resname):
     try:
-        return resname[resname.index('(')+1:resname.index(")")]
+        return resname[resname.index('(') + 1:resname.index(")")]
     except Exception:
         return ''
+
 
 def get_edge_label(G, edge, edge_thresholds):
     dist = G.edges[edge]['distance']
@@ -22,22 +24,24 @@ def get_edge_label(G, edge, edge_thresholds):
     except Exception:
         return 1
 
+
 def write_graph_smiles(generic_subgraph):
     G = generic_subgraph.copy()
     element_dict = {}
     num_chars = 0
-    for i,node in enumerate(G.nodes):
-        G.nodes[node]['element'] = 'C'+str(i)
-        element_dict['C'+str(i)] = G.nodes[node]['label']
+    for i, node in enumerate(G.nodes):
+        G.nodes[node]['element'] = 'C' + str(i)
+        element_dict['C' + str(i)] = G.nodes[node]['label']
         num_chars += len(G.nodes[node]['label'])
     proper_smiles = write_smiles(G)
-    for key,val in element_dict.items():
-        proper_smiles = proper_smiles.replace(key,val)
+    for key, val in element_dict.items():
+        proper_smiles = proper_smiles.replace(key, val)
     # linear case
-    if len(proper_smiles.replace('[','').replace(']','')) == num_chars:
-        return proper_smiles.replace('[','').replace(']','')
+    if len(proper_smiles.replace('[', '').replace(']', '')) == num_chars:
+        return proper_smiles.replace('[', '').replace(']', '')
     else:
         return proper_smiles
+
 
 def get_numerical_node_label(u, res_to_num_label):
     if strip_res_number(u) in char_to_res_name and strip_res_number(u) in res_to_num_label:
@@ -49,37 +53,48 @@ def get_numerical_node_label(u, res_to_num_label):
         result = res_to_num_label["#"]
     return result
 
+
 def strip_res_number(u):
     for i in range(0, len(u)):
         if u[i].isdigit():
             return u[:i]
 
+
 def node_match(node1, node2):
     return node1['num_label'] == node2['num_label']
+
 
 def edge_match(edge1, edge2):
     return edge1['num_label'] == edge2['num_label']
 
+
 def get_graph_matcher(protein_graph, generic_subgraph):
-    return nx.algorithms.isomorphism.GraphMatcher(protein_graph, generic_subgraph, node_match=node_match, edge_match=edge_match)
+    return nx.algorithms.isomorphism.GraphMatcher(protein_graph,
+                                                  generic_subgraph,
+                                                  node_match=node_match,
+                                                  edge_match=edge_match)
+
 
 def set_defaults(kwargs):
-    default = {'distance_cutoff':20,
-               'max_degree' : 4,
-                'dist_def':'COM',
-                'sdef':'RSA',
-                'edge_prune' : 'PERCENT',
-                'percent_edges':1.0,
-               'num_st_dev_edges':1.0,
-               'rd_thresh':3.03,
-               'rsa_thresh':0.2,
-               'coef_alpha':1.0,
-               'exp_beta':2.3,
-               'r_offset':0.0}
+    default = {
+        'distance_cutoff': 20,
+        'max_degree': 4,
+        'dist_def': 'COM',
+        'sdef': 'RSA',
+        'edge_prune': 'PERCENT',
+        'percent_edges': 1.0,
+        'num_st_dev_edges': 1.0,
+        'rd_thresh': 3.03,
+        'rsa_thresh': 0.2,
+        'coef_alpha': 1.0,
+        'exp_beta': 2.3,
+        'r_offset': 0.0
+    }
     for arg in default:
         if arg not in kwargs:
             kwargs[arg] = default[arg]
     return kwargs
+
 
 def make_pretty_subgraph(sg):
     for name_node in sg.nodes():
@@ -90,7 +105,8 @@ def make_pretty_subgraph(sg):
         sg.nodes[name_node]['fontcolor'] = "#000000"
         sg.nodes[name_node]['color'] = '#708090'
         sg.nodes[name_node]['penwidth'] = 2.0
-        if (len(sg.nodes[name_node]['label']) == 1) or (len(sg.nodes[name_node]['label']) > 1 and sg.nodes[name_node]['label'][1].isdigit()):
+        if (len(sg.nodes[name_node]['label']) == 1) or (len(sg.nodes[name_node]['label']) > 1
+                                                        and sg.nodes[name_node]['label'][1].isdigit()):
             if 'Y' == sg.nodes[name_node]['label'][0]:
                 sg.nodes[name_node]['fillcolor'] = '#96c8f0'
             elif 'W' == sg.nodes[name_node]['label'][0]:
@@ -116,7 +132,8 @@ def make_pretty_subgraph(sg):
         sg.edges[edge]['style'] = 'dashed'
     return sg
 
-def nodes_and_edges_from_smiles(smiles_str,edge_thresholds=[],residue_categories=[]):
+
+def nodes_and_edges_from_smiles(smiles_str, edge_thresholds=[], residue_categories=[]):
     ''' Returns all possible combinations of nodes and edges based on graph string and edge thresholds and residue categories.
 
     Parameters
@@ -135,9 +152,9 @@ def nodes_and_edges_from_smiles(smiles_str,edge_thresholds=[],residue_categories
         smiles_str = new_smiles
     # replace some problematic characters
     if 'H' in smiles_str:
-        smiles_str = smiles_str.replace('H','He')
+        smiles_str = smiles_str.replace('H', 'He')
     if '#' in smiles_str:
-        smiles_str = smiles_str.replace('#','Np')
+        smiles_str = smiles_str.replace('#', 'Np')
     base_graph = read_smiles(smiles_str)
     node_list = []
     for node in base_graph.nodes:
@@ -149,9 +166,9 @@ def nodes_and_edges_from_smiles(smiles_str,edge_thresholds=[],residue_categories
             else:
                 node_list.append(base_graph.nodes[node]['element'])
         except Exception:
-                node_list.append("*")
+            node_list.append("*")
     l1 = []
-    for i in range(0, len(edge_thresholds)+1):
+    for i in range(0, len(edge_thresholds) + 1):
         l1.append(i + 1)
     from itertools import product
     edge_combs = list(product(l1, repeat=len(base_graph.edges)))

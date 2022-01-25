@@ -19,6 +19,37 @@ class PDBGroupProcess(unittest.TestCase):
         for pdb in cls.pdb_ids:
             os.remove(pdb+".pdb")
 
+    def test_clustering(self):
+        self.pg.process_emaps(edge_prune='DEGREE')
+        self.pg.generate_graph_database()
+        self.pg.find_subgraph('WWW#')
+        sg = self.pg.subgraph_patterns['1_WWW#_14']
+        sg.find_protein_subgraphs(clustering_option="structural")
+        assert len(sg.protein_subgraphs)==137
+        g1 = sg.groups[1]
+        assert len(g1) == 12
+        sg.set_clustering("sequence")
+        g1 = sg.groups[1]
+        assert len(g1) == 14
+        eta_moieties = {}
+        for pdb_id in self.pg.emaps:
+            eta_moieties[pdb_id] = []
+        eta_moieties['1U3D'] = ['FAD510(A)-2']
+        self.pg.process_emaps(edge_prune='DEGREE',eta_moieties=eta_moieties)
+        self.pg.generate_graph_database(edge_thresh=[12,14])
+        self.pg.find_subgraph('WWW#')
+        sg = self.pg.subgraph_patterns['1_WWW#_1']
+        sg.find_protein_subgraphs()
+        assert len(sg.groups)==1
+
+    def test_no_subgraphs(self):
+        self.pg.process_emaps(edge_prune='DEGREE')
+        self.pg.generate_graph_database()
+        self.pg.run_gspan(20)
+        assert len(self.pg.subgraph_patterns) == 0
+        self.pg.find_subgraph('WWWX')
+        assert len(self.pg.subgraph_patterns) == 0
+
     def test_default_chains_and_moieties(self):
         self.pg.process_emaps(edge_prune='DEGREE')
         total_length_chains = np.sum([len(x) for x in self.pg._included_chains.values()])
@@ -65,19 +96,6 @@ class PDBGroupProcess(unittest.TestCase):
         self.pg.generate_graph_database(sub=['Y','F'])
         self.pg.find_subgraph('WWW*')
         assert len(self.pg.subgraph_patterns) == 3
-
-    def test_clustering(self):
-        self.pg.process_emaps(edge_prune='DEGREE')
-        self.pg.generate_graph_database()
-        self.pg.find_subgraph('WWW#')
-        sg = self.pg.subgraph_patterns['1_WWW#_14']
-        sg.find_protein_subgraphs(clustering_option="structural")
-        assert len(sg.protein_subgraphs)==137
-        g1 = sg.groups[1]
-        assert len(g1) == 12
-        sg.set_clustering("sequence")
-        g1 = sg.groups[1]
-        assert len(g1) == 14
 
     def test_reports(self):
         self.pg.process_emaps(edge_prune='DEGREE')

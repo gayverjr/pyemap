@@ -15,6 +15,7 @@ from functools import total_ordering
 from .pyemap_exceptions import *
 import numpy as np
 
+
 @total_ordering
 class ShortestPath(object):
     """Data structure used to store shortest paths.
@@ -69,15 +70,14 @@ class ShortestPath(object):
         return self.length < other.length
 
     def __str__(self):
-        rounded_edges = [np.round(x,2) for x in self.edges]
+        rounded_edges = [np.round(x, 2) for x in self.edges]
         printline = self.path_id + ": " + \
             str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2))) + "\n" + \
             "Edge weights: {}".format(str(rounded_edges))
         return printline
 
     def get_path_as_list(self):
-        original_list = [[self.path_id], self.path, [
-            str('{:.2f}'.format(round(self.length, 2)))]]
+        original_list = [[self.path_id], self.path, [str('{:.2f}'.format(round(self.length, 2)))]]
         merged = list(itertools.chain(*original_list))
         return merged
 
@@ -251,7 +251,7 @@ def dijkstras_shortest_paths(G, start, targets):
         except Exception as e:
             pass
     if len(shortestPaths) == 0:
-        raise PyeMapShortestPathException("No paths to the surface from "  + str(start) + " were found.")
+        raise PyeMapShortestPathException("No paths to the surface from " + str(start) + " were found.")
     shortestPaths = sorted(shortestPaths)
     branches = []
     # find the parent pathways

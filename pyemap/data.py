@@ -25,35 +25,36 @@ res_name_to_char = {
     "NME": "<",
 }
 
-res_name_to_smiles = {'ALA': '[CH3]', 
-'CYS': '*[CH2]', 
-'ASP': '*C([CH2])=O', 
-'GLU': '*C(=O)[CH2][CH2]', 
-'PHE': '[CH2]c1[cH][cH][cH][cH][cH]1', 
-'GLY': '*C(=O)[CH2]N', 
-'HIS': '[CH2]C1:*:C:*:[CH]1', 
-'ILE': '[CH3][CH][CH2][CH3]', 
-'LYS': '*[CH2][CH2][CH2][CH2]', 
-'LEU': '[CH2][CH]([CH3])[CH3]', 
-'MET': '[CH2][CH2]S[CH3]', 
-'ASN': '[CH2]C([NH2])=O', 
-'PRO': '*C(=O)[CH]1*[CH2][CH2][CH2]1', 
-'GLN': 'CCC(N)=O', 
-'ARG': '*=C([NH2])[NH][CH2][CH2][CH2]', 
-'SER': '[CH2][OH]', 
-'THR': '[CH3][CH][OH]', 
-'VAL': '[CH3][CH][CH3]', 
-'TRP': '[CH2]c1[cH][nH]c2[cH][cH][cH][cH]c12', 
-'TYR': '*c1[cH][cH]c([CH2])[cH][cH]1'}
+res_name_to_smiles = {
+    'ALA': '[CH3]',
+    'CYS': '*[CH2]',
+    'ASP': '*C([CH2])=O',
+    'GLU': '*C(=O)[CH2][CH2]',
+    'PHE': '[CH2]c1[cH][cH][cH][cH][cH]1',
+    'GLY': '*C(=O)[CH2]N',
+    'HIS': '[CH2]C1:*:C:*:[CH]1',
+    'ILE': '[CH3][CH][CH2][CH3]',
+    'LYS': '*[CH2][CH2][CH2][CH2]',
+    'LEU': '[CH2][CH]([CH3])[CH3]',
+    'MET': '[CH2][CH2]S[CH3]',
+    'ASN': '[CH2]C([NH2])=O',
+    'PRO': '*C(=O)[CH]1*[CH2][CH2][CH2]1',
+    'GLN': 'CCC(N)=O',
+    'ARG': '*=C([NH2])[NH][CH2][CH2][CH2]',
+    'SER': '[CH2][OH]',
+    'THR': '[CH3][CH][OH]',
+    'VAL': '[CH3][CH][CH3]',
+    'TRP': '[CH2]c1[cH][nH]c2[cH][cH][cH][cH]c12',
+    'TYR': '*c1[cH][cH]c([CH2])[cH][cH]1'
+}
 
 char_to_res_name = {v: k for k, v in res_name_to_char.items()}
 
-aromatic_aa = ["HIS","PHE","TRP","TYR"]
-polar_aa = ["SER","THR","CYS","PRO","ASN","GLN"]
-pos_aa = ["LYS","ARG"]
-neg_aa = ["ASP","GLU"]
-nonpolar_aa = ["GLY","ALA","VAL","LEU","MET","ILE"]
-
+aromatic_aa = ["HIS", "PHE", "TRP", "TYR"]
+polar_aa = ["SER", "THR", "CYS", "PRO", "ASN", "GLN"]
+pos_aa = ["LYS", "ARG"]
+neg_aa = ["ASP", "GLU"]
+nonpolar_aa = ["GLY", "ALA", "VAL", "LEU", "MET", "ILE"]
 
 radii = {
     'H': 1.20,
@@ -84,28 +85,27 @@ radii = {
 
 # pulled from: https://cdn.rcsb.org/wwpdb/docs/documentation/file-format/PDB_format_1992.pdf page 27
 side_chain_atoms = {
-"ALA": ['CB'],
-"CYS": ['SG'],
-"ASP": ['CG','OD1','OD2'],
-"GLU": ['CG','CD','OE1','OE2'],
-"PHE": ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2'],
-"GLY": ['CA'],
-"HIS": ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2'],
-"ILE": ['CG1','CD1','CG2'],
-"LYS": ['CG','CD','CE','NZ'],
-"LEU": ['CG','CD1','CD2'],
-"MET": ['CG','SD','CE'],
-"ASN": ['CG','OD1','AD1','AD2','ND2'],
-"PRO": ['N','CA','CD','CG','CB'],
-"GLN": ['CG','CD','OE1','AE1','NE2','AE2'],
-"ARG": ['CG','CD','NE','CZ','NH1','NH2'],
-"SER": ['OG'],
-"THR": ['OG1','CG2'],
-"VAL": ['CG1','CG2'],
-"TRP": ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
-"TYR": ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
+    "ALA": ['CB'],
+    "CYS": ['SG'],
+    "ASP": ['CG', 'OD1', 'OD2'],
+    "GLU": ['CG', 'CD', 'OE1', 'OE2'],
+    "PHE": ['CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2'],
+    "GLY": ['CA'],
+    "HIS": ['CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2'],
+    "ILE": ['CG1', 'CD1', 'CG2'],
+    "LYS": ['CG', 'CD', 'CE', 'NZ'],
+    "LEU": ['CG', 'CD1', 'CD2'],
+    "MET": ['CG', 'SD', 'CE'],
+    "ASN": ['CG', 'OD1', 'AD1', 'AD2', 'ND2'],
+    "PRO": ['N', 'CA', 'CD', 'CG', 'CB'],
+    "GLN": ['CG', 'CD', 'OE1', 'AE1', 'NE2', 'AE2'],
+    "ARG": ['CG', 'CD', 'NE', 'CZ', 'NH1', 'NH2'],
+    "SER": ['OG'],
+    "THR": ['OG1', 'CG2'],
+    "VAL": ['CG1', 'CG2'],
+    "TRP": ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
+    "TYR": ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
 }
-
 '''
 TRP_sc = ['CB','CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
 TYR_sc = ['CB','CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
@@ -175,8 +175,7 @@ SB_std_dev = {
 
 import os
 # clusters
-clusters = os.listdir(os.path.abspath(
-    os.path.dirname(__file__)) + '/data/clusters')
+clusters = os.listdir(os.path.abspath(os.path.dirname(__file__)) + '/data/clusters')
 clusters = [cluster.replace('.svg', '') for cluster in clusters]
 
-metal_ligands = {'CU':2,'FE':3,'FE2':2,'MN':2,'CO':2,'NI':2,'MO':0,'4MO':4,'CU1':1}
+metal_ligands = {'CU': 2, 'FE': 3, 'FE2': 2, 'MN': 2, 'CO': 2, 'NI': 2, 'MO': 0, '4MO': 4, 'CU1': 1}

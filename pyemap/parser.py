@@ -9,7 +9,7 @@ from Bio.PDB import PDBIO, FastMMCIFParser, PDBParser
 from .custom_residues import process_custom_residues
 from .data import res_name_to_char
 from .emap import emap
-from . pyemap_exceptions import *
+from .pyemap_exceptions import *
 import os
 from pathlib import Path
 import requests
@@ -37,6 +37,7 @@ def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/
         print(e)
         raise PyeMapParseException("Could not fetch PDB {}.".format(pdbcode)) from e
 
+
 def fetch_and_parse(pdb_id, dest="", quiet=False):
     '''Fetches pdb from database and parses the file.
 
@@ -58,10 +59,11 @@ def fetch_and_parse(pdb_id, dest="", quiet=False):
         dest = os.getcwd()
     if not quiet:
         print("Fetching PDB " + pdb_id + " from RSCB Database...")
-    outfnm = download_pdb(pdb_id,dest)
+    outfnm = download_pdb(pdb_id, dest)
     if not quiet:
         print("Success!")
     return parse(outfnm, quiet)
+
 
 def parse(filename, quiet=True):
     '''Parses pdb file and returns emap object.
@@ -103,7 +105,7 @@ def parse(filename, quiet=True):
     for model in structure.get_models():
         num_models += 1
     if num_models < 1:
-        raise PyeMapParseException("Error: structure " + structure.header['idcode'] +  " does not contain any models.")
+        raise PyeMapParseException("Error: structure " + structure.header['idcode'] + " does not contain any models.")
     if structure.header['idcode'] == "":
         idcode = "CUST"
     else:
@@ -120,8 +122,8 @@ def parse(filename, quiet=True):
                 residue.get_full_id()
                 non_standard_residue_list.append(residue.copy())
                 residue.sequence_index = 'X'
-            seq_idx+=1
-        seq_str = ">"+ idcode + ":" + chain.id + "\n"+''.join(seq)
+            seq_idx += 1
+        seq_str = ">" + idcode + ":" + chain.id + "\n" + ''.join(seq)
         sequences[chain.id] = seq_str
     custom_residue_list = process_custom_residues(non_standard_residue_list)
     if not quiet:
@@ -129,4 +131,3 @@ def parse(filename, quiet=True):
     my_emap = emap(filename, idcode, custom_residue_list, chain_list, sequences)
     my_emap._structure = structure
     return my_emap
-

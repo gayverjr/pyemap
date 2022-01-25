@@ -37,6 +37,7 @@ def moieties_on_chains(chains, moieties):
     else:
         return moieties
 
+
 class PDBGroup():
     '''
     Contains all information regarding the group of proteins being analyzed, and all of the 
@@ -56,6 +57,7 @@ class PDBGroup():
         List of sequences in FASTA format after multiple sequence alignment
 
     '''
+
     def __init__(self, title):
         ''' Initializes PDBGroup object
         
@@ -68,8 +70,8 @@ class PDBGroup():
         self.title = title
         self.emaps = {}
         self.subgraph_patterns = {}
-        self.fasta=""
-        self.aligned_fasta=""
+        self.fasta = ""
+        self.aligned_fasta = ""
         self._emaps = {}
         self._node_labels = {}
         self._residue_categories = {}
@@ -112,8 +114,8 @@ class PDBGroup():
         self._include_residues = []
         self._sequences = {}
         self._aligned_sequences = {}
-        self.fasta=""
-        self.aligned_fasta=""
+        self.fasta = ""
+        self.aligned_fasta = ""
         self.emaps = self._emaps.copy()
         self._clean_graph_database()
 
@@ -140,17 +142,17 @@ class PDBGroup():
             for pdb_id, emap in self.emaps.items():
                 for chain in emap.active_chains:
                     inp.write(emap.sequences[chain] + "\n")
-                    orig_fasta+=emap.sequences[chain] + "\n"
+                    orig_fasta += emap.sequences[chain] + "\n"
             inp.close()
             try:
                 muscle_cline = MuscleCommandline(input=inp.name, out=out.name)
                 muscle_cline()
                 seqIO = SeqIO.parse(out, "fasta")
-                aligned_fasta=""
+                aligned_fasta = ""
                 for record in seqIO:
                     self._aligned_sequences[record.id] = record.seq
-                    aligned_fasta+='>'+str(record.id)+'\n'
-                    aligned_fasta+=str(record.seq)+'\n'
+                    aligned_fasta += '>' + str(record.id) + '\n'
+                    aligned_fasta += str(record.seq) + '\n'
                 self.fasta = orig_fasta
                 self.aligned_fasta = aligned_fasta
                 # now lets save the updated sequence numbers
@@ -201,24 +203,25 @@ class PDBGroup():
         '''
         self._reset_process()
         try:
-            if chains.upper()=='ALL':
+            if chains.upper() == 'ALL':
                 _chains = {}
                 for pdb_id in self._emaps:
                     _chains[pdb_id] = self._emaps[pdb_id].chains
-        except Exception: 
+        except Exception:
             _chains = chains.copy()
         _eta_moieties = eta_moieties.copy()
         for pdb_id in self.emaps:
             if pdb_id not in _chains:
                 _chains[pdb_id] = [self.emaps[pdb_id].chains[0]]
             if pdb_id not in _eta_moieties:
-                _eta_moieties[pdb_id] = [item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in _chains[pdb_id]]
+                _eta_moieties[pdb_id] = [
+                    item for item in self.emaps[pdb_id].eta_moieties.keys() if extract_chain(item) in _chains[pdb_id]
+                ]
             _eta_moieties[pdb_id] = moieties_on_chains(_chains[pdb_id], _eta_moieties[pdb_id])
         self._emap_parameters = kwargs
         self._included_chains = _chains
         self._included_eta_moieties = _eta_moieties
         self._include_residues = include_residues
-
 
     def _process_emap(self, pdb_id):
         '''Processes :class:`~pyemap.emap` object in order to generate protein graph. 
@@ -268,11 +271,7 @@ class PDBGroup():
         self._setup_process(chains, eta_moieties, include_residues, **kwargs)
         for pdb_id in self._emaps:
             try:
-                process(self.emaps[pdb_id],
-                        chains=self._included_chains[pdb_id],
-                        eta_moieties=self._included_eta_moieties[pdb_id],
-                        include_residues=self._include_residues,
-                        **kwargs)
+                self._process_emap(pdb_id)
             except Exception as e:
                 remove_pdbs.append(pdb_id)
                 warnings.warn("Could not generate graph for: " + pdb_id + ". It will not be included in the analysis.")
@@ -291,7 +290,7 @@ class PDBGroup():
             for node in protein_graph.nodes:
                 protein_graph.nodes[node]['num_label'] = get_numerical_node_label(node, self._node_labels)
             for edge in protein_graph.edges:
-                protein_graph.edges[edge]['num_label'] = get_edge_label(protein_graph, edge, self._edge_thresholds)                
+                protein_graph.edges[edge]['num_label'] = get_edge_label(protein_graph, edge, self._edge_thresholds)
 
     def _report_header(self):
         ''' Generates header for reports.
@@ -398,7 +397,7 @@ class PDBGroup():
         '''
         if emap_obj.pdb_id not in self._emaps:
             self.emaps[emap_obj.pdb_id] = emap_obj
-            self._emaps[emap_obj.pdb_id] =  emap_obj
+            self._emaps[emap_obj.pdb_id] = emap_obj
         else:
             print("An emap object with PDB ID:" + str(emap_obj.pdb_id) + " is already in the data set. Skipping...")
 
@@ -420,28 +419,28 @@ class PDBGroup():
         '''
         self._clean_graph_database()
         try:
-            for i in range(0,len(edge_thresh)-1):
+            for i in range(0, len(edge_thresh) - 1):
                 assert float(edge_thresh[i]) <= float(edge_thresh[i + 1])
             self._edge_thresholds = edge_thresh.copy()
         except Exception as e:
             raise PyeMapGraphDatabaseException("Invalid specification of edge thresholds.") from e
         try:
             for x in sub:
-              assert x in char_to_res_name  
-              assert x.upper() in self._include_residues
-            self._substitutions =[x.upper() for x in sub]
+                assert x in char_to_res_name
+                assert x.upper() in self._include_residues
+            self._substitutions = [x.upper() for x in sub]
             self._set_node_labels()
         except Exception as e:
             raise PyeMapGraphDatabaseException("Invalid specification of substitutions.") from e
         f = StringIO("")
-        for i,key in enumerate(self.emaps):
+        for i, key in enumerate(self.emaps):
             G = self.emaps[key].init_graph
             f.write("t # " + str(i) + "\n")
             for j, node in enumerate(G.nodes):
                 f.write("v " + str(j) + " " + str(get_numerical_node_label(node, self._node_labels)) + "\n")
             for j, edge in enumerate(G.edges):
                 f.write("e " + str(list(G.nodes()).index(edge[0])) + " " + str(list(G.nodes()).index(edge[1])) + " " +
-                        str(get_edge_label(G, edge, self._edge_thresholds)+1) + "\n")
+                        str(get_edge_label(G, edge, self._edge_thresholds) + 1) + "\n")
         f.write("t # -1")
         self._graph_database = f.getvalue()
         f.close()
@@ -516,7 +515,7 @@ class PDBGroup():
                         if len(line.split()) > 1 and line.split()[0] == "e":
                             idx1 = int(line.split()[1])
                             idx2 = int(line.split()[2])
-                            edge_label = int(line.split()[3])-1
+                            edge_label = int(line.split()[3]) - 1
                             G.add_edge(idx1, idx2, label=edge_label)
                             G.edges[(idx1, idx2)]['num_label'] = edge_label
                         if "where" in line:
@@ -532,7 +531,9 @@ class PDBGroup():
                 line_idx += 1
             buff.close()
         subgraphs.sort(reverse=True)
-        for graph_number,sg in enumerate(subgraphs):
+        if len(subgraphs) == 0:
+            warnings.warn("Warning: No subgraphs were found with the current parameters.")
+        for graph_number, sg in enumerate(subgraphs):
             sg._update_id(graph_number)
             self.subgraph_patterns[sg.id] = sg
 
@@ -546,9 +547,9 @@ class PDBGroup():
         '''
         if self.fasta == self.aligned_fasta:
             warnings.warn("Warning: sequences have not been aligned.")
-        if dest=="":
+        if dest == "":
             dest = 'data_aligned.fasta'
-        with open(dest,'w') as f:
+        with open(dest, 'w') as f:
             f.write(self.aligned_fasta)
 
     def find_subgraph(self, graph_specification):
@@ -584,7 +585,8 @@ class PDBGroup():
         self._gspan_parameters["graph_specification"] = graph_specification
         try:
             graph_specification = graph_specification.upper()
-            node_combs, edge_combs, edges = nodes_and_edges_from_smiles(graph_specification, self._edge_thresholds, list(self._residue_categories.values()))
+            node_combs, edge_combs, edges = nodes_and_edges_from_smiles(graph_specification, self._edge_thresholds,
+                                                                        list(self._residue_categories.values()))
         except Exception:
             raise PyeMapMiningException("Could not parse graph from string.")
         try:
@@ -596,7 +598,7 @@ class PDBGroup():
                     G.nodes[node_idx]['label'] = node
                     G.nodes[node_idx]['num_label'] = self._node_labels[node]
                 for edge in edges:
-                    G.add_edge(edge[0],edge[1])
+                    G.add_edge(edge[0], edge[1])
                 for edge_comb in edge_combs:
                     for j, edge in enumerate(G.edges):
                         G.edges[edge]['num_label'] = edge_comb[j]
@@ -607,9 +609,13 @@ class PDBGroup():
                         if GM.subgraph_is_monomorphic():
                             support[pdb_id] = self.emaps[pdb_id]
                     if len(support) > 0:
-                        frequent_subgraphs.append(SubgraphPattern(G,len(frequent_subgraphs),support,self._node_labels,self._edge_thresholds))
+                        frequent_subgraphs.append(
+                            SubgraphPattern(G, len(frequent_subgraphs), support, self._node_labels,
+                                            self._edge_thresholds))
             frequent_subgraphs.sort(reverse=True)
-            for graph_number,fs in enumerate(frequent_subgraphs):
+            if len(frequent_subgraphs) == 0:
+                warnings.warn("Warning: No subgraphs were found using the specified string.")
+            for graph_number, fs in enumerate(frequent_subgraphs):
                 fs._update_id(graph_number)
                 self.subgraph_patterns[fs.id] = fs
         except Exception as e:

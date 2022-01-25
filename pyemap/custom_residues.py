@@ -4,8 +4,9 @@
 """
 import networkx as nx
 import numpy as np
-from .data import SB_means,SB_std_dev, clusters, metal_ligands
+from .data import SB_means, SB_std_dev, clusters, metal_ligands
 from .structures import cleanup_bonding, remove_side_chains
+
 
 def is_pi_bonded(cur_atom, next_atom):
     """Determines whether two atoms are pi bonded based on experimental bond lengths.
@@ -43,6 +44,7 @@ def is_pi_bonded(cur_atom, next_atom):
     else:
         return False
 
+
 def dist(x, y):
     """Returns Euclidean distance between two 3 dimensional points.
 
@@ -60,6 +62,7 @@ def dist(x, y):
 
     """
     return np.sqrt(np.sum((x - y)**2))
+
 
 def find_conjugated_systems(atoms, res_names):
     """Finds conjugated systems within a BioPython residue object, and returns them as individual customized BioPython
@@ -92,8 +95,7 @@ def find_conjugated_systems(atoms, res_names):
                     cust_graph.nodes[k]["coords"] = atoms[k].coord
     # now we have a forest, let's get each individual tree (only take cycles or bigger than 10)
     subgraphs = []
-    all_subgraphs = (cust_graph.subgraph(c)
-                     for c in nx.connected_components(cust_graph))
+    all_subgraphs = (cust_graph.subgraph(c) for c in nx.connected_components(cust_graph))
     for sub_g in all_subgraphs:
         graph = sub_g.copy()
         if nx.cycle_basis(graph):
@@ -107,9 +109,8 @@ def find_conjugated_systems(atoms, res_names):
 
     # iterate over all of the subgraphs
     for graph in subgraphs:
-        res_name = str(atoms[0].parent.get_resname()) + str(
-            atoms[0].get_full_id()[3][1]) + "(" + str(
-                atoms[0].get_full_id()[2]) + ")"
+        res_name = str(atoms[0].parent.get_resname()) + str(atoms[0].get_full_id()[3][1]) + "(" + str(
+            atoms[0].get_full_id()[2]) + ")"
         res_name = res_name.strip()
         if len(subgraphs) > 1:
             res_name += '-' + str(count)
@@ -123,6 +124,7 @@ def find_conjugated_systems(atoms, res_names):
         res_names.append(res_name)
 
     return custom_res_list
+
 
 def create_custom_residue(atm_list, res_name):
     """Generates customized BioPython residue object corresponding to an ETA moiety.
@@ -158,6 +160,7 @@ def create_custom_residue(atm_list, res_name):
             custom_res.detach_child(atm_list[k].id)
     return custom_res
 
+
 def process_custom_residues(non_standard_residue_list):
     """Identifies and returns customized Bio.PDB.Residue objects corresponding to electron transfer active moieties.
 
@@ -178,8 +181,7 @@ def process_custom_residues(non_standard_residue_list):
 
     for residue in non_standard_residue_list:
         atm_list = list(residue.get_atoms())
-        conj_systems = find_conjugated_systems(
-            atm_list, res_names)
+        conj_systems = find_conjugated_systems(atm_list, res_names)
         if conj_systems:
             for system in conj_systems:
                 res_names.append(system.resname)
@@ -189,8 +191,7 @@ def process_custom_residues(non_standard_residue_list):
     for residue in non_standard_residue_list:
         if residue.resname in clusters or residue.resname.upper() in metal_ligands:
             atm_list = list(residue.get_atoms())
-            res_name = str(atm_list[0].parent.get_resname()) + str(
-                atm_list[0].get_full_id()[3][1]) + "(" + str(
-                    atm_list[0].get_full_id()[2]) + ")"
+            res_name = str(atm_list[0].parent.get_resname()) + str(atm_list[0].get_full_id()[3][1]) + "(" + str(
+                atm_list[0].get_full_id()[2]) + ")"
             custom_res.append(create_custom_residue(atm_list, res_name))
     return custom_res
