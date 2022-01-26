@@ -191,6 +191,14 @@ class emap():
             residue.smiles = smiles_str
         self.eta_moieties[residue.resname] = residue
 
+    def visualize_pathway_in_nglview(self,ptid,view):
+        '''Visualize pathway in nglview widget'''
+        pt = self.paths[ptid]
+        for i in range(0,len(pt.selection_strs)):
+            first_atm_select = pt.selection_strs[i][:pt.selection_strs[i].index(')')+1]+"]"
+            view.add_representation('ball+stick',sele=pt.selection_strs[i],color=pt.color_list[i])
+            view.add_representation('label',color="black",sele=first_atm_select,labelText=pt.label_texts[i])
+
     def _visualize_pathway(self, pathway, yens):
         '''
         '''
