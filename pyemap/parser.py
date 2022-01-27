@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 
 
-def download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
+def _download_pdb(pdbcode, datadir, downloadurl="https://files.rcsb.org/download/"):
     """
     Downloads a PDB file from the Internet and saves it in a data directory.
     :param pdbcode: The standard PDB ID e.g. '3ICB' or '3icb'
@@ -59,7 +59,7 @@ def fetch_and_parse(pdb_id, dest="", quiet=False):
         dest = os.getcwd()
     if not quiet:
         print("Fetching PDB " + pdb_id + " from RSCB Database...")
-    outfnm = download_pdb(pdb_id, dest)
+    outfnm = _download_pdb(pdb_id, dest)
     if not quiet:
         print("Success!")
     return parse(outfnm, quiet)

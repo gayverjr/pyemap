@@ -1,5 +1,8 @@
+.. _spa:
+
 Single Protein
 ==============================
+
 
 .. toctree::
    :maxdepth: 2

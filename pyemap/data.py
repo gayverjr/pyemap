@@ -106,19 +106,7 @@ side_chain_atoms = {
     "TRP": ['CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
     "TYR": ['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
 }
-'''
-TRP_sc = ['CB','CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2']
-TYR_sc = ['CB','CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH']
-PHE_sc = ['CB','CG', 'CD1', 'CD2', 'CE1', 'CZ', 'CE2']
-HIS_sc = ['CB','CG', 'ND1', 'CE1', 'NE2', 'CD2', 'AD1', 'AE1', 'AE2', 'AD2']
 
-for key in side_chain_atoms:
-    l1 = side_chain_atoms[key]
-    if not key=="ALA":
-        if l1:
-            l1.remove('CB')
-    side_chain_atoms[key] = l1
-'''
 
 SB_means = {
     'CC': 1.54,
@@ -178,4 +166,5 @@ import os
 clusters = os.listdir(os.path.abspath(os.path.dirname(__file__)) + '/data/clusters')
 clusters = [cluster.replace('.svg', '') for cluster in clusters]
 
-metal_ligands = {'CU': 2, 'FE': 3, 'FE2': 2, 'MN': 2, 'CO': 2, 'NI': 2, 'MO': 0, '4MO': 4, 'CU1': 1}
+metal_ligands = {'CU1': 1, 'CU': 2, 'CU3': 3,  'FE': 3, 'FE2': 2, 'MN': 2, 'MN3': 3,   
+'CO': 2, '3CO': 3, 'CR': 3,  'NI': 2, 'MO': 0, '4MO': 4, '6MO': 6}

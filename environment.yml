@@ -9,4 +9,7 @@ dependencies:
    - biopython
    - pillow
    - networkx 
-   - svglib
+   - pysmiles
+   - requests
+   - cariosvg
+   - gspan_mining

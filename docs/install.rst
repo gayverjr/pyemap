@@ -32,8 +32,8 @@ exposed or buried. Please install these packages separately if you need that fun
 
 **Pip**
 
-Pip installation will only install python dependencies, and requires Graphviz_ in order to work.
-This is sufficient to run PyeMap analysis and view graph images, but some features will be missing::
+Pip installation will only install python dependencies, and requires a working Graphviz_ installation.
+This is sufficient to run PyeMap analysis, but some features will be missing::
 
     $ pip install pyemap
 
@@ -47,14 +47,6 @@ For full functionality, install the following packages:
 All of these packages can be downloaded free of charge from their respective owners, and build recipes are available on the
 Anaconda_ cloud for some platforms.
 
-**Graphviz**
-
-PyeMap uses the Graphviz_ software to visualize the graphs. For graphs with <200 vertices, we use the `neato` program,
-which works by minimizing a global energy function. Within the neato program we have found that an experimental mode called `ipsep`
-(which you can read more about here_) provides the cleanest looking graphs. The versions of Graphviz distributed through conda and homebrew
-do not come with ipsep enabled. To get around this, we suggest building graphviz from source, and adding a compiler argument which
-enables ipsep. Here's how to do it:
-
 .. _here: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.591.840&rep=rep1&type=pdf
 .. _MSMS: http://mgltools.scripps.edu/packages/MSMS
 .. _DSSP: https://github.com/cmbi/xssp/releases
@@ -63,15 +55,4 @@ enables ipsep. Here's how to do it:
 .. _MUSCLE: http://www.drive5.com/muscle/
 .. _RCSB: https://www.rcsb.org/
 
-First, remove any prior installations of Graphviz from your conda environment::
 
-   $ conda activate pyemap_env
-   $ conda remove graphviz --force-remove
-
-Then, download the latest Graphviz and compile from source::
-
-   $ ./configure --with-ipsepcola=yes
-   $ make
-   $ make install
-
-And then add the executables to a directory on your systems’ path.

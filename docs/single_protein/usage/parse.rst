@@ -11,5 +11,6 @@ saved to an :ref:`emap <emap>` object which is returned to the user.
 
 Parser
 -------
-.. automodule:: pyemap.parser
-   :members: 
+.. autofunction:: pyemap.parse
+
+   .. autofunction:: pyemap.fetch_and_parse

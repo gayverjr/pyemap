@@ -1,3 +1,5 @@
+.. _mining_algo:
+
 Mining
 =======
 
@@ -23,8 +25,10 @@ The technical details are beyond the scope of this documentation (and can be fou
 * gSpan is a complete algorithm, so it will find all patterns which meet a specified support threshold
 * The perfomance of gSpan is greatly sped up by increasing the minimum support threshold, as this allows more aggressive pruning of candidate subgraphs
 
- In addition to the support number, one can also specify a minimum or maximum number of vertices for the identified subgraph patterns. For a full list 
- of accepted kwargs, please refer to the gspan_mining package's repository_.
+In addition to the support number, one can also specify a minimum or maximum number of vertices for the identified subgraph patterns. For a full list 
+of accepted kwargs, please refer to the gspan_mining package's repository_.
+
+To perform general pattern mining with PyeMap, use the :func:`~pyemap.graph_mining.PDBGroup.run_gspan` function.
 
 
 .. _Python Implementation: https://pypi.org/project/gspan-mining/
@@ -42,8 +46,6 @@ Search for all subgraph patterns comprised of 4-6 nodes with a support number of
     pg.run_gspan(10,min_num_vertices=4,max_num_vertices=6)
 
 
-
-
 Specific Pattern Mining
 ------------------------
 Instead of searching for all subgraphs up to a given support threshold, one instead may be interested in finding protein 
@@ -52,8 +54,8 @@ search each PDB for a monomorphism using the NetworkX implementation of the VF2 
 
 .. _documentation: https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
 
-In PyeMap, this is done for protein graphs using the :py:func:`pyemap.graph_mining.PDBGroup.find_subgraph` function.
-:py:func:`pyemap.graph_mining.PDBGroup.find_subgraph` accepts a string representation of a linear chain, 
+In PyeMap, this is done for protein graphs using the :py:func:`~pyemap.graph_mining.PDBGroup.find_subgraph` function.
+:py:func:`~pyemap.graph_mining.PDBGroup.find_subgraph` accepts a string representation of a subgraph, 
 where each character is one of the following:
 
 * 1-character amino acid code for a standard residue
@@ -61,14 +63,20 @@ where each character is one of the following:
 * # for non-protein residue
 * \* as a wildcard character
 
+Branching can be specified using a syntax similar to the SMILES_ format, where there is no specification of bonding and each amino acid or special 
+character described above must be separated by brackets [] (see example below).
+
 If edge thresholds are used (see the classification section), the search will be performed for all possible combinations of edges, and thus 
 several subgraph patterns will be found for a set of residue types. If the \* wildcard character is used, subgraph pattern(s) will be found 
 for each combination of each residue type replacing the * placeholder character(s), including the special 'X' and '#' residue types.
 
-**Example**
+**Examples**
 
 Search for all subgraph patterns matching WWW#
 
 .. code-block:: python
 
     pg.find_subgraph('WWW#')
+
+
+.. _SMILES: http://opensmiles.org/opensmiles.html

@@ -12,26 +12,79 @@ are considered in the distance calculations. From the distance matrix,
 an undirected weighted graph is constructed using NetworkX_, with
 the calculated distances as weights. 
 
-One of two algorithms are then used to prune the edges of the graph, which is specified by the `edge_prune` keyword argument.
+One of two algorithms are then used to prune the edges of the graph, which is specified by the :attr:`edge_prune` keyword argument
+to :func:`~pyemap.process_data.process`.
 
-**Percent-based algorithm**
+**Percent-based algorithm (default)**
 
-The following thresholds are then imposed on the graph:
+This algorithm considers only the smallest :attr:`percent_edges` % of edges by weight per node, and then prunes based on the mean and standard deviation 
+of the weights of the remaining edges.
 
-* Only the shortest `percent_edges`% of edges or 2 edges, whichever is greater, are kept for each vertex
-* Of those edges, all edges > `distance_cutoff` are removed
-* Of the remaining edges, only those with length :math:`l \leq \overline{l}_{vertex} + n\sigma_{vertex}` are kept, where :math:`σ_{vertex}` is the standard deviation in length in the remaining set of edges for given vertex, and n = `num_std_dev_edges` 
-* All disconnected vertices are removed
+.. _percent_prune:
+.. pcode::
 
-Specify `edge_prune` as 1 to use this algorithm.
+    \begin{algorithm}
+    \caption{Prune by Percent}
+    \begin{algorithmic}
+    \PROCEDURE{prune}{G(V,E), percent\_edges, num\_st\_dev\_edges, distance\_cutoff}  
+        \FOR{v in V}
+            \FOR {e in v.edges}
+            \IF{e['weight'] > distance\_cutoff or e['weight'] > percentileweight(percent\_edges)}
+               \STATE G.remove(e)
+            \ENDIF
+            \ENDFOR
+            \STATE $\bar{l}$ = mean\_weight(v.edges)
+            \STATE $\sigma$ = st\_dev\_weight(v.edges)
+            \FOR {e in v.edges}
+            \IF{e['weight'] > $\bar{l}$ + num\_st\_dev\_edges $\cdot$  $\sigma$}
+               \STATE G.remove(e)
+            \ENDIF
+            \ENDFOR
+        \ENDFOR
+    \ENDPROCEDURE
+    \end{algorithmic}
+    \end{algorithm}
+
+:attr:`percent_edges`, :attr:`num_st_dev_edges`, and :attr:`distance_cutoff` are specified as keyword arguments to 
+:func:`~pyemap.process_data.process`. 
+
+Specify :attr:`edge_prune='PERCENT'` to use this algorithm.
 
 **Degree-based algorithm**
 
-First, all edges > `distance_cutoff` are removed. Then, for each node, the edges are sorted by weight, and all edges except the smallest 
-`max_degree` are marked as candidates for removal. We then sort this group of edges by weight, and iterate over all edges starting from the largest edge. 
-At each iteration, we remove the edge from the graph if the degree of both associated is larger than `max_degree`.
+This algorithm greedily prunes the largest edges by weight of the graph until each node has at most :attr:`edge_prune` neighbors.
 
-Specify `edge_prune` as 0 to use this algorithm.
+.. _degree_prune:
+.. pcode::
+
+    \begin{algorithm}
+    \caption{Prune by Degree}
+    \begin{algorithmic}
+    \PROCEDURE{prune}{G(V,E), max\_degree, distance\_cutoff}  
+        \STATE removal\_candidates = []
+        \FOR{e in E}
+            \IF{e['weight'] > distance\_cutoff}
+               \STATE G.remove(e)
+            \ENDIF
+            \ENDFOR
+        \FOR{v in V}
+            \IF{degree(v) > D}
+               \STATE removal\_candidates.append(v.edges)
+            \ENDIF
+        \ENDFOR
+        \STATE sort\_by\_weight\_descending(removal\_candidates)
+        \FOR{e(u,v) in removal\_candidates}
+            \IF {degree(u) > max\_degree or degree(v) > max\_degree}
+               \STATE G.remove(e)
+            \ENDIF
+         \ENDFOR
+    \ENDPROCEDURE
+    \end{algorithmic}
+    \end{algorithm}
+
+:attr:`max_degree` and attr:`distance_cutoff`: are specified as keywords arguments to :func:`~pyemap.process_data.process`.
+
+Specify :attr:`edge_prune='DEGREE'` to use this algorithm. This algorithm is recommended when doing :ref:`Protein Graph Mining <pgm>`.
 
 **Penalty Functions**
 
@@ -57,7 +110,7 @@ Distance thresholds and penalty function parameters can be modified at the proce
 Visualization and further analysis
 -----------------------------------
 The graph can be interacted with and written to file using the :class:`~pyemap.emap` object. The graph is visualized using PyGraphviz_ and 
-Graphviz_. The graph is stored as a :class:`networkx.Graph` object in the `init_graph` and `paths_graph` attributes of the :class:`~pyemap.emap` object.
+Graphviz_. The graph is stored as a :class:`networkx.Graph` object in the :attr:`init_graph` and :attr:`paths_graph` attributes of the :class:`~pyemap.emap` object.
 
 .. _PyGraphviz: https://pygraphviz.github.io/
 .. _Graphviz: http://www.graphviz.org/
@@ -73,7 +126,7 @@ Source
 .. autosummary::
    :toctree: autosummary
 
+   pyemap.process_data.filter_by_degree
+   pyemap.process_data.filter_by_percent
    pyemap.process_data.create_graph
    pyemap.process_data.pathways_model
-   pyemap.process_data.closest_atom_dmatrix
-   pyemap.process_data.com_dmatrix

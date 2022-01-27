@@ -19,7 +19,7 @@ residue is buried within the protein structure. The parameter was first introduc
 Chakravarty [Chakravarty1999]_ and coworkers, and is computed in PyeMap using the freely available program MSMS. MSMS computes a solvent-excluded surface
 by rolling a probe sphere along the surface of the protein, which is represented as 
 atomic spheres. The boundary of the volume reachable by the probe is taken to be the 
-solvent-excluded surface The residue depth for each residue is calculated as the 
+solvent-excluded surface. The residue depth for each residue is calculated as the 
 average distance of its respective atoms from the solvent-excluded surface [Sanner1996]_. In PyeMap, 
 the threshold for classifying residues as buried/exposed is:
 
@@ -28,10 +28,12 @@ the threshold for classifying residues as buried/exposed is:
 
 which is the threshold proposed by Tan and coworkers [Tan2009]_. Residues
 3.03 Å and shallower will be classified as exposed in the final graph;
-those deeper will be classified as buried.
+those deeper will be classified as buried. This threshold can be customized by 
+passing the the :attr:`rd_thresh` keyword argument
+to :func:`~pyemap.process_data.process`.
 
-Please note that MSMS is not available on Mac OS Catalina, and therefore 
-residue depth cannot be used on that platform.
+Please note that MSMS is not available on Mac OS > 10.15, as newer Mac OS do not 
+support 32-bit applications.
 
 Relative Solvent Accessibility
 -------------------------------
@@ -62,7 +64,9 @@ In PyeMap, the RSA threshold chosen for exposed residues is:
 
 as recommended by Tien and coworkers. Residues with RSA greater
 than equal to 0.05 will be classified as exposed, those with lower RSA
-values will be classified as buried.
+values will be classified as buried. This threshold can be customized by 
+passing the the :attr:`rsa_thresh` keyword argument
+to :func:`~pyemap.process_data.process`.
 
 Source
 ------
