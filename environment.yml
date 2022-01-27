@@ -4,14 +4,15 @@ channels:
 dependencies:
    - rdkit
    - pygraphviz
-   - pip
+   - pip:
+      - cariosvg
+      - gspan_mining
+      - sphinxcontrib-pseudocode
+      - pysmiles
    - numpy
    - scipy
    - biopython
    - pillow
    - networkx 
-   - pysmiles
    - requests
-   - cariosvg
-   - gspan_mining
-   - sphinxcontrib-pseudocode
+
