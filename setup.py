@@ -21,13 +21,12 @@ DOCLINES = (__doc__ or '').split("\n")
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
 
-
 setup(
     # Self-descriptive entries which should always be present
     name='pyemap',
     author='James Gayvert',
     author_email='jrg444@gmail.com',
-    description= DOCLINES[0],
+    description=DOCLINES[0],
     long_description="\n".join(DOCLINES[2:]),
     version="2.0.0",
     license='BSD-3-Clause',
@@ -47,18 +46,11 @@ setup(
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    install_requires=['numpy',
-    				  'networkx',
-    				  'biopython',
-    			      'scipy',
-    				  'pillow',
-                      'pygraphviz',
-                      'gspan_mining',
-                      'requests',
-                      'cairosvg',
-                      'pysmiles'
-                      ]
-    				   # Required packages, pulls from pip if needed; do not use for Conda deployment
+    install_requires=[
+        'numpy', 'networkx', 'biopython', 'scipy', 'pillow', 'pygraphviz', 'gspan_mining', 'requests', 'cairosvg',
+        'pysmiles'
+    ]
+    # Required packages, pulls from pip if needed; do not use for Conda deployment
     # platforms=['Linux',
     #            'Mac OS-X',
     #            'Unix',
@@ -67,5 +59,4 @@ setup(
 
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     # zip_safe=False,
-
 )

@@ -8,9 +8,9 @@ Overview of PyeMap
 .. image:: https://github.com/gayverjr/pyemap/workflows/ubuntu/badge.svg
    :target: https://github.com/gayverjr/pyemap/actions
 .. image:: https://codecov.io/gh/gayverjr/pyemap/branch/main/graph/badge.svg
-  :target: https://codecov.io/gh/gayverjr/pyemap/branch/main
-
-- Website:  https://emap.bu.edu
+   :target: https://codecov.io/gh/gayverjr/pyemap/branch/main
+.. image:: https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg
+   :target: https://emap.bu.edu/
 
 PyeMap is a python package aimed at automatic identification of electron and hole transfer
 pathways in proteins. The analysis is based on a coarse-grained version of Beratan and
