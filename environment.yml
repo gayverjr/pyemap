@@ -7,7 +7,6 @@ dependencies:
    - pip:
       - cairosvg
       - gspan_mining
-      - sphinxcontrib-pseudocode
       - pysmiles
    - numpy
    - scipy

@@ -20,8 +20,9 @@ to :func:`~pyemap.process_data.process`.
 This algorithm considers only the smallest :attr:`percent_edges` % of edges by weight per node, and then prunes based on the mean and standard deviation 
 of the weights of the remaining edges.
 
-.. _percent_prune:
-.. pcode::
+..
+ .. _percent_prune:
+ .. pcode::
 
     \begin{algorithm}
     \caption{Prune by Percent}
@@ -45,6 +46,11 @@ of the weights of the remaining edges.
     \end{algorithmic}
     \end{algorithm}
 
+..
+
+.. image:: images/algorithm1.png
+
+
 :attr:`percent_edges`, :attr:`num_st_dev_edges`, and :attr:`distance_cutoff` are specified as keyword arguments to 
 :func:`~pyemap.process_data.process`. 
 
@@ -54,8 +60,9 @@ Specify :attr:`edge_prune='PERCENT'` to use this algorithm.
 
 This algorithm greedily prunes the largest edges by weight of the graph until each node has at most :attr:`edge_prune` neighbors.
 
-.. _degree_prune:
-.. pcode::
+..
+   .. _degree_prune:
+   .. pcode::
 
     \begin{algorithm}
     \caption{Prune by Degree}
@@ -81,6 +88,9 @@ This algorithm greedily prunes the largest edges by weight of the graph until ea
     \ENDPROCEDURE
     \end{algorithmic}
     \end{algorithm}
+..
+
+.. image:: images/algorithm2.png
 
 :attr:`max_degree` and attr:`distance_cutoff`: are specified as keywords arguments to :func:`~pyemap.process_data.process`.
 
