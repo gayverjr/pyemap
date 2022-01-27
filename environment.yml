@@ -5,7 +5,7 @@ dependencies:
    - rdkit
    - pygraphviz
    - pip:
-      - cariosvg
+      - cairosvg
       - gspan_mining
       - sphinxcontrib-pseudocode
       - pysmiles
