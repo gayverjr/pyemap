@@ -4,6 +4,7 @@ channels:
 dependencies:
    - rdkit
    - pygraphviz
+   - pip
    - numpy
    - scipy
    - biopython
@@ -13,3 +14,4 @@ dependencies:
    - requests
    - cariosvg
    - gspan_mining
+   - sphinxcontrib-pseudocode
