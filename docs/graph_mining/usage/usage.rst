@@ -1,4 +1,4 @@
-Basic Usage
+Usage
 ========================
 Graph mining with PyeMap occurs in 4 steps:
 #. Generate protein graphs

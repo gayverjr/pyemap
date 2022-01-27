@@ -26,6 +26,19 @@ def get_edge_label(G, edge, edge_thresholds):
 
 
 def write_graph_smiles(generic_subgraph):
+    ''' Returns pseudo-SMILES string for supplied graph.
+
+    Parameters
+    -----------
+    generic_subgraph: :class:`networkx.Graph`
+        Graph to be transformed into string representation. The :attr:`label` attribute 
+        of each node should be set to the 1-letter amino acid code or special character.
+
+    Returns
+    --------
+    pseudosmiles: str
+        String representation of graph of interest
+    '''
     G = generic_subgraph.copy()
     element_dict = {}
     num_chars = 0

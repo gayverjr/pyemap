@@ -1,6 +1,6 @@
 Installation
 =========================================================
-PyeMap officially supports Python versions 3.6 and later, and has been tested for Linux and OSX platforms.
+PyeMap officially supports Python versions 3.7 and later, and has been tested for Linux and OSX platforms.
 
 **Conda (recommended)**
 

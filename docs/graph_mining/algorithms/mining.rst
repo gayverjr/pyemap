@@ -18,7 +18,7 @@ In the graph mining literature, the frequency that a pattern appears in the set 
 pattern. In other words, if a pattern appears in 12/14 graphs, one would say it supports 12 graphs, or equivalently, has a support of 12 (regardless of 
 whether it appears multiple times within a given graph). 
 
-In PyeMap, we use a `Python implementation`_ of the gSpan_ algorithm, one of the most efficient and popular approaches for graph mining. 
+In PyeMap, we use a `Python implementation`_ of the gSpan_ algorithm [Han2002]_, one of the most efficient and popular approaches for graph mining. 
 The technical details are beyond the scope of this documentation (and can be found in the gSpan_ paper), but here we emphasize a few of its key features.
 
 * gSpan is a recursive algorithm which relies on the use of minimum depth first search (DFS) codes
@@ -64,19 +64,38 @@ where each character is one of the following:
 * \* as a wildcard character
 
 Branching can be specified using a syntax similar to the SMILES_ format, where there is no specification of bonding and each amino acid or special 
-character described above must be separated by brackets [] (see example below).
+character described above must be separated by brackets (see example below). See the :py:func:`~pyemap.graph_mining.write_graph_smiles` function, and the  
+pysmiles_ repository for more details.
 
 If edge thresholds are used (see the classification section), the search will be performed for all possible combinations of edges, and thus 
-several subgraph patterns will be found for a set of residue types. If the \* wildcard character is used, subgraph pattern(s) will be found 
-for each combination of each residue type replacing the * placeholder character(s), including the special 'X' and '#' residue types.
+several subgraph patterns will be found for a set of residue types. 
 
 **Examples**
 
-Search for all subgraph patterns matching WWW#
+.. figure:: images/linear.png
+   :height: 300
+   :align: center
 
-.. code-block:: python
+   Examples of subgraph patterns identified using string 'WWW*'.
 
-    pg.find_subgraph('WWW#')
+.. figure:: images/smiles_ex.png
+   :height: 300
+   :align: center
+
+   Subgraph pattern (left) and protein subgraph (right) identified using string '[H]1[C][#][C]1'.
+
+Source
+-------
+
+.. toctree::
+   :maxdepth: 1
+
+.. autosummary::
+   :toctree: autosummary
+
+   pyemap.graph_mining.write_graph_smiles
+
 
 
 .. _SMILES: http://opensmiles.org/opensmiles.html
+.. _pysmiles: https://github.com/pckroon/pysmiles

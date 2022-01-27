@@ -17,15 +17,11 @@ pathways in proteins. The analysis is based on a coarse-grained version of Berat
 Onuchic’s Pathway model, and only accounts for through-space hopping between
 aromatic residues side chains [Beratan1992]_. Side chains of aromatic residues and non-protein electron
 transfer active moieties are modeled as vertices in a weighted graph, where the edge
-weights are modified distance dependent penalty functions. Shortest path algorithms are
-used to compute the shortest pathways from a specified electron or hole donor to the
-surface of the protein, or to a user-specified acceptor.
+weights are modified distance dependent penalty functions. 
 
-
-PyeMap analysis is organized into 3 steps. The first step is parsing a PDB or CIF file provided
-by the user or fetched from the RCSB_ database. The next step is constructing the
-graph theory model of the protein crystal structure. Finally, the shortest paths between a
-specified electron/hole source to the surface or to a specified electron/hole acceptor are calculated.
+For single proteins, PyeMap identifies the shortest pathways between a specified donor to the surface, or to 
+a specified acceptor. For groups of proteins, PyeMap identifies shared pathways/motifs using graph 
+mining techniques.
 
 .. _RCSB: http://www.rcsb.org/
 
@@ -66,7 +62,8 @@ In Development
    :caption: Contents:
 
    install
-   tutorial/tutorial
+   tutorial/single_protein
+   tutorial/mining
    reference
    bibliography
    cite

@@ -74,7 +74,7 @@ The threshold used for determining whether two subgraphs are connected in the su
 
 **Sequence Similarity**
 
-Sequence simiarlity in PyeMap relies on a multiple sequence alignment, which will automatically be performed by the MUSCLE_ package 
+Sequence simiarlity in PyeMap relies on a multiple sequence alignment, which will automatically be performed by the MUSCLE_ package [Edgar2004]_ 
 if it is installed on your machine. Starting from a one-to-one mapping between the residues, 
 the sequence similarity between two protein subgraphs is simply defined as the differences 
 in the residue numbers with respect to the multiple sequence alignment. 
@@ -88,6 +88,19 @@ of nodes comprising the subgraph pattern, which allows for slight misalignments.
 **Note:**
 
 If MUSCLE is not installed, the original residue numbers will be used, which is unlikely to lead to a meaningful clustering.
+
+Source
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+.. autosummary::
+   :toctree: autosummary
+
+   pyemap.graph_mining.SubgraphPattern._do_clustering
+   pyemap.graph_mining.SubgraphPattern._subgraph_rmsd
+   pyemap.graph_mining.SubgraphPattern._subgraph_seq_dist
 
 
 .. _MUSCLE: http://www.drive5.com/muscle/

@@ -1,5 +1,5 @@
 ==============================
-Tutorial
+Tutorial: Single Protein
 ==============================
 This tutorial can help you start working with PyeMap.
 
@@ -130,14 +130,34 @@ If what you need instead is the actual distance, this information is also kept:
    8.802989071175238
 
 Visualization
--------------
+==============
+
+Residues
+---------
 Graph images and chemical structures of non-protein electron transfer active moieties can be exported to PIL with the 
 :func:`~pyemap.emap.residue_to_Image()`, :func:`~pyemap.emap.init_graph_to_Image()`, :func:`~pyemap.emap.paths_graph_to_Image()` functions. To save
 to file, use :func:`~pyemap.emap.paths_graph_to_file()`, :func:`~pyemap.emap.init_graph_to_file()`, and :func:`~pyemap.emap.residue_to_file`. 
 
    >>> my_emap.residue_to_Image("FAD510(A)-2").show()
 
-.. image:: images/fad.png
+.. image:: images/fad.svg
+
+
+NGLView
+--------
+Pathways can be visualized in the crystal structure using the `NGLView Jupyter Widget <http://nglviewer.org/nglview/latest/api.html>`_. 
+Pass the pathway ID of interest along with a :class:`nglview.widget.NGLWidget` object to the :func:`~pyemap.emap.visualize_pathway_in_nglview` function.
+
+   >>> import nglview as nv
+   >>> view = nv.show_file(my_emap.file_path)
+   >>> view.clear_representations()
+   >>> view.add_cartoon(color="lightgray")
+   >>> my_emap.visualize_pathway_in_nglview("1a",view)
+   >>> view
+
+.. figure:: images/ngl_single.png
+   :width: 300
+   :align: center
 
 
 

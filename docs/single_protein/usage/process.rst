@@ -33,8 +33,7 @@ based on PDB atom serial number. The syntax is summarized below:
 
 Process
 -------
-.. automodule:: pyemap.process_data
-   :members: process
+.. autofunction:: pyemap.process
 
 Example
 --------

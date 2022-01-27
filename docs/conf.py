@@ -53,7 +53,7 @@ intersphinx_mapping = {
     'networkx': ('https://networkx.github.io/documentation/stable/', None),
     'Biopython': ('https://biopython.org/docs/1.75/api/', None),
     'Pillow': ('https://pillow.readthedocs.io/en/stable/', None),
-
+    'NGLView': ('http://nglviewer.org/nglview/latest', None),
 }
 
 autosummary_generate = True

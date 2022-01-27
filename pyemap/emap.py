@@ -24,26 +24,22 @@ class emap():
     Attributes
     ----------
     file_path: str
-        Name of the crystal structure file being processed by PyeMap.
-    structure: :class:`Bio.PDB.Structure.Structure`
-        Macromolecular protein structure. Contains model which contains residues and atoms.
-    eta_moieties: dict of node label(str): :class:`Bio.PDB.Residue.Residue`
+        Crystal structure file being analyzed by PyeMap.
+    eta_moieties: dict of str: :class:`Bio.PDB.Residue.Residue`
         Non-protein eta moieties automatically identified at the parsing step.
     chain_list: list of str
         List of chains identified at the parsing step.
-    smiles: dict of node label(str): smiles string(str)
-        List of smiles strings for non-protein eta moieties identified at the parsing step.
-    residues: dict of node label(str): :class:`Bio.PDB.Residue.Residue`
+    sequences: dict of str, str
+        Amino acid sequence for each chain in FASTA format
+    residues: dict of str: :class:`Bio.PDB.Residue.Residue`
         Residues included in the graph after the process step.
-    ngl_strings: dict of nodel label(str):ngl_string(str)
-        Formatted NGL viewer selection strings for residues included in the graph after the process step.
     user_residues: dict of str: :class:`Bio.PDB.Residue.Residue`
         Custom residues specified by the user.
     init_graph: :class:`networkx.Graph`
         Graph generated after the process step.
-    branches: dict of branch id(int): :class:`~pyemap.Branch`
+    branches: dict of int: :class:`~pyemap.Branch`
         Branches found by PyeMap analysis
-    paths: dict of path id(str): :class:`~pyemap.ShortestPath`
+    paths: dict of str: :class:`~pyemap.ShortestPath`
         Paths found by PyeMap sorted by lowest to highest score.
     paths_graph: :class:`networkx.Graph`
         Graph generated after the shortest paths step.
@@ -74,8 +70,8 @@ class emap():
         self._include_residues = []
         self._process_params = {}
         self.paths = OrderedDict()
-        self.paths_graph = []
-        self.init_graph = []
+        self.paths_graph = None
+        self.init_graph = None
         self.branches = OrderedDict()
         for residue in eta_moieties:
             self._add_eta_moiety(residue)
@@ -92,7 +88,7 @@ class emap():
         -----
         Attributes of nodes/edges store info on surface exposure, edge weights etc.
         '''
-        self.init_graph = graph
+        self.init_graph = graph.copy()
 
     def _store_paths(self, branches, yens=False):
         '''Stores pathways in emap object, and sets their ngl selection strings for visualization.
@@ -125,7 +121,7 @@ class emap():
         -----
         Attributes of nodes/edges store info on surface exposure, edge weights etc.
         '''
-        self.paths_graph = graph
+        self.paths_graph = graph.copy()
 
     def _reset_process(self):
         '''Returns emap object to state it was in after parsing.
@@ -133,9 +129,9 @@ class emap():
         self.residues = {}
         self.active_chains = {}
         self.user_residues = {}
-        self.init_graph = []
+        self.init_graph = None
         self.paths = OrderedDict()
-        self.paths_graph = []
+        self.paths_graph = None
         self.branches = OrderedDict()
         self._include_residues = []
         self._process_params = {}
@@ -144,7 +140,7 @@ class emap():
         '''Returns emap object to state it was in after the process step.
         '''
         self.paths = OrderedDict()
-        self.paths_graph = []
+        self.paths_graph = None
         self.branches = OrderedDict()
 
     def _get_residue_graph(self, residue):
@@ -192,7 +188,15 @@ class emap():
         self.eta_moieties[residue.resname] = residue
 
     def visualize_pathway_in_nglview(self,ptid,view):
-        '''Visualize pathway in nglview widget'''
+        '''Visualize pathway in nglview widget
+        
+        Parameters
+        ----------
+        ptid: str
+            Pathway ID to be visualized
+        view: :class:`nglview.widget.NGLWidget`
+            NGL Viewer widget 
+        '''
         pt = self.paths[ptid]
         for i in range(0,len(pt.selection_strs)):
             first_atm_select = pt.selection_strs[i][:pt.selection_strs[i].index(')')+1]+"]"
@@ -200,8 +204,6 @@ class emap():
             view.add_representation('label',color="black",sele=first_atm_select,labelText=pt.label_texts[i])
 
     def _visualize_pathway(self, pathway, yens):
-        '''
-        '''
         colors = {"F": "orange", "Y": "blue", "W": "red", "H": "green"}
         selection_strs = []
         color_list = []
@@ -226,8 +228,6 @@ class emap():
         pathway.set_visualization(selection_strs, color_list, labeled_atoms, label_texts)
 
     def _add_residue(self, residue):
-        '''Gets ngl string for residue, and adds the residue to the residues and ngl_strings dictionaries.
-        '''
         residue.ngl_string = self._get_ngl_string(residue)
         if residue.resname in res_name_to_smiles:
             residue.smiles = res_name_to_smiles[residue.resname.upper()]

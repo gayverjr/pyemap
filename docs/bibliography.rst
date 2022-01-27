@@ -8,4 +8,5 @@ Bibliography
 .. [Tan2009] Song, J.; Tan, H.; Mahmood, K.; Law, R. H. P.; Buckle, A. M.; Webb, G. I.; Akutsu, T.; Whisstock, J. C. *PLoS ONE*, **2009**, 4, 1–14.
 .. [Tien2013] Tien, M. Z.; Meyer, A. G.; Sydykova, D. K.; Spielman, S. J.; Wilke, C. O. *PLoS ONE*, **2013**, 8, 1–8.
 .. [Sander1983] Kabsch, W.; Sander, C. *Biopolymers*, **1983**, 22, 2577–2637.
-.. [Kannan1999] Kannan, N.; Vishveshwara, S. *J. Mol. Biol.*, **1999** 292, 441-464. 
+.. [Han2002] X. Yan and J. Han. *Proc. Int'l Conf. Data Mining*, **2002**.
+.. [Edgar2004] Edgar RC. *Nucleic Acids Res.* **2004** 32(5) 1792-1797. 
