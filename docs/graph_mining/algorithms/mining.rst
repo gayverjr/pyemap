@@ -68,7 +68,9 @@ character described above must be separated by brackets (see example below). See
 pysmiles_ repository for more details.
 
 If edge thresholds are used (see the classification section), the search will be performed for all possible combinations of edges, and thus 
-several subgraph patterns will be found for a set of residue types. 
+several subgraph patterns will be found for a set of residue types. If the \* 
+wildcard character is used, subgraph pattern(s) will be found for each combination of 
+each residue type replacing the \* placeholder character(s), including the special X and # residue types.
 
 **Examples**
 
