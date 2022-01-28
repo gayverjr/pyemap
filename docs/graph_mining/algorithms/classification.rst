@@ -15,8 +15,8 @@ Nodes
 
 By default, each standard amino acid residue receives its own category, and all non-standard residues 
 included in the analysis are labeled as 'NP' for non-protein (processed internally as '#'). One can specify a group 
-of standard amino-acid residue-types to be given the label 'X' (which is standard notation for unknown residue type), which enables 
-these resiudes to be substituted for another in subgraph patterns. This is done by passing a list of 1-letter amino acid characters to as 
+of standard amino-acid residue types to be given the label 'X' (which is standard notation for unknown residue type), which enables 
+these residues to be substituted for another in subgraph patterns. This is done by passing a list of 1-letter amino acid characters to as 
 the :py:attr:`sub` keyword argument to :func:`~pyemap.graph_mining.PDBGroup.generate_graph_database`.
 
 **Example**

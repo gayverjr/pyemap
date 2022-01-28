@@ -50,7 +50,7 @@ Specific Pattern Mining
 ------------------------
 Instead of searching for all subgraphs up to a given support threshold, one instead may be interested in finding protein 
 subgraphs which match a previously known pattern. In this case, the problem is reduced to one of graph matching, and we simply 
-search each PDB for a monomorphism using the NetworkX implementation of the VF2 algorithm (see the NetworkX documentation for more details).
+search each PDB for a monomorphism using the NetworkX implementation of the VF2 algorithm (see the NetworkX documentation_ for more details).
 
 .. _documentation: https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
 
@@ -82,7 +82,22 @@ several subgraph patterns will be found for a set of residue types.
    :height: 300
    :align: center
 
-   Subgraph pattern (left) and protein subgraph (right) identified using string '[H]1[C][#][C]1'.
+   Subgraph pattern (left) and protein subgraph (right) identified using the string '[H]1[C][#][C]1'.
+
+
+Subgraph Patterns
+------------------
+
+The end result of either mining option is a set of *subgraph patterns*, each of which has a unique ID with the format:
+
+{Index}_{String representation}_{support number}
+
+e.g. 1_WWW_18.
+
+The string representation for each pattern is a pseudo-SMILES string generated using 
+the pysmiles_ package. Importantly, these strings can be used as inputs for 
+:py:func:`~pyemap.graph_mining.PDBGroup.find_subgraph`, as they correctly encode the structure of the graph using a syntax
+similar to the \href{http://opensmiles.org/opensmiles.html}{SMILES} format.
 
 Source
 -------

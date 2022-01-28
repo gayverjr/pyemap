@@ -10,7 +10,7 @@ the crystal structure, and thus may not be related to one another in a meaningfu
 subgraphs based on their simiarlity in order to identify shared pathways/motifs.
 
 
-Identifying Protein Subgraphs: Background
+Graph Matching
 ----------------------------------------------
 In order to identify the specific residues involved in subgraph patterns, we utitlize the NetworkX implementation of 
 the VF2 algorithm for graph matching. We refer the reader to their documentation_ for more details, but for the sake of clarity, we 
@@ -37,11 +37,18 @@ In PyeMap, for each PDB which supports the given subgraph pattern, we search for
 which are isomorphic to the subgraph pattern. This gives us a set of *protein subgraphs*, which we can then cluster into 
 groups based on similarity.
 
+Each protein subgraph for a given subgraph pattern is assigned a unique ID with the format:
+
+{PDB ID}-{Unique Index}
+
+e.g. 1u3d-2.
+
 Clustering
 ------------
-PyeMap currenly enables two types of clustering: **structural** similarity, and **sequence** simiarlity. 
+PyeMap currenly enables two types of clustering: **structural** similarity, and **sequence** simiarlity, which both 
+use the same underlying algorithm below. 
 
-**Basic Algorithm**
+**Algorithm**
 
 For a given subgraph pattern P, we have a set of protein subgraphs V which correspond to groups of specific residues in PDB structures 
 which match pattern P. We then construct a supergraph G(V,E), where two protein subgraphs share an edge if and only if they are 

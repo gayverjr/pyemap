@@ -46,7 +46,7 @@ Hagberg, A. A.; Schult, D. A.; Swart, P. J. *Exploring Network Structure, Dynami
 
 Other Supporting Software
 ---------------------------
-RDKit_ , NumPy_ , SciPy_ , PyGraphviz_ , Graphviz_, pysmiles_, gspan_mining_
+RDKit_ , NumPy_ , SciPy_ , PyGraphviz_ , Graphviz_, pysmiles_, gspan-mining_
 
 .. _MSMS: http://mgltools.scripps.edu/packages/MSMS/
 
@@ -70,7 +70,7 @@ RDKit_ , NumPy_ , SciPy_ , PyGraphviz_ , Graphviz_, pysmiles_, gspan_mining_
 
 .. _gSpan: https://sites.cs.ucsb.edu/~xyan/papers/gSpan-short.pdf
 
-.. _gspan_mining: https://pypi.org/project/gspan-mining/
+.. _gspan-mining: https://pypi.org/project/gspan-mining/
 
 .. _pysmiles: https://github.com/pckroon/pysmiles
 

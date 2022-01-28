@@ -491,15 +491,21 @@ def finish_graph(G, surface_exposed_res):
 
 
 def filter_by_percent(G, percent_edges, num_st_dev_edges, distance_cutoff, coef_alpha, exp_beta, r_offset):
-    included_edges = []
     minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
     # should never happen, but just in case
     if minval == 0:
         minval = 1
+    remove_edges = []
+    # impose hard cutoff, collect other edge weights
     for u, v, d in G.edges(data=True):
-        d['distance'] = d['weight']
-        d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
-        d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
+        if d['weight'] > distance_cutoff:
+            remove_edges.append((u, v))
+        else:
+            d['distance'] = d['weight']
+            d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
+            d['len'] = d['weight'] / minval  # scaling factor for prettier graphs
+    G.remove_edges_from(remove_edges)
+    included_edges = []
     for node in G.nodes():
         edge_length_per_node = []
         weights = []
@@ -508,8 +514,7 @@ def filter_by_percent(G, percent_edges, num_st_dev_edges, distance_cutoff, coef_
         weights = sorted(weights)
         thresh_index = math.ceil(len(weights) * percent_edges / 100)
         for neighbor in G[node]:
-            if weights.index(G.edges[(node, neighbor)]['weight']) <= thresh_index and \
-                    G.edges[(node, neighbor)]['weight'] <= distance_cutoff:
+            if weights.index(G.edges[(node, neighbor)]['weight']) <= thresh_index:
                 edge_length_per_node.append(G.edges[(node, neighbor)]['weight'])
         len_average, len_st_dev = 0.0, 0.0
         if edge_length_per_node != []:
@@ -518,7 +523,6 @@ def filter_by_percent(G, percent_edges, num_st_dev_edges, distance_cutoff, coef_
             len_st_dev = np.std(edge_length_per_node)
         for neighbor in G[node]:
             if weights.index(G.edges[(node, neighbor)]['weight']) <= thresh_index and \
-                    G.edges[(node, neighbor)]['weight'] <= distance_cutoff and \
                     np.round(G.edges[(node, neighbor)]['weight'], 8) <= np.round((len_average + num_st_dev_edges * len_st_dev), 8):
                 included_edges.append([node, neighbor])
     excluded_edges = []

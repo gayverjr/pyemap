@@ -9,10 +9,32 @@ closest atoms. For standard protein residues, only side chain atoms
 are considered in the calculation. All atoms of automatically identified
 non-protein ET active moieties and user-specified custom fragments
 are considered in the distance calculations. From the distance matrix,
-an undirected weighted graph is constructed using NetworkX_, with
+an undirected weighted graph is constructed using NetworkX_, initially with
 the calculated distances as weights. 
 
-One of two algorithms are then used to prune the edges of the graph, which is specified by the :attr:`edge_prune` keyword argument
+
+**Penalty Functions**
+
+The next step is to recast the weights as modified distance dependent penalty functions:
+
+.. math::
+   P'=-log_{10}(\epsilon)
+
+where: 
+
+.. math::
+   \epsilon = \alpha \exp(-\beta(R-R_{offset}))
+
+α, β, and :math:`R_{offset}` are hopping parameters, similar to the through-space
+tunneling penalty function in the Pathways model [Beratan1992]_. All subsequent
+calculations are performed using the modified penalty functions as
+edge weights. When using default hopping parameters (α = 1.0,
+β = 2.3, Roffset = 0.0), the edge weights will be equal to the distances
+(multiplied by a prefactor of :math:`2.3*log_{10}(e)` ≈ 1). 
+
+Edge Pruning
+--------------
+One of two algorithms is used to prune the edges of the graph, which is specified by the :attr:`edge_prune` keyword argument
 to :func:`~pyemap.process_data.process`.
 
 **Percent-based algorithm (default)**
@@ -58,7 +80,7 @@ Specify :attr:`edge_prune='PERCENT'` to use this algorithm.
 
 **Degree-based algorithm**
 
-This algorithm greedily prunes the largest edges by weight of the graph until each node has at most :attr:`edge_prune` neighbors.
+This algorithm greedily prunes the largest edges by weight of the graph until each node has at most :attr:`max_degree` neighbors.
 
 ..
    .. _degree_prune:
@@ -95,27 +117,6 @@ This algorithm greedily prunes the largest edges by weight of the graph until ea
 :attr:`max_degree` and attr:`distance_cutoff`: are specified as keywords arguments to :func:`~pyemap.process_data.process`.
 
 Specify :attr:`edge_prune='DEGREE'` to use this algorithm. This algorithm is recommended when doing :ref:`Protein Graph Mining <pgm>`.
-
-**Penalty Functions**
-
-After the edges are pruned, the weights are recast as modified distance dependent penalty functions:
-
-.. math::
-   P'=-log_{10}(\epsilon)
-
-where: 
-
-.. math::
-   \epsilon = \alpha \exp(-\beta(R-R_{offset}))
-
-α, β, and :math:`R_{offset}` are hopping parameters, similar to the through-space
-tunneling penalty function in the Pathways model [Beratan1992]_. All subsequent
-calculations are performed using the modified penalty functions as
-edge weights. When using default hopping parameters (α = 1.0,
-β = 2.3, Roffset = 0.0), the edge weights will be equal to the distances
-(multiplied by a prefactor of :math:`2.3*log_{10}(e)` ≈ 1).
-
-Distance thresholds and penalty function parameters can be modified at the process step. 
 
 Visualization and further analysis
 -----------------------------------
