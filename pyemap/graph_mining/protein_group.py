@@ -585,7 +585,7 @@ class PDBGroup():
 
         Linear chains can be specified simply by list the 1-letter amino acid codes/special characters, e.g. WWW. 
         To specify branching, use a syntax similar to the SMILES format, where there is no specification of 
-        bonding and each character must be upper case and separated by brackets, e.g. [H]1[C][#][C]1
+        bonding and each character must be upper case and separated by brackets, e.g. [H]1[C][#][C]1.
         If edge thresholds are used, all possible combinations of edges will be searched for.
 
         Parameters

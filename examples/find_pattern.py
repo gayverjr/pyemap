@@ -22,13 +22,11 @@ pg.find_subgraph('WWW#')
 sg = pg.subgraph_patterns['1_WWW#_18'] 
 # Final step: Find protein subgraphs 
 sg.find_protein_subgraphs('structural')
-print(len(sg.groups))
-print([len(x) for x in sg.groups.values()])
 # To switch clustering, call 'sg.set_clustering('sequence')
 # Visualize pattern
-#sg.subgraph_to_Image().show()
+sg.subgraph_to_Image().show()
 # Visualize protein subgraph
-#sg.subgraph_to_Image(id='6KII_23').show()
+sg.subgraph_to_Image(id='6KII_23').show()
 # Print reports
-#print(pg.mining_report())
-#print(sg.full_report())
+print(pg.mining_report())
+print(sg.full_report())

@@ -1,9 +1,13 @@
 Usage
 ========================
 Graph mining with PyeMap occurs in 4 steps:
+
 #. Generate protein graphs
+
 #. Classify nodes and edges
+
 #. Find subgraph patterns
+
 #. Find and cluster protein subgraphs
 
 
@@ -52,7 +56,7 @@ See the :ref:`mining <mining_algo>` section for more details.
 
 The results of the mining calculation are stored in the :attr:`subgraph_patterns` dictionary as 
 :class:`~pyemap.graph_mining.SubgraphPattern` objects. To find protein subgraphs, 
-thte :func:`~pyemap.graph_mining.SubgraphPattern.find_protein_subgraphs` function 
+the :func:`~pyemap.graph_mining.SubgraphPattern.find_protein_subgraphs` function 
 must be called for the subgraph pattern of interest. The identified protein subgraphs are stored in 
 the :attr:`protein_subgraphs` attribute of the :class:`~pyemap.graph_mining.SubgraphPattern` object, 
 and the clustering is described by the :attr:`groups` attribute. One can switch between different types of 

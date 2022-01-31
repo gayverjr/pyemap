@@ -11,7 +11,6 @@ It serves as the backend for the web application [eMap](https://emap.bu.edu/), a
 
 - **Documentation:** https://readthedocs.org/projects/pyemap/
 - **Website:** https://emap.bu.edu
-- **News:** https://twitter.com/eMap_protein
 
 # Installation
 PyeMap officially supports Python versions 3.7 and later, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).

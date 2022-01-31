@@ -6,8 +6,8 @@ of PyeMap.
 
 Parsing
 =========
-The first step of graph mining with PyeMap is to create a `PDBGroup` object, 
-and populate it `emap` objects for the PDBs of interest. 
+The first step of graph mining with PyeMap is to create a :class:`~pyemap.graph_mining.PDBGroup` object, 
+and populate it with :class:`~pyemap.emap` objects for the PDBs of interest. 
 Here, we'll fetch and parse a small set of flavoprotein PDBs.
 
 .. code-block:: python
@@ -27,8 +27,7 @@ Generating Protein Graphs
 The next step is to generate the graphs for each PDB. 
 One can specify the chains, ET active moieties, residues, 
 and any other kwargs from :func:`~pyemap.process`. If no arguments 
-are specified, the first chain from each PDB will be chosen, 
-all ET active moieties on those chains will be included. See :func:`~pyemap.graph_mining.PDBGroup.process_emaps` for more details.
+are specified, the first chain from each PDB will be chosen, and all ET active moieties on those chains will be included. See :func:`~pyemap.graph_mining.PDBGroup.process_emaps` for more details.
 
 .. code-block:: python
 
@@ -49,13 +48,15 @@ See :func:`~pyemap.graph_mining.PDBGroup.generate_graph_database` for more detai
 
 Mine for subgraphs
 ===================
-There are two types of searches available in PyeMap. One can mine for all possible subgraphs:
+There are two types of searches available in PyeMap. 
+
+1.  mine for all possible subgraphs:
 
 .. code-block:: python
 
    pg.run_gspan(19)
 
-Or search for a specific pattern:
+2. search for a specific pattern:
 
 .. code-block:: python
 
@@ -91,7 +92,7 @@ Analysis: Protein subgraphs
 ============================
 
 To identify the specific residues in each PDB involved in the identified patterns, 
-one should first call :func:`pyemap.graph_mining.SubgraphPattern.find_protein_subgraphs`, and the 
+one should first call :func:`pyemap.graph_mining.SubgraphPattern.find_protein_subgraphs`. The 
 identified **protein subgraphs** are stored in the `protein_subgraphs` dictionary. Each protein subgraph 
 has a unique ID.
 
@@ -119,7 +120,7 @@ To visualize a protein subgraph, use :func:`pyemap.graph_mining.SubgraphPattern.
 Clustering
 ============
 Protein subgraphs are clustered into groups based on sequence or structural similarity. 
-By default, structural clustering is used, and this can be switched to sequence using :func:`pyemap.graph_mining.SubgraphPattern.set_clustering`.
+By default, structural clustering is used. To switch to sequence clustering, call :func:`pyemap.graph_mining.SubgraphPattern.set_clustering`.
 
 .. code-block:: python
 

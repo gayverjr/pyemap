@@ -99,7 +99,7 @@ e.g. 1_WWW_18.
 The string representation for each pattern is a pseudo-SMILES string generated using 
 the pysmiles_ package. Importantly, these strings can be used as inputs for 
 :py:func:`~pyemap.graph_mining.PDBGroup.find_subgraph`, as they correctly encode the structure of the graph using a syntax
-similar to the \href{http://opensmiles.org/opensmiles.html}{SMILES} format.
+similar to the SMILES_ format.
 
 Source
 -------

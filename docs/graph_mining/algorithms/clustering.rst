@@ -59,12 +59,13 @@ connected component corresponds to a cluster of similar protein subgraphs.
    :class: with-shadow
    :height: 400
 
-   A supergraph composed of 66 connected components, and therefore, 66 clusters.
+   Example supergraph G, where each node is a protein subgraph belonging to a subgraph pattern P. In this example, the supergraph G is
+   composed of 66 connected components, and therefore, 66 clusters.
 
 .. figure:: images/cluster.png
    :height: 400
 
-   The largest cluster zoomed in.
+   The largest cluster in Fig. 3 zoomed in. 
 
 
 **Structural Similarity**
@@ -77,19 +78,20 @@ Starting from a one-to-one mapping between the residues, we make the following a
 * Only the alpha carbon (CA) is considered for standard amino acid residues. If it is not present in the crystal structure, :math:`\infty` is returned.
 * For non-standard amino acids, we use the first atom type both residues have in common. If no shared atom type is found, :math:`\infty` is returned.
 
-The threshold used for determining whether two subgraphs are connected in the supergraph is 0.5 Å.
+An edge is drawn between two protein subgraphs in the supergraph if RMSD :math:`\leq` 0.5 Å.
 
 **Sequence Similarity**
 
 Sequence simiarlity in PyeMap relies on a multiple sequence alignment, which will automatically be performed by the MUSCLE_ package [Edgar2004]_ 
 if it is installed on your machine. Starting from a one-to-one mapping between the residues, 
-the sequence similarity between two protein subgraphs is simply defined as the differences 
+the sequence similarity between two protein subgraphs is simply defined as the sum of the differences 
 in the residue numbers with respect to the multiple sequence alignment. 
 For instance, TRP50 in one PDB and TRP200 in another PDB could have a difference of 
 0 if they are aligned by the multiple sequence alignment. 
 One important caveat is that **non-protein residues are not considered in sequence similarity**, only standard amino acid residues. 
 
-The threshold used for determining whether two subgraphs are connected in the supergraph is :math:`N`, where :math:`N`` is the total number 
+An edge is drawn between two protein subgraphs in the supergraph if :math:`D \leq N`, where D is the sum of the differences 
+in the residue numbers with respect to the multiple sequence alignment, and :math:`N`` is the total number 
 of nodes comprising the subgraph pattern, which allows for slight misalignments.
 
 **Note:**
