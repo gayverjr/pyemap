@@ -2,34 +2,6 @@ Installation
 =========================================================
 PyeMap officially supports Python versions 3.7 and later, and has been tested for Linux and OSX platforms.
 
-**Conda (recommended)**
-
-In order to set up the pre-requisites for PyeMap, you need to install the conda_ package manager. The easiest ways to get conda are
-through the Anaconda_ or Miniconda_ distributions.
-
-.. _conda: https://docs.conda.io/en/latest/
-
-.. _Anaconda: https://www.anaconda.com/
-
-.. _Miniconda: https://docs.conda.io/en/latest/miniconda.html
-
-Once you have a working copy of conda, create and activate a new virtual environment::
-
-    $ conda create -n pyemap_env
-    $ conda activate pyemap_env
-
-Now add conda channels in order to download dependencies::
-
-    $ conda config --add channels conda-forge --add channels gayverjr
-    $ conda update --all
-
-And finally, install PyeMap::
-
-    $ conda install pyemap
-
-Our conda recipe does not include MSMS_ or DSSP_, which are used to classify residues as surface 
-exposed or buried. Please install these packages separately if you need that functionality.
-
 **Pip**
 
 Pip installation will only install python dependencies, and requires a working Graphviz_ installation.

@@ -15,28 +15,13 @@ It serves as the backend for the web application [eMap](https://emap.bu.edu/), a
 - **Website:** https://emap.bu.edu
 
 # Installation
-PyeMap officially supports Python versions 3.7 and later, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
-### Conda (recommended):
-```
-# create new virtual environment
-$ conda create -n pyemap_env python=3.7
-$ conda activate pyemap_env
-# include channels for dependencies, only needs to be done once
-$ conda config --add channels conda-forge --add channels gayverjr
-$ conda update --all
-# install pyemap
-$ conda install pyemap
-```
-
-Our conda recipe does not include [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina), or [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), 
-which are used for classifying residues as buried or surface exposed. Please install these packages separately if you need that functionality.
 
 ### Pip
 Pip installation will only install python dependencies, and requires [Graphviz](https://graphviz.gitlab.io/) in order to work. This is sufficient to run PyeMap analysis and view graph images, but some features will be missing.
 ```
 pip install pyemap
 ```
-For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina), and [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), all of which can be downloaded free of charge from their owners, and are available on most platforms.
+For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MUSCLE](https://www.drive5.com/muscle/), [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina), and [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), all of which can be downloaded free of charge from their owners, and are available on most platforms. 
 
 # Getting started
 Please see our [tutorial](https://pyemap.readthedocs.io/en/latest/tutorial/tutorial.html) on how to use PyeMap. This tutorial is also available as a Jupyter notebook in the examples directory.
