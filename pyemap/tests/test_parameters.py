@@ -1,14 +1,44 @@
-import os
-import sys
+## Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import unittest
-import warnings
 import pyemap
+import os
 from math import isclose
 
 class SingleChainParams(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/1u3d.pdb")) 
+        cls.my_emap = pyemap.fetch_and_parse("1u3d") 
+    
+    @classmethod
+    def tearDownClass(cls):
+        os.remove("1u3d.pdb")
 
     def test_eta_moities(self):
         assert len(self.my_emap.eta_moieties) >= 3
@@ -21,44 +51,49 @@ class SingleChainParams(unittest.TestCase):
             resnames.append(residue.resname)
         assert "TYR" in resnames
         assert "TRP" in resnames
-        assert "PHE" not in resnames
-        assert "HIS" not in resnames
         #phenylalanine on
-        pyemap.process(self.my_emap,phe=True)
+        pyemap.process(self.my_emap,include_residues=["W","Y","F"])
         resnames=[]
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" in resnames
         assert "TRP" in resnames
         assert "PHE" in resnames
-        assert "HIS" not in resnames
         #histidine on
         resnames=[]
-        pyemap.process(self.my_emap,his=True)
+        pyemap.process(self.my_emap,include_residues=["W","Y","H"])
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" in resnames
         assert "TRP" in resnames
-        assert "PHE" not in resnames
         assert "HIS" in resnames
         #tyrosine off
         resnames=[]
-        pyemap.process(self.my_emap,tyr=False)
+        pyemap.process(self.my_emap,include_residues=["W"])
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" not in resnames
         assert "TRP" in resnames
-        assert "PHE" not in resnames
-        assert "HIS" not in resnames
         #tryptophan off
         resnames=[]
-        pyemap.process(self.my_emap,trp=False)
+        pyemap.process(self.my_emap,include_residues=["C","Y","W"])
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert "TYR" in resnames
-        assert "TRP" not in resnames
-        assert "PHE" not in resnames
-        assert "HIS" not in resnames
+        assert "TRP" in resnames
+        assert "CYS" in resnames
+
+
+    def test_edge_prune_options(self):
+        pyemap.process(self.my_emap,edge_prune="DEGREE")
+        G = self.my_emap.init_graph.copy()
+        pyemap.process(self.my_emap,edge_prune="PERCENT")
+        G2 = self.my_emap.init_graph.copy()
+        pyemap.process(self.my_emap,edge_prune="DEGREE",max_degree=2)
+        G3 = self.my_emap.init_graph.copy()
+        assert G.size()!=G2.size() and G2.size()!=G.size() and G2.size()!=G3.size()
+        assert max(G.degree, key=lambda x: x[1])[1] == 4
+        assert max(G3.degree, key=lambda x: x[1])[1] == 2
 
 
     def test_distance_options(self):   
@@ -89,11 +124,21 @@ class SingleChainParams(unittest.TestCase):
     
     def test_custom_atom_range(self):
          #custom residues
-        pyemap.process(self.my_emap,eta_moieties=[], custom = "(134-140),(109-117)")
+        pyemap.process(self.my_emap,eta_moieties=[], custom = "(3960-3969),(3970-3980,3982,3984-3987)")
         resnames=[]
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert all(elem in resnames for elem in ["CUST-1","CUST-2"])
+        try:
+            self.my_emap.residue_to_file('CUST-1')
+            assert False
+        except KeyError:
+            assert True
+        try:
+            self.my_emap.residue_to_Image('CUST-1')
+            assert False
+        except KeyError:
+            assert True
         #example for bad custom residues, shoud raise exception
         try:
             pyemap.process(self.my_emap, custom = "(28-41)")
@@ -135,11 +180,11 @@ class SingleChainParams(unittest.TestCase):
 class MultiChainParams(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.my_emap = pyemap.parse(os.path.join(sys.path[0],"pyemap/tests/test_pdbs/2oal.pdb")) 
+        cls.my_emap = pyemap.fetch_and_parse("2oal")
 
     def test_chains(self):
         #default all chains on
-        pyemap.process(self.my_emap)
+        pyemap.process(self.my_emap,chains=["A","B"])
         labels=[]
         for residue in self.my_emap.residues.values():
             labels.append(residue.node_label)

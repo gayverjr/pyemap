@@ -8,25 +8,20 @@ Overview of PyeMap
 .. image:: https://github.com/gayverjr/pyemap/workflows/ubuntu/badge.svg
    :target: https://github.com/gayverjr/pyemap/actions
 .. image:: https://codecov.io/gh/gayverjr/pyemap/branch/main/graph/badge.svg
-  :target: https://codecov.io/gh/gayverjr/pyemap/branch/main
-
-- Website:  https://emap.bu.edu
-- News:     https://twitter.com/eMap_protein
+   :target: https://codecov.io/gh/gayverjr/pyemap/branch/main
+.. image:: https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg
+   :target: https://emap.bu.edu/
 
 PyeMap is a python package aimed at automatic identification of electron and hole transfer
 pathways in proteins. The analysis is based on a coarse-grained version of Beratan and
 Onuchic’s Pathway model, and only accounts for through-space hopping between
 aromatic residues side chains [Beratan1992]_. Side chains of aromatic residues and non-protein electron
 transfer active moieties are modeled as vertices in a weighted graph, where the edge
-weights are modified distance dependent penalty functions. Shortest path algorithms are
-used to compute the shortest pathways from a specified electron or hole donor to the
-surface of the protein, or to a user-specified acceptor.
+weights are modified distance dependent penalty functions. 
 
-
-PyeMap analysis is organized into 3 steps. The first step is parsing a PDB or CIF file provided
-by the user or fetched from the RCSB_ database. The next step is constructing the
-graph theory model of the protein crystal structure. Finally, the shortest paths between a
-specified electron/hole source to the surface or to a specified electron/hole acceptor are calculated.
+For single proteins, PyeMap identifies the shortest pathways between a specified donor to the surface, or to 
+a specified acceptor. For groups of proteins, PyeMap identifies shared pathways/motifs using graph 
+mining techniques.
 
 .. _RCSB: http://www.rcsb.org/
 
@@ -37,23 +32,29 @@ and can also be used as a fully functional Python package.
 
 Current Features
 ----------------
-* Identification of most probable electron/hole transfer pathways from a specified donor to the protein surface or a specified electron/hole acceptor
-* Accepts valid .pdb or .cif structures provided by the user or fetched from RCSB_ database
-* Automatic detection of non-protein aromatic moieties such as porphyrins, nucleobases, and other aromatic cofactors
-* Automatic detection of 60+ inorganic clusters such as iron-sulfur clusters and others
-* User specified custom fragments
-* Visualization of chemical structures and graphs
-* Automatic identification of surface exposed residues using residue depth or solvent accessibility criteria
-* Control over various parameters which determine connectivity of graph theory model
-* Tested on structures as large as 5350 residues (51599 atoms)
 
+**Single protein**
+   * Identification of most probable electron/hole transfer pathways from a specified donor to the protein surface or a specified electron/hole acceptor
+   * Accepts valid .pdb or .cif structures provided by the user or fetched from RCSB_ database
+   * Automatic detection of non-protein aromatic moieties such as porphyrins, nucleobases, and other aromatic cofactors
+   * Automatic detection of 60+ inorganic clusters such as iron-sulfur clusters and others
+   * Automatic detection of redox-active metal ions
+   * User specified custom fragments
+   * Visualization of chemical structures and graphs
+   * Automatic identification of surface exposed residues using residue depth or solvent accessibility criteria
+   * Control over various parameters which determine connectivity of graph theory model
+   * Tested on structures as large as 5350 residues (51599 atoms)
+
+**Graph Mining**
+   * Mining families of protein graphs for all patterns up to a given support threshold
+   * Mining families of protein graphs for specific patterns
+   * Classification of protein subgraphs based on similarity
 
 
 In Development
 ----------------
-* Tools for screening families of proteins for common electron/hole transfer pathways
-* Generalization to DNA, protein-DNA complexes etc.
 * Improving the physical model of electron transfer by incorporating information on geometry-dependent electronic couplings and site sensitive energetics
+* Generalization to DNA, protein-DNA complexes etc.
 
 
 .. toctree::
@@ -61,7 +62,8 @@ In Development
    :caption: Contents:
 
    install
-   tutorial/tutorial
+   tutorial/single_protein
+   tutorial/mining
    reference
    bibliography
    cite

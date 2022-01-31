@@ -1,11 +1,36 @@
-# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
-# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
-"""Functions for identifying electron transfer active moieties, and constructing customized Bio.PDB.Residue objects.
-"""
+## Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import networkx as nx
 import numpy as np
-from .data import SB_means,SB_std_dev, clusters
+from .data import SB_means, SB_std_dev, clusters, metal_ligands
 from .structures import cleanup_bonding, remove_side_chains
+
 
 def is_pi_bonded(cur_atom, next_atom):
     """Determines whether two atoms are pi bonded based on experimental bond lengths.
@@ -43,6 +68,7 @@ def is_pi_bonded(cur_atom, next_atom):
     else:
         return False
 
+
 def dist(x, y):
     """Returns Euclidean distance between two 3 dimensional points.
 
@@ -60,6 +86,7 @@ def dist(x, y):
 
     """
     return np.sqrt(np.sum((x - y)**2))
+
 
 def find_conjugated_systems(atoms, res_names):
     """Finds conjugated systems within a BioPython residue object, and returns them as individual customized BioPython
@@ -92,8 +119,7 @@ def find_conjugated_systems(atoms, res_names):
                     cust_graph.nodes[k]["coords"] = atoms[k].coord
     # now we have a forest, let's get each individual tree (only take cycles or bigger than 10)
     subgraphs = []
-    all_subgraphs = (cust_graph.subgraph(c)
-                     for c in nx.connected_components(cust_graph))
+    all_subgraphs = (cust_graph.subgraph(c) for c in nx.connected_components(cust_graph))
     for sub_g in all_subgraphs:
         graph = sub_g.copy()
         if nx.cycle_basis(graph):
@@ -107,9 +133,8 @@ def find_conjugated_systems(atoms, res_names):
 
     # iterate over all of the subgraphs
     for graph in subgraphs:
-        res_name = str(atoms[0].parent.get_resname()) + str(
-            atoms[0].get_full_id()[3][1]) + "(" + str(
-                atoms[0].get_full_id()[2]) + ")"
+        res_name = str(atoms[0].parent.get_resname()) + str(atoms[0].get_full_id()[3][1]) + "(" + str(
+            atoms[0].get_full_id()[2]) + ")"
         res_name = res_name.strip()
         if len(subgraphs) > 1:
             res_name += '-' + str(count)
@@ -123,6 +148,7 @@ def find_conjugated_systems(atoms, res_names):
         res_names.append(res_name)
 
     return custom_res_list
+
 
 def create_custom_residue(atm_list, res_name):
     """Generates customized BioPython residue object corresponding to an ETA moiety.
@@ -156,8 +182,8 @@ def create_custom_residue(atm_list, res_name):
     for k in range(0, len(atm_list)):
         if atm_list[k].serial_number not in atm_serial_list:
             custom_res.detach_child(atm_list[k].id)
-
     return custom_res
+
 
 def process_custom_residues(non_standard_residue_list):
     """Identifies and returns customized Bio.PDB.Residue objects corresponding to electron transfer active moieties.
@@ -179,8 +205,7 @@ def process_custom_residues(non_standard_residue_list):
 
     for residue in non_standard_residue_list:
         atm_list = list(residue.get_atoms())
-        conj_systems = find_conjugated_systems(
-            atm_list, res_names)
+        conj_systems = find_conjugated_systems(atm_list, res_names)
         if conj_systems:
             for system in conj_systems:
                 res_names.append(system.resname)
@@ -188,10 +213,9 @@ def process_custom_residues(non_standard_residue_list):
 
     # Clusters
     for residue in non_standard_residue_list:
-        if residue.resname in clusters:
+        if residue.resname in clusters or residue.resname.upper() in metal_ligands:
             atm_list = list(residue.get_atoms())
-            res_name = str(atm_list[0].parent.get_resname()) + str(
-                atm_list[0].get_full_id()[3][1]) + "(" + str(
-                    atm_list[0].get_full_id()[2]) + ")"
+            res_name = str(atm_list[0].parent.get_resname()) + str(atm_list[0].get_full_id()[3][1]) + "(" + str(
+                atm_list[0].get_full_id()[2]) + ")"
             custom_res.append(create_custom_residue(atm_list, res_name))
     return custom_res

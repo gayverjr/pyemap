@@ -23,6 +23,8 @@ jobs:
         run: |
           conda install -c conda-forge pygraphviz
           conda install -c conda-forge rdkit
+          conda install -c bioconda muscle
+          conda install -c conda-forge msms
           pip install .
           
       - name: Generate coverage report

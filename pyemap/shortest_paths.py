@@ -1,5 +1,31 @@
-# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
-# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
+## Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """Finds shortest paths in graph given a source and optionally a target node.
 
 Defines implementations of yen's and dijkstra's algorithms for calculating the shortest path(s) from
@@ -12,6 +38,9 @@ import itertools
 import string
 import networkx as nx
 from functools import total_ordering
+from .pyemap_exceptions import *
+import numpy as np
+
 
 @total_ordering
 class ShortestPath(object):
@@ -25,6 +54,8 @@ class ShortestPath(object):
     ----------
     path: list of str
         List of residue names that make up the shortest path
+    edges: list of float
+        List of edge weights that make up the shortest path
     path_id: list of str
         List of residues that make up the shortest path
     length: float
@@ -39,7 +70,7 @@ class ShortestPath(object):
         Labels of residues in NGL visualization
     """
 
-    def __init__(self, path, length):
+    def __init__(self, path, edges, length):
         '''Initializes ShortestPath object.
 
         Parameters
@@ -51,6 +82,7 @@ class ShortestPath(object):
         '''
         self.path = path
         self.length = length
+        self.edges = edges
         self.path_id = "none"
         self.selection_strs = []
         self.color_list = []
@@ -64,13 +96,14 @@ class ShortestPath(object):
         return self.length < other.length
 
     def __str__(self):
+        rounded_edges = [np.round(x, 2) for x in self.edges]
         printline = self.path_id + ": " + \
-            str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2)))
+            str(self.path) + " " + str('{:.2f}'.format(round(self.length, 2))) + "\n" + \
+            "Edge weights: {}".format(str(rounded_edges))
         return printline
 
     def get_path_as_list(self):
-        original_list = [[self.path_id], self.path, [
-            str('{:.2f}'.format(round(self.length, 2)))]]
+        original_list = [[self.path_id], self.path, [str('{:.2f}'.format(round(self.length, 2)))]]
         merged = list(itertools.chain(*original_list))
         return merged
 
@@ -139,17 +172,6 @@ class Branch(object):
             printline += "\n" + str(pt)
         printline += "\n"
         return printline
-
-    def get_branch_as_list(self):
-        ''' List representation of Branch. First entry is: "Branch: `branch_id`" and the rest of the entries
-        are the string representations of each ShortestPath object comprising the Branch.
-        '''
-        branch_list = []
-        printline = "Branch: " + str(self.target)
-        branch_list.append([printline])
-        for pt in self.paths:
-            branch_list.append(pt.get_path_as_list())
-        return branch_list
 
 
 def _is_parent_pathway(shortest_path, targets):
@@ -246,13 +268,16 @@ def dijkstras_shortest_paths(G, start, targets):
         path = []
         try:
             path = nx.dijkstra_path(G, start, goal)
-        except Exception as e:
-            path = []
-        if not path == []:
+            weights = []
             sum = 0
             for i in range(0, len(path) - 1):  # sum up edge weights
                 sum += (G[path[i]][path[i + 1]]['weight'])
-            shortestPaths.append(ShortestPath(path, sum))
+                weights.append(G[path[i]][path[i + 1]]['weight'])
+            shortestPaths.append(ShortestPath(path, weights, sum))
+        except Exception as e:
+            pass
+    if len(shortestPaths) == 0:
+        raise PyeMapShortestPathException("No paths to the surface from " + str(start) + " were found.")
     shortestPaths = sorted(shortestPaths)
     branches = []
     # find the parent pathways
@@ -294,16 +319,14 @@ def dijkstras_shortest_paths(G, start, targets):
                 if len(G.nodes[path[i + 1]]['fillcolor']) != 9:
                     G.nodes[path[i + 1]]['fillcolor'] += '5F'
                     G.nodes[path[i + 1]]['color'] = '#7080905F'
-    if len(shortestPaths) == 0:
-        raise RuntimeError("No paths to the surface found.")
     return branches
 
 
 def yens_shortest_paths(G, start, target, max_paths=10):
-    """Returns top 5 shortest paths from source to target.
+    """Returns shortest paths from source to target.
 
     Uses Yen's algorithm to calculate the shortest paths from source to target, writes
-    out the ShortestPath objects to file, and returns the 5 pathway IDs. In the graph, nodes and
+    out the ShortestPath objects to file, and returns the 10 pathway IDs. In the graph, nodes and
     edges that are part of any pathways are made opaque, and the shortest path is highlighted.
 
 
@@ -330,58 +353,60 @@ def yens_shortest_paths(G, start, target, max_paths=10):
 
     Raises
     ------
-    RuntimeError:
+    PyeMapShortestPathException:
         No shortest paths to target found.
 
     """
     letters = list(string.ascii_letters)
     shortestPaths = []
     k = 0
-    paths = list(itertools.islice(nx.shortest_simple_paths(G, start, target), max_paths))
+    try:
+        paths = list(itertools.islice(nx.shortest_simple_paths(G, start, target), max_paths))
+    except Exception:
+        raise PyeMapShortestPathException("No paths between " + str(start) + " and " + str(target) + " were found.")
     for k in range(0, len(paths)):
         path = paths[k]
         sum = 0
+        weights = []
         for i in range(0, len(path) - 1):  # sum up edge weights
             sum += (G[path[i]][path[i + 1]]['weight'])
-        path = ShortestPath(path, sum)
+            weights.append(G[path[i]][path[i + 1]]['weight'])
+        path = ShortestPath(path, weights, sum)
         shortestPaths.append(path)
-    if shortestPaths:
-        shortestPaths = sorted(shortestPaths)
-        for i in range(0, len(shortestPaths)):
-            path = shortestPaths[i].path
-            if i == 0:  # shortest path gets bolder edges
-                for j in range(len(path) - 1):
-                    G[path[j]][path[j + 1]]['penwidth'] = 6.0
-                    G[path[j]][path[j + 1]]['style'] = 'solid'
-                    G.nodes[path[j]]['penwidth'] = 6.0
-                    G.nodes[path[j + 1]]['penwidth'] = 6.0
-                    G[path[j]][path[j + 1]]['color'] = '#778899FF'
-                    # make the nodes look opaque if they are connected to the source
-                    if len(G.nodes[path[j]]['fillcolor']) != 9:
-                        G.nodes[path[j]]['fillcolor'] += 'FF'
-                        G.nodes[path[j]]['color'] = '#708090FF'
-                    if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
-                        G.nodes[path[j + 1]]['fillcolor'] += 'FF'
-                        G.nodes[path[j + 1]]['color'] = '#708090FF'
-            else:
-                for j in range(len(path) - 1):
-                    G[path[j]][path[j + 1]]['penwidth'] = 6.0
-                    G[path[j]][path[j + 1]]['style'] = 'solid'
-                    G.nodes[path[j]]['penwidth'] = 6.0
-                    G.nodes[path[j + 1]]['penwidth'] = 6.0
-                    if G[path[j]][path[j + 1]]['color'] != '#778899FF':
-                        G[path[j]][path[j + 1]]['color'] = '#7788997F'
-                    # make the nodes look opaque if they are connected to the source
-                    if len(G.nodes[path[j]]['fillcolor']) != 9:
-                        G.nodes[path[j]]['fillcolor'] += '7F'
-                        G.nodes[path[j]]['color'] = '#7080907F'
-                    if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
-                        G.nodes[path[j + 1]]['fillcolor'] += '7F'
-                        G.nodes[path[j + 1]]['color'] = '#7080907F'
-            shortestPaths[i].set_id("1" + letters[i])
-        br = Branch(1, shortestPaths[0].path[-1])
-        for pt in shortestPaths:
-            br.add_path(pt)
-        return [br]
-    else:  # no paths found
-        raise RuntimeError("No paths to target found.")
+    shortestPaths = sorted(shortestPaths)
+    for i in range(0, len(shortestPaths)):
+        path = shortestPaths[i].path
+        if i == 0:  # shortest path gets bolder edges
+            for j in range(len(path) - 1):
+                G[path[j]][path[j + 1]]['penwidth'] = 6.0
+                G[path[j]][path[j + 1]]['style'] = 'solid'
+                G.nodes[path[j]]['penwidth'] = 6.0
+                G.nodes[path[j + 1]]['penwidth'] = 6.0
+                G[path[j]][path[j + 1]]['color'] = '#778899FF'
+                # make the nodes look opaque if they are connected to the source
+                if len(G.nodes[path[j]]['fillcolor']) != 9:
+                    G.nodes[path[j]]['fillcolor'] += 'FF'
+                    G.nodes[path[j]]['color'] = '#708090FF'
+                if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
+                    G.nodes[path[j + 1]]['fillcolor'] += 'FF'
+                    G.nodes[path[j + 1]]['color'] = '#708090FF'
+        else:
+            for j in range(len(path) - 1):
+                G[path[j]][path[j + 1]]['penwidth'] = 6.0
+                G[path[j]][path[j + 1]]['style'] = 'solid'
+                G.nodes[path[j]]['penwidth'] = 6.0
+                G.nodes[path[j + 1]]['penwidth'] = 6.0
+                if G[path[j]][path[j + 1]]['color'] != '#778899FF':
+                    G[path[j]][path[j + 1]]['color'] = '#7788997F'
+                # make the nodes look opaque if they are connected to the source
+                if len(G.nodes[path[j]]['fillcolor']) != 9:
+                    G.nodes[path[j]]['fillcolor'] += '7F'
+                    G.nodes[path[j]]['color'] = '#7080907F'
+                if len(G.nodes[path[j + 1]]['fillcolor']) != 9:
+                    G.nodes[path[j + 1]]['fillcolor'] += '7F'
+                    G.nodes[path[j + 1]]['color'] = '#7080907F'
+        shortestPaths[i].set_id("1" + letters[i])
+    br = Branch(1, shortestPaths[0].path[-1])
+    for pt in shortestPaths:
+        br.add_path(pt)
+    return [br]

@@ -7,9 +7,10 @@ Original Authors
 * James Gayvert
 * Ksenia Bravaya
 
-Contributors to eMap (web version)
+Other Contributors
 -----------------------------------
-Melissa Wei
+* Melissa Wei
+* Alyssa Kranc
 
 Funding
 -------

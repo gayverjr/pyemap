@@ -6,7 +6,7 @@
 [![PyPI](https://badge.fury.io/py/pyemap.svg)](https://pypi.org/project/pyemap/)
 [![Build Status](https://github.com/gayverjr/pyemap/workflows/ubuntu/badge.svg)](https://github.com/gayverjr/pyemap/actions) [![codecov](https://codecov.io/gh/gayverjr/pyemap/branch/main/graph/badge.svg)](https://codecov.io/gh/gayverjr/pyemap/branch/main) [![Documentation Status](https://readthedocs.org/projects/pyemap/badge/?version=latest)](https://pyemap.readthedocs.io/en/latest/?badge=latest) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://github.com/gayverjr/pyemap/blob/main/LICENSE)
 
-[![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/gayverjr/pyemap.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/gayverjr/pyemap/context:python)
+[![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/gayverjr/pyemap.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/gayverjr/pyemap/context:python) [![PyPI version](https://badge.fury.io/py/pyemap.svg)](https://badge.fury.io/py/pyemap)
 
 PyeMap is a Python package aimed at automatic identification of electron and hole transfer pathways in proteins.
 It serves as the backend for the web application [eMap](https://emap.bu.edu/), and can also be used as a fully functional Python package.
@@ -15,7 +15,7 @@ It serves as the backend for the web application [eMap](https://emap.bu.edu/), a
 - **Website:** https://emap.bu.edu
 
 # Installation
-PyeMap officially supports Python versions 3.6, 3.7, and 3.8, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
+PyeMap officially supports Python versions 3.7 and later, and has been tested for Linux and OSX platforms. Below is an abbreviated version of the instructions provided in the [documentation](https://pyemap.readthedocs.io/en/latest/install.html).
 ### Conda (recommended):
 ```
 # create new virtual environment
@@ -36,7 +36,7 @@ Pip installation will only install python dependencies, and requires [Graphviz](
 ```
 pip install pyemap
 ```
-For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina), [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), and [wget](https://www.gnu.org/software/wget/), all of which can be downloaded free of charge from their owners, and are available on most platforms.
+For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina), and [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), all of which can be downloaded free of charge from their owners, and are available on most platforms.
 
 # Getting started
 Please see our [tutorial](https://pyemap.readthedocs.io/en/latest/tutorial/tutorial.html) on how to use PyeMap. This tutorial is also available as a Jupyter notebook in the examples directory.
@@ -47,7 +47,7 @@ Please report any bugs and make feature requests [here](https://github.com/gayve
 # License
 Released under the 3-Clause BSD license (see LICENSE).
 
-Copyright (C) 2019
+Copyright (C) 2018-2022
 
 James Gayvert <jrg444@gmail.com>
 

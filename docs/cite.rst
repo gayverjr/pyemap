@@ -25,6 +25,14 @@ Wolfgang, K.; Christian, S. *Biopolymers*, **1983**, 22, 2577-2637. |br|
 Threshold: |br|
 Tien, M. Z.; Meyer, A. G.; Sydykova, D. K.; Spielman, S. J.; Wilke, C. O. *PLoS ONE*, **2013**, 8, 1-8.
 
+**Multiple Sequence Alignment** |br|
+MUSCLE_: |br|
+Edgar RC. *Nucleic Acids Res.* **2004** 32(5) 1792-1797.
+
+**Graph Mining** |br|
+gSpan_: |br|
+X. Yan and J. Han. *Proc. Int'l Conf. Data Mining*, **2002**.
+
 Biopython_: |br|
 Application note:|br|
 Cock, P. J. A.; Antao, T.; Chang, J. T.; Chapman, B. A.; Cox, C. J.; Dalke, A.; Friedberg, I.;
@@ -35,9 +43,10 @@ Hamelryck, T.; Manderick, B. *Bioinformatics*, **2003**, 19, 2308-2310.
 NetworkX_: |br|
 Hagberg, A. A.; Schult, D. A.; Swart, P. J. *Exploring Network Structure, Dynamics, and Function using NetworkX*. Pasadena, CA USA, **2008**.
 
+
 Other Supporting Software
 ---------------------------
-RDKit_ , NumPy_ , SciPy_ , PyGraphviz_ , Graphviz_
+RDKit_ , NumPy_ , SciPy_ , PyGraphviz_ , Graphviz_, pysmiles_, gspan-mining_
 
 .. _MSMS: http://mgltools.scripps.edu/packages/MSMS/
 
@@ -56,6 +65,14 @@ RDKit_ , NumPy_ , SciPy_ , PyGraphviz_ , Graphviz_
 .. _PyGraphviz: https://pygraphviz.github.io/
 
 .. _Graphviz: https://graphviz.gitlab.io/
+
+.. _MUSCLE: https://www.drive5.com/muscle/
+
+.. _gSpan: https://sites.cs.ucsb.edu/~xyan/papers/gSpan-short.pdf
+
+.. _gspan-mining: https://pypi.org/project/gspan-mining/
+
+.. _pysmiles: https://github.com/pckroon/pysmiles
 
 .. |br| raw:: html
 

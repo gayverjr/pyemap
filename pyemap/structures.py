@@ -1,101 +1,34 @@
-# PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.
-# Copyright(C) 2017-2020 Ruslan Tazhigulov, James Gayvert, Ksenia Bravaya (Boston University, USA)
-from heapq import heappop, heappush
+## Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import networkx as nx
 import numpy as np
 from .data import SB_means,SB_std_dev
-from collections import defaultdict
-
-
-def buildSmarts(graph, cur, prev):
-    '''DFS algorithm to generate Smarts string.
-
-    Parameters
-    ----------
-    graph: :class:`networkx.Graph`
-    atoms: array-like
-        List of atoms in structure
-    cur,prev: int 
-        Atom indices
-
-    References
-    ----------
-    Varnek, A. Tutorials in Chemoinformatics; John Wiley & Sons, Inc.: Hoboken, NJ, 2017.
-    '''
-    visited.add(cur)
-    seq = ''
-    seq += graph.nodes[cur]["element"].lower()
-    for d in closingClosures[cur]:
-        seq += d
-        heappush(digits, d[-1])
-    for a in openingClosures[cur]:
-        d = str(heappop(digits))
-        seq += d
-        closingClosures[a].append(d)
-    branches = []
-    neighbors = list(graph.neighbors(cur))
-    if prev in neighbors:
-        neighbors.remove(prev)
-    for neighbor in neighbors:
-        if neighbor not in visited:
-            branches.append(buildSmarts(graph, neighbor, cur))
-    for branch in branches[:-1]:
-        seq += "(" + branch + ")"
-    if len(branches) > 0:
-        seq += branches[-1]
-    return seq
-
-
-def getClosures(graph, cur, prev):
-    '''DFS algorithm to generate Smarts string.
-
-    graph: :class:`networkx.Graph`
-        Chemical graph
-    cur,prev: int
-        Atom indices
-
-    References
-    ----------
-    Varnek, A. Tutorials in Chemoinformatics; John Wiley & Sons, Inc.: Hoboken, NJ, 2017.
-
-    '''
-    ancestor.add(cur)
-    visited.add(cur)
-    neighbors = list(graph.neighbors(cur))
-    if prev in neighbors:
-        neighbors.remove(prev)
-    for neighbor in neighbors:
-        if neighbor in ancestor:
-            openingClosures[neighbor].append(cur)
-        elif neighbor not in visited:
-            getClosures(graph, neighbor, cur)
-    ancestor.remove(cur)
-
-
-def getSimpleSmarts(graph):
-    """DFS algorithm to generate Smarts string.
-
-    Parameters
-    ----------
-    graph: :class:`networkx.Graph`
-        Chemical graph
-
-    References
-    ----------
-    Varnek, A. Tutorials in Chemoinformatics; John Wiley & Sons, Inc.: Hoboken, NJ, 2017.
-
-    """
-    root = list(graph.nodes())[0]
-    global visited, ancestor, openingClosures, closingClosures, digits
-    visited = set()
-    ancestor = set()
-    openingClosures = defaultdict(list)
-    getClosures(graph, root, None)
-    closingClosures = defaultdict(list)
-    digits = [str(x) for x in range(1, 10)]
-    visited = set()
-    return buildSmarts(graph, root, None)
-
 
 def is_part_of_cycle(node, res_graph):
     for cycle in nx.cycle_basis(res_graph):
