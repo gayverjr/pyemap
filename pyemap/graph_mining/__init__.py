@@ -26,6 +26,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+'''Classes and functions for performing graph mining on a group of PDBs.'''
+
 from .protein_group import PDBGroup
 from .frequent_subgraph import SubgraphPattern
 from .utils import write_graph_smiles

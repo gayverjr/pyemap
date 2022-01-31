@@ -1,5 +1,6 @@
 include LICENSE
 include MANIFEST.in
+include pypi.md
 
 graft pyemap
 global-exclude *.py[cod] __pycache__ *.so

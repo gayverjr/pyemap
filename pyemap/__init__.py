@@ -26,6 +26,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+'''PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins.'''
+
 from .parser import fetch_and_parse,parse
 from .process_data import process
 from .pathway_analysis import find_paths
