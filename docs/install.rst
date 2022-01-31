@@ -26,5 +26,6 @@ Anaconda_ cloud for some platforms.
 .. _RDKit: https://www.rdkit.org/docs/Install.html
 .. _MUSCLE: http://www.drive5.com/muscle/
 .. _RCSB: https://www.rcsb.org/
+.. _Anaconda: https://anaconda.org/
 
 
