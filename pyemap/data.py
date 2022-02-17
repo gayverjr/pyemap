@@ -187,6 +187,22 @@ SB_std_dev = {
     'PP': 0.025
 }
 
+
+site_energies={
+    'D' : 2.24,
+    'C' : 9.69,
+    'FAD':8.29,
+    'E' : 3.78,
+    'NADH': 7.29,
+    'NAD+':7.29,
+    'PLQ':10.60,
+    'Y':8.20,
+    'W':7.63,
+    'H':8.47,
+    'P':8.84,
+    'ANP': 8.2
+}
+
 import os
 # clusters
 clusters = os.listdir(os.path.abspath(os.path.dirname(__file__)) + '/data/clusters')
