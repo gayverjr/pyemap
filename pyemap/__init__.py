@@ -34,3 +34,4 @@ from .pathway_analysis import find_paths
 from .emap import emap
 from .shortest_paths import ShortestPath, Branch
 from . import graph_mining
+from . import coupling

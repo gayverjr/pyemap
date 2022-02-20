@@ -44,9 +44,10 @@ from scipy.spatial import distance_matrix
 import math
 from collections import OrderedDict
 import warnings
-from .data import res_name_to_char, side_chain_atoms, char_to_res_name
+from .data import res_name_to_char, side_chain_atoms, char_to_res_name, reorganization_energies, site_energies
 from .pyemap_exceptions import *
 from .utils import validate_binary_params
+from .coupling import compute_couplings
 
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
@@ -130,6 +131,21 @@ def calculate_residue_depth(model, aromatic_residues, rd_cutoff):
         warnings.warn("Unable to calculate residue depth. Check that MSMS is installed.", RuntimeWarning, stacklevel=2)
         return []
 
+def compute_energetics(G,residues):
+    T = 298.15
+    Kb = 8.617333262E-5
+    planck = 4.135667696E-15
+    compute_couplings(G,residues)
+    H = G.to_directed()
+    for edge in H.edges:
+        donor = edge[0][0]
+        acceptor = edge[1][0]
+        lda = (reorganization_energies[donor] + reorganization_energies[acceptor])/2
+        vda = H.edges[edge]['coupling']
+        deltaG = site_energies[acceptor] - site_energies[donor]
+        kda = ((2*np.pi)**2/planck)*(vda**2)*(4*np.pi*lda*T*Kb)**-0.5*np.exp(-1*(deltaG+lda)**2/(4*lda*Kb*T))     
+        H.edges[edge]['weight'] = 1/kda
+    return H
 
 def calculate_rsa(filename, model, node_list, rsa_cutoff):
     """Returns a list of surface exposed residues as determined by relative solvent accessibility.
@@ -557,7 +573,7 @@ def filter_by_degree(G, max_degree, distance_cutoff, coef_alpha, exp_beta, r_off
             G.remove_edge(u, v)
 
 
-def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, distance_cutoff, percent_edges,
+def create_graph(com_matrix, catm_dmatrix, dist_def, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, distance_cutoff, percent_edges,
                  num_st_dev_edges, max_degree, eta_moieties):
     """Constructs the graph from the distance matrix and node labels.
 
@@ -588,7 +604,16 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
         Reference for 20A filter on edges
     """
     np.set_printoptions(threshold=sys.maxsize)
-    G = nx.from_numpy_array(dmatrix)
+    if dist_def == 'COM':
+        G = nx.from_numpy_array(com_matrix)
+    elif dist_def =='CATM' or dist_def=="COUPLING":
+        G = nx.from_numpy_array(catm_dmatrix)
+    else:
+        raise PyeMapGraphException("Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
+    for i in range(0,len(com_matrix)):
+        for j in range(i+1,len(com_matrix)):
+            G.edges[(i,j)]['com'] = com_matrix[i][j]
+            G.edges[(i,j)]['catm'] = catm_dmatrix[i][j]
     G = nx.relabel_nodes(G, node_labels)
     if edge_prune == 'DEGREE':
         filter_by_degree(G, max_degree, distance_cutoff, coef_alpha, exp_beta, r_offset)
@@ -640,7 +665,7 @@ def store_params(emap, params):
 def process(emap,
             chains=None,
             eta_moieties=None,
-            dist_def='COM',
+            dist_def='CATM',
             sdef='RSA',
             edge_prune='PERCENT',
             include_residues=["Y", "W"],
@@ -741,15 +766,11 @@ def process(emap,
     node_labels = {}
     for i in range(0, len(all_residues)):
         node_labels[i] = all_residues[i].node_label
-    if dist_def == 'COM':
-        dmatrix = com_dmatrix(all_residues)
-    elif dist_def == 'CATM':
-        dmatrix = closest_atom_dmatrix(all_residues)
-    else:
-        raise PyeMapGraphException(
-            "Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
-    G = create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, distance_cutoff, percent_edges,
+    COM_matrix = com_dmatrix(all_residues)
+    catm_dmatrix = closest_atom_dmatrix(all_residues)
+    G = create_graph(COM_matrix, catm_dmatrix, dist_def, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, distance_cutoff, percent_edges,
                      num_st_dev_edges, max_degree, emap.eta_moieties.keys())
+    G = compute_energetics(G,all_residues)
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise PyeMapGraphException("Not enough edges to construct a graph.")
