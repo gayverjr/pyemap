@@ -40,7 +40,7 @@ def extract_resname(residue):
         return resname
 
 
-def validate_binary_params(dist_def, edge_prune, sdef):
+def validate_binary_params(dist_def, edge_prune, sdef, weighting_method):
     ''' Checks if dist_def, sdef, and edge_prune are defined properly. Accepts old 0,1 inputs as well for compatibility with older versions/eMap.
     '''
     try:
@@ -55,6 +55,20 @@ def validate_binary_params(dist_def, edge_prune, sdef):
             raise PyeMapGraphException("Improper specification of dist_def. Should be 'COM' or 'CATM'.")
         else:
             dist_def = dist_def.upper()
+    try:
+        if int(weighting_method) == 0:
+            weighting_method = 'DISTANCE'
+        elif int(weighting_method) == 1:
+            weighting_method = 'ENERGY'
+        else:
+            raise PyeMapGraphException("Improper specification of weighting. Should be 'ENERGY' or 'DISTANCE'.")
+    except ValueError:
+        if weighting_method.upper() not in ['DISTANCE', 'ENERGY']:
+            raise PyeMapGraphException("Improper specification of dist_def. Should be 'DISTANCE' or 'ENERGY'.")
+        else:
+            weighting_method = weighting_method.upper()
+
+
     try:
         if sdef is None:
             pass
@@ -81,4 +95,4 @@ def validate_binary_params(dist_def, edge_prune, sdef):
             raise PyeMapGraphException("Improper specification of edge_prune. Should be 'DEGREE' or 'PERCENT'.")
         else:
             edge_prune = edge_prune.upper()
-    return dist_def, edge_prune, sdef
+    return dist_def, edge_prune, sdef, weighting_method

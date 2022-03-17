@@ -493,19 +493,22 @@ def finish_graph(G, surface_exposed_res):
 
 
 
+
+
 def filter_by_percent(G, percent_edges, num_st_dev_edges, weighting_method, distance_cutoff, coef_alpha, exp_beta, r_offset):
     included_edges = []
     minval = min(dict(G.edges).items(), key=lambda x: x[1]['weight'])[1]['weight']
     # should never happen, but just in case
     if minval == 0:
         minval = 1
-    print(minval)
+    #print(minval)
     
     for _, _, d in G.edges(data=True):
       #  print(weighting)
+        
+        
         d['distance'] = d['weight']
-        if weighting_method == 'DISTANCE':
-            d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
+        d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
         d['len'] = d['weight'] / minval
             #    print(G.edges[(name_node1,name_node2)]['weight'])
                 
@@ -556,9 +559,8 @@ def filter_by_degree(G, max_degree, weighting_method, distance_cutoff, coef_alph
             remove_edges.append((u, v))
         else:
             
-            if weighting_method == 'DISTANCE':
-                d['distance'] = d['weight']
-                d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
+            d['distance'] = d['weight']
+            d['weight'] = pathways_model(d['weight'], coef_alpha, exp_beta, r_offset)
             d['len'] = d['weight'] / minval 
              # scaling factor for prettier graphs
              #   print(d['weight'])
@@ -576,7 +578,7 @@ def filter_by_degree(G, max_degree, weighting_method, distance_cutoff, coef_alph
 
 
 def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
-                 num_st_dev_edges, max_degree, eta_moieties):
+                 num_st_dev_edges, max_degree, eta_moieties,custom_site_energy):
 
     #print(weighting_method)
     """Constructs the graph from the distance matrix and node labels.
@@ -613,16 +615,9 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
 
 
 
-    if weighting_method == 'ENERGY':
-        for _, _, d in G.edges(data=True):
-            d['distance'] = d['weight']
-
-        for edge in G.edges():
-            name_node1, name_node2 = edge[0], edge[1]
-            G.edges[(name_node1,name_node2)]['weight']=build_edges(G,name_node1,name_node2)
 
 
-            #print(G.edges[(name_node1,name_node2)]['weight'])
+
 
 
 
@@ -633,6 +628,47 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
         filter_by_percent(G, percent_edges, num_st_dev_edges, weighting_method, distance_cutoff, coef_alpha, exp_beta, r_offset)
     else:
         raise PyeMapGraphException("Invalid choice of edge_prune. Must be set to 'DEGREE' or 'PERCENT'.")
+
+    custom_site={}
+    if weighting_method == 'ENERGY':
+        for _, _, d in G.edges(data=True):
+            d['distance'] = d['weight']
+
+
+
+       # if custom_reorg is None:
+        
+        #    custom_reorg = {}
+         
+        for eta in eta_moieties:
+            for e in custom_site_energy:
+                custom_site[eta] = e
+                custom_site_energy.remove(e)
+                break
+
+        #custom_site = {eta_moieties[i]: custom_site_energy[i] for i in range(len(eta_moieties))}
+        print(custom_site_energy)
+        print(custom_site)
+        #custom_reor = {eta_moieties[i]: custom_reorg[i] for i in range(len(eta_moieties))}
+        #print(custom_reor)
+
+        D = nx.DiGraph(G)
+        #print(D)
+        for edge in D.edges():
+            name_node1, name_node2 = edge[0], edge[1]
+            r=G.edges[edge]['distance']
+            before = np.log(G.edges[(name_node1,name_node2)]['weight'])
+            G.edges[(name_node1,name_node2)]['weight']=build_edges(G,D, name_node1,name_node2,r,custom_site) *100
+            after =np.log(G.edges[(name_node1,name_node2)]['weight'])
+            string = [before, after, name_node1,name_node2]
+            print(string[0], string[1], string[2], string[3])
+
+            
+
+
+
+
+
     for name_node in G.nodes():
         G.nodes[name_node]['style'] = 'filled'
         G.nodes[name_node]['fontname'] = 'Helvetica-Bold'
@@ -667,21 +703,26 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
 
 #Alyssa
 
+    
 
-def build_edges(G, name_node1, name_node2):
+
+def build_edges(G,D, name_node1, name_node2,r,custom_site):
+    
     
             #AlyssaG.edges[(node, neighbor)]['distance']
 
-    distance = G.edges[(name_node1, name_node2)]['distance']
+    D.edges[(name_node1,name_node2)]['rad'] = r
+
         
     if list(name_node1)[1].isnumeric()==True:
-            G.edges[(name_node1, name_node2)]['mol1'] = list(name_node1)[0]
+            D.edges[(name_node1, name_node2)]['mol1'] = list(name_node1)[0]
     if list(name_node1)[1].isalpha() ==True:
-            G.edges[(name_node1, name_node2)]['mol1'] = "".join(list(name_node1)[0:3])
+            D.edges[(name_node1, name_node2)]['mol1'] = "".join(list(name_node1)[0:3])
     if list(name_node2)[1].isnumeric() ==True:
-            G.edges[(name_node1, name_node2)]['mol2'] = list(name_node2)[0]
+            D.edges[(name_node1, name_node2)]['mol2'] = list(name_node2)[0]
     if list(name_node2)[1].isalpha() ==True:
-            G.edges[(name_node1, name_node2)]['mol2'] = "".join(list(name_node2)[0:3])
+            D.edges[(name_node1, name_node2)]['mol2'] = "".join(list(name_node2)[0:3])
+
 
 
 
@@ -690,7 +731,7 @@ def build_edges(G, name_node1, name_node2):
         if a.isdigit() ==True:
             num_2.append(a)
     num_2="".join(num_2)
-    G.edges[(name_node1, name_node2)]['num2'] =num_2
+    D.edges[(name_node1, name_node2)]['num2'] =num_2
         #print(num_2)
 
 
@@ -699,98 +740,107 @@ def build_edges(G, name_node1, name_node2):
         if a.isdigit() ==True:
             num_1.append(a)
     num_1="".join(num_1)
-    G.edges[(name_node1, name_node2)]['num1'] =num_1
+    D.edges[(name_node1, name_node2)]['num1'] =num_1
        # print(num_1)
 
 
-    G.edges[(name_node1, name_node2)]['chain1'] = name_node1[name_node1.find("(")+1:name_node1.find(")")]
-    G.edges[(name_node1, name_node2)]['chain2'] = name_node2[name_node2.find("(")+1:name_node2.find(")")]
+    D.edges[(name_node1, name_node2)]['chain1'] = name_node1[name_node1.find("(")+1:name_node1.find(")")]
+    D.edges[(name_node1, name_node2)]['chain2'] = name_node2[name_node2.find("(")+1:name_node2.find(")")]
         #print(name_node1)
         #print(name_node2)
 
-    G.edges[(name_node1,name_node2)]['k'],G.edges[(name_node1,name_node2)]['t']=energy_pen(G,name_node1, name_node2,distance)
+    D.edges[(name_node1,name_node2)]['k'],D.edges[(name_node1,name_node2)]['t']=energy_pen(G,D,name_node1,name_node2, custom_site)
 
-    return(G.edges[(name_node1, name_node2)]['t'])
-    #print(G.edges[(name_node1,name_node2)]['t'])
+    return(D.edges[(name_node1, name_node2)]['t'])
+    print(G.edges[(name_node1,name_node2)]['t'])
         
    
 
 
 
-def energy_pen(G,name_node1,name_node2,distance):
+def energy_pen(G,D, name_node1,name_node2,custom_site):
+
+
     hbar = 6.582119569* 10**-16 #ev s
  #ev s
     T= 300
     Kb = 8.617333262*10**-5 #ev/K
 
-
-
   
-    reorganization_energies(G,name_node1, name_node2)
-    C = James_coupling(G,name_node1,name_node1,distance)
-    site_E(G,name_node1, name_node2)
-    #print(la)f
-    #print(dg)
-    k = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*G.edges[(name_node1,name_node2)]['la'] *Kb*T))) *np.exp(-(G.edges[(name_node1,name_node2)]['dg']+G.edges[(name_node1,name_node2)]['la'])**2 /(4* G.edges[(name_node1,name_node2)]['la']*Kb*T))
+    reorganization_energies(G,D,name_node1, name_node2)
+    C = James_coupling(G,D,name_node1,name_node1,D.edges[(name_node1, name_node2)]['rad'])
+    site_E(G,D,name_node1, name_node2, custom_site)
+
+
+    k = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node1,name_node2)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node1,name_node2)]['dg']+D.edges[(name_node1,name_node2)]['la'])**2 /(4* D.edges[(name_node1,name_node2)]['la']*Kb*T))
     t=1/k
-    #print(k)
-    #print(t)
-    print(G.edges[(name_node1, name_node2)]['mol1'])
-    print(G.edges[(name_node1, name_node2)]['mol2'])
+
     return(k,t)
 
 
-def site_E(G,name_node1, name_node2):
+def site_E(G,D,name_node1, name_node2, custom_site):
 
-    if  G.edges[(name_node1, name_node2)]['mol1'] in site_energies:
-        G.edges[(name_node1,name_node2)]['s1'] = site_energies[G.edges[(name_node1, name_node2)]['mol1']]
-    else:
-        G.edges[(name_node1,name_node2)]['s1'] = 8
 
-    if G.edges[(name_node1, name_node2)]['mol2'] in site_energies:
-        G.edges[(name_node1,name_node2)]['s2'] = site_energies[G.edges[(name_node1, name_node2)]['mol2']]
+
+
+
+    if name_node1 in custom_site:
+        D.edges[(name_node1,name_node2)]['s1'] = custom_site[name_node1]
+        print(name_node1)
+        print(custom_site)
+    elif  D.edges[(name_node1, name_node2)]['mol1'] in site_energies:
+        D.edges[(name_node1,name_node2)]['s1'] = site_energies[D.edges[(name_node1, name_node2)]['mol1']]
     else:
-        G.edges[(name_node1,name_node2)]['s2'] = 10
+        D.edges[(name_node1,name_node2)]['s1'] = 0
+
+    if name_node2 in custom_site:
+        D.edges[(name_node1,name_node2)]['s2'] = custom_site[name_node2]
+    elif D.edges[(name_node1, name_node2)]['mol2'] in site_energies:
+        D.edges[(name_node1,name_node2)]['s2'] = site_energies[D.edges[(name_node1, name_node2)]['mol2']]
+    else:
+        D.edges[(name_node1,name_node2)]['s2'] = 0
     
-    G.edges[(name_node1,name_node2)]['dg'] = float( G.edges[(name_node1,name_node2)]['s2']) - float( G.edges[(name_node1,name_node2)]['s1'])
+    D.edges[(name_node1,name_node2)]['dg'] = float( D.edges[(name_node1,name_node2)]['s2']) - float( D.edges[(name_node1,name_node2)]['s1'])
 
-            
-        
-    return(G)
+    print(D.edges[(name_node1,name_node2)]['s1'])
+    print(D.edges[(name_node1,name_node2)]['s2'])
+    return(G,D)
 
 
-def James_coupling(G,name_node1,name_node2,distance):
-    C=10**-3
+def James_coupling(G,D,name_node1,name_node2,r):
+   #print(r)
+    C= (10**-2) / float(r)
+
    # print(C)
     return(C)
 
-def reorganization_energies(G,name_node1,name_node2):
-    if G.edges[(name_node1, name_node2)]['mol1'] == 'Y':
-        G.edges[(name_node1, name_node2)]['l1'] = 1.02
-    elif G.edges[(name_node1, name_node2)]['mol1'] == 'W':
-        G.edges[(name_node1, name_node2)]['l1'] = .95
-    elif G.edges[(name_node1, name_node2)]['mol1'] == 'M':
-        G.edges[(name_node1, name_node2)]['l1'] = 1.08
-    elif G.edges[(name_node1, name_node2)]['mol1'] == 'C':
-        G.edges[(name_node1, name_node2)]['l1'] = 1.27
+def reorganization_energies(G,D,name_node1,name_node2):
+    if D.edges[(name_node1, name_node2)]['mol1'] == 'Y':
+        D.edges[(name_node1, name_node2)]['l1'] = 1.02
+    elif D.edges[(name_node1, name_node2)]['mol1'] == 'W':
+        D.edges[(name_node1, name_node2)]['l1'] = .95
+    elif D.edges[(name_node1, name_node2)]['mol1'] == 'M':
+        D.edges[(name_node1, name_node2)]['l1'] = 1.08
+    elif D.edges[(name_node1, name_node2)]['mol1'] == 'C':
+        D.edges[(name_node1, name_node2)]['l1'] = 1.27
     else:
-        G.edges[(name_node1, name_node2)]['l1']=1.1
+        D.edges[(name_node1, name_node2)]['l1']=1.1
 
 
-    if G.edges[(name_node1, name_node2)]['mol2'] == 'Y':
-        G.edges[(name_node1, name_node2)]['l2'] = 1.02
-    elif G.edges[(name_node1, name_node2)]['mol2'] == 'W':
-        G.edges[(name_node1, name_node2)]['l2'] = .95
-    elif G.edges[(name_node1, name_node2)]['mol2'] == 'M':
-        G.edges[(name_node1, name_node2)]['l2'] = 1.08
-    elif G.edges[(name_node1, name_node2)]['mol2'] == 'C':
-        G.edges[(name_node1, name_node2)]['l2'] = 1.27
+    if D.edges[(name_node1, name_node2)]['mol2'] == 'Y':
+        D.edges[(name_node1, name_node2)]['l2'] = 1.02
+    elif D.edges[(name_node1, name_node2)]['mol2'] == 'W':
+        D.edges[(name_node1, name_node2)]['l2'] = .95
+    elif D.edges[(name_node1, name_node2)]['mol2'] == 'M':
+        D.edges[(name_node1, name_node2)]['l2'] = 1.08
+    elif D.edges[(name_node1, name_node2)]['mol2'] == 'C':
+        D.edges[(name_node1, name_node2)]['l2'] = 1.27
     else:
-        G.edges[(name_node1, name_node2)]['l2']=.98
+        D.edges[(name_node1, name_node2)]['l2']=.98
 
-    G.edges[(name_node1, name_node2)]['la'] = float(G.edges[(name_node1, name_node2)]['l2']) + float(G.edges[(name_node1, name_node2)]['l1'])
+    D.edges[(name_node1, name_node2)]['la'] = float(D.edges[(name_node1, name_node2)]['l2']) + float(D.edges[(name_node1, name_node2)]['l1'])
 
-    return(G.edges)
+    return(G.edges, D.edges)
 
 
 def store_params(emap, params):
@@ -809,7 +859,7 @@ def process(emap,
             edge_prune='PERCENT',
             include_residues=["Y", "W"],
             custom="",
-            weighting_method = "ENERGY",
+            weighting_method = 'ENERGY',
             distance_cutoff=20,
             max_degree=4,
             percent_edges=1.0,
@@ -818,7 +868,11 @@ def process(emap,
             rsa_thresh=0.2,
             coef_alpha=1.0,
             exp_beta=2.3,
-            r_offset=0.0):
+            r_offset=0.0,
+            custom_site_energy=None,
+            custom_reorg=None):
+
+
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
 
     Parameters
@@ -858,14 +912,29 @@ def process(emap,
     RuntimeError:
         Not enough residues to construct a graph
 
+
+    
     """
+
+
     max_degree = int(max_degree)
-    dist_def, edge_prune, sdef = validate_binary_params(dist_def, edge_prune, sdef)
+    dist_def, edge_prune, sdef, weighting_method = validate_binary_params(dist_def, edge_prune, sdef,weighting_method)
     emap_params = locals().copy()
     emap._reset_process()
     pdb_file = emap.file_path
     if chains is None:
         chains = [emap.chains[0]]
+
+    if custom_site_energy is None:
+        custom_site_energy={}
+    if custom_reorg is None:
+        custom_reorg = {}
+
+    custom_site = {eta_moieties[i]: custom_site_energy[i] for i in range(len(eta_moieties))}
+    print(custom_site)
+    custom_reor = {eta_moieties[i]: custom_reorg[i] for i in range(len(eta_moieties))}
+    print(custom_reor)
+
     if eta_moieties is None:
         eta_moieties = []
         for resname, moiety in emap.eta_moieties.items():
@@ -914,7 +983,7 @@ def process(emap,
         raise PyeMapGraphException(
             "Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
     G = create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
-                     num_st_dev_edges, max_degree, emap.eta_moieties.keys())
+                     num_st_dev_edges, max_degree, emap.eta_moieties.keys(),custom_site_energy)
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise PyeMapGraphException("Not enough edges to construct a graph.")
