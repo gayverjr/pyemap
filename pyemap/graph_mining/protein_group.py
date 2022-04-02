@@ -33,7 +33,6 @@ import networkx as nx
 import datetime
 from ..data import char_to_res_name
 from Bio import SeqIO
-from Bio.Align.Applications import MuscleCommandline
 from .frequent_subgraph import SubgraphPattern
 import warnings
 from .utils import get_edge_label, get_numerical_node_label, get_graph_matcher, extract_chain, set_defaults, nodes_and_edges_from_smiles
@@ -162,25 +161,30 @@ class PDBGroup():
         Successful alignment requires installing MUSCLE (https://www.ebi.ac.uk/Tools/msa/muscle/) and having the exectuable in the path.
 
         '''
-        inp = NamedTemporaryFile(mode='w', delete=False)
-        out = NamedTemporaryFile(mode='w+', delete=False)
+        inp = 'data.fasta'
+        out = 'aligned.fasta'
         orig_fasta = ""
         try:
+            f = open(inp,'w')
             for pdb_id, emap in self.emaps.items():
                 for chain in emap.active_chains:
-                    inp.write(emap.sequences[chain] + "\n")
-                    orig_fasta += emap.sequences[chain] + "\n"
-            inp.close()
+                    if len(emap.sequences[chain].split('\n')[1].strip()) > 0:
+                        f.write(emap.sequences[chain] + "\n")
+                        orig_fasta += emap.sequences[chain] + "\n"
+            f.close()
+            self.fasta = orig_fasta
             try:
-                muscle_cline = MuscleCommandline(input=inp.name, out=out.name)
-                muscle_cline()
+                import subprocess
+                try:
+                    subprocess.run(['muscle', '-align', inp, '-output', out])
+                except Exception as e:
+                    subprocess.run(['muscle', '-in', inp, '-output', out])
                 seqIO = SeqIO.parse(out, "fasta")
                 aligned_fasta = ""
                 for record in seqIO:
                     self._aligned_sequences[record.id] = record.seq
                     aligned_fasta += '>' + str(record.id) + '\n'
                     aligned_fasta += str(record.seq) + '\n'
-                self.fasta = orig_fasta
                 self.aligned_fasta = aligned_fasta
                 # now lets save the updated sequence numbers
                 for pdb_id, emap in self.emaps.items():
@@ -199,9 +203,9 @@ class PDBGroup():
                             try:
                                 resnum = residue.sequence_index
                                 residue.aligned_residue_number = seq_map[int(resnum)]
-                            except Exception:
+                            except Exception as e:
                                 residue.aligned_residue_number = 'X'
-            except Exception:
+            except Exception as e:
                 for pdb_id, emap in self.emaps.items():
                     for chain, residues in emap.active_chains.items():
                         for residue in residues:
@@ -209,8 +213,10 @@ class PDBGroup():
                 warnings.warn("Warning: could not align sequences. Make sure that MUSCLE (https://www.drive5.com/muscle/manual/) is installed and "\
                 "accessible in the current path. Original residue numbers will be used for sequence similarity.")
         finally:
-            os.remove(inp.name)
-            os.remove(out.name)
+            if os.path.exists(inp):
+                os.remove(inp)
+            if os.path.exists(out):
+                os.remove(out)
 
     def _setup_process(self, chains={}, eta_moieties={}, include_residues=["Y", "W"], **kwargs):
         ''' Sets up parameters to begin emap graph generation.

@@ -36,11 +36,12 @@ from PIL import Image
 import os
 from shutil import copyfile
 import tempfile
-from cairosvg import svg2png
 from .process_data import get_atom_list
 import datetime
 from pysmiles import write_smiles
 from .pyemap_exceptions import *
+from .utils import draw_mpl_graph
+import warnings
 
 
 class emap():
@@ -348,7 +349,6 @@ class emap():
 
     def residue_to_Image(self, resname, scale=1.0):
         '''Returns PIL image of chemical structure. 
-
         Parameters
         -----------
         resname: str
@@ -370,10 +370,8 @@ class emap():
             if "CUST" in resname:
                 raise KeyError("Not available for user defined residues.")
             elif resname[:3] in clusters:
-                dest = tempfile.NamedTemporaryFile(suffix=".png").name
-                cluster_img_name = os.path.abspath(
-                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.svg'
-                svg2png(url=cluster_img_name, write_to=dest, scale=scale)
+                dest = os.path.abspath(
+                    os.path.dirname(__file__)) + '/data/clusters/' + resname[:3] + '.png'
                 img = Image.open(dest)
                 return img
             try:
@@ -381,15 +379,12 @@ class emap():
                     mol = Chem.MolFromSmiles(self.eta_moieties[resname].smiles)
                 except Exception:
                     mol = Chem.MolFromSmiles(self.residues[resname].smiles)
-                d2d = rdMolDraw2D.MolDraw2DSVG(100, 100)
+                d2d = rdMolDraw2D.MolDraw2DCairo(100, 100)
                 d2d.DrawMolecule(mol)
                 d2d.FinishDrawing()
-                dest1 = tempfile.NamedTemporaryFile(suffix=".svg").name
-                dest2 = tempfile.NamedTemporaryFile(suffix=".png").name
-                with open(dest1, 'w') as f:
-                    f.write(d2d.GetDrawingText())
-                svg2png(url=dest1, write_to=dest2, scale=scale)
-                img = Image.open(dest2)
+                dest = tempfile.NamedTemporaryFile(suffix=".png").name
+                d2d.WriteDrawingText(dest)  
+                img = Image.open(dest)
                 return img
             except Exception as e:
                 raise PyeMapException("Could not draw residue: {}".format(resname)) from e
@@ -405,26 +400,41 @@ class emap():
             Destination for writing to file.
         '''
         if G:
-            agraph = to_agraph(G)
-            agraph.graph_attr.update(ratio=1.0, overlap="rc", mode="ipsep", splines="true")
-            if agraph.number_of_nodes() <= 200:
-                try:
-                    agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-                except Exception as e:
-                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            else:
-                try:
-                    agraph.layout(prog='dot')
-                except Exception as e:
-                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            if dest:
-                svg_fn = dest + '.svg'
-                png_fn = dest + '.png'
-                agraph.draw(svg_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-                agraph.draw(png_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-            else:
-                png_fn = self.file_path[:-4] + "_graph.png"
-                agraph.draw(png_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+            try:
+                import pygraphviz
+                agraph = to_agraph(G)
+                agraph.graph_attr.update(ratio=1.0, overlap="rc", mode="ipsep", splines="true")
+                if agraph.number_of_nodes() <= 200:
+                    try:
+                        agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                    except Exception as e:
+                        raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
+                else:
+                    try:
+                        agraph.layout(prog='dot')
+                    except Exception as e:
+                        raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
+                if dest:
+                    svg_fn = dest + '.svg'
+                    png_fn = dest + '.png'
+                    agraph.draw(svg_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                    agraph.draw(png_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                else:
+                    png_fn = self.file_path[:-4] + "_graph.png"
+                    agraph.draw(png_fn, prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+            except (ModuleNotFoundError, ImportError) as e:
+                warnings.warn("Unable to import pygraphviz. See: http://pygraphviz.github.io/. Falling back on matplotlib...")
+                import matplotlib.pyplot as plt
+                draw_mpl_graph(G)
+                if dest:
+                    svg_fn = dest + '.svg'
+                    png_fn = dest + '.png'
+                    plt.savefig(svg_fn)
+                    plt.savefig(png_fn)
+                else:
+                    png_fn = self.file_path[:-4] + "_graph.png"
+                    plt.savefig(png_fn)
+                plt.clf()
         else:
             raise RuntimeError("Nothing to draw.")
 
@@ -524,16 +534,24 @@ class emap():
         '''
         if G:
             fout = tempfile.NamedTemporaryFile(suffix=".png")
-            agraph = to_agraph(G)
-            agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
             try:
-                agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
-            except Exception as e:
-                raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
-            if agraph.number_of_nodes() <= 200:
-                agraph.draw(fout.name, prog='neato')
-            else:
-                agraph.draw(fout.name, prog='dot')
+                import pygraphviz
+                agraph = to_agraph(G)
+                agraph.graph_attr.update(ratio=1.0, overlap="ipsep", mode="ipsep", splines="true")
+                try:
+                    agraph.layout(prog='neato', args="-Gepsilon=0.01 -Gmaxiter=50")
+                except Exception as e:
+                    raise RuntimeError("There was a problem with Graphviz. See https://graphviz.gitlab.io/") from e
+                if agraph.number_of_nodes() <= 200:
+                    agraph.draw(fout.name, prog='neato')
+                else:
+                    agraph.draw(fout.name, prog='dot')
+            except (ModuleNotFoundError, ImportError) as e:
+                import matplotlib.pyplot as plt
+                warnings.warn('Unable to import pygraphviz. See: http://pygraphviz.github.io/. Falling back on matplotlib...')
+                draw_mpl_graph(G)
+                plt.savefig(fout)
+                plt.clf()
             img = Image.open(fout.name)
             return img
         else:

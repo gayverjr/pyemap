@@ -39,6 +39,26 @@ def extract_resname(residue):
     except Exception:
         return resname
 
+def draw_mpl_graph(G):
+    import networkx as nx
+    pos = nx.spring_layout(G, seed=3113794652)
+    nx.draw_networkx_edges(G, pos, alpha=0.2)
+    try:
+        nodes =  [n for n in G.nodes() if G.nodes[n]['shape'] == 'oval']
+        colors = [G.nodes[n]['fillcolor'] for n in nodes]
+        nx.draw_networkx_nodes(G,pos,nodelist=nodes,node_color=colors, node_shape='o')
+        nodes =  [n for n in G.nodes() if G.nodes[n]['shape'] == 'box']
+        colors = [G.nodes[n]['fillcolor'] for n in nodes]
+        nx.draw_networkx_nodes(G,pos,nodelist=nodes,node_color=colors, node_shape='s')
+        nx.draw_networkx_labels(G,pos,font_size=6)
+    except KeyError:
+        colors = [G.nodes[n]['fillcolor'] for n in G.nodes()]
+        labels = {}
+        for n in G.nodes():
+            labels[n] = G.nodes[n]['label']
+        nx.draw_networkx_edges(G, pos, alpha=0.2)
+        nx.draw_networkx_nodes(G,pos,node_color=colors)
+        nx.draw_networkx_labels(G,pos,labels=labels,font_size=6)
 
 def validate_binary_params(dist_def, edge_prune, sdef):
     ''' Checks if dist_def, sdef, and edge_prune are defined properly. Accepts old 0,1 inputs as well for compatibility with older versions/eMap.
