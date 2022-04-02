@@ -29,11 +29,13 @@
 import numpy as np
 from Bio.SVDSuperimposer import SVDSuperimposer
 from .utils import get_graph_matcher, write_graph_smiles, make_pretty_subgraph
+from ..utils import draw_mpl_graph
 from networkx.drawing.nx_agraph import to_agraph
 import networkx as nx
 from PIL import Image
 from functools import total_ordering
 import tempfile
+import warnings
 
 
 def _gen_groups(cc, all_graphs):
@@ -338,7 +340,7 @@ class SubgraphPattern():
         '''
         total_dist = 0
         for key, val in mapping.items():
-            if sg1.nodes[key]['aligned_resnum'] != "X":
+            if sg1.nodes[key]['aligned_resnum'] != "X" and sg2.nodes[val]['aligned_resnum'] != "X":
                 total_dist += np.absolute(sg1.nodes[key]['aligned_resnum'] - sg2.nodes[val]['aligned_resnum'])
         return total_dist
 
@@ -435,7 +437,7 @@ class SubgraphPattern():
             sorted_graph.nodes[node]['num_label'] = protein_graph.nodes[node]['num_label']
             sorted_graph.nodes[node]['aligned_resnum'] = emap_obj.residues[node].aligned_residue_number
             sorted_graph.nodes[node]['resnum'] = emap_obj.residues[node].full_id[3][1]
-            sorted_graph.graph['pdb_id'] = protein_graph.graph['pdb_id']
+        sorted_graph.graph['pdb_id'] = protein_graph.graph['pdb_id']
         for edge in protein_subgraph.edges():
             sorted_graph.add_edge(edge[0], edge[1])
             for key in protein_graph.edges[edge]:
@@ -459,11 +461,20 @@ class SubgraphPattern():
         else:
             G = self.protein_subgraphs[id].copy()
         make_pretty_subgraph(G)
-        agraph = to_agraph(G)
-        agraph.graph_attr.update()
-        agraph.edge_attr.update(len='1.0')
-        fout = tempfile.NamedTemporaryFile(suffix=".png")
-        agraph.draw(fout.name, prog='dot')
+        try:
+            import pygraphviz
+            agraph = to_agraph(G)
+            agraph.graph_attr.update()
+            agraph.edge_attr.update(len='1.0')
+            fout = tempfile.NamedTemporaryFile(suffix=".png")
+            agraph.draw(fout.name, prog='dot')
+        except (ModuleNotFoundError, ImportError) as e:
+            warnings.warn("Unable to import pygraphviz. Falling back on matplotlib...")
+            import matplotlib.pyplot as plt
+            draw_mpl_graph(G)
+            fout = tempfile.NamedTemporaryFile(suffix=".png")
+            plt.savefig(fout)
+            plt.clf()
         img = Image.open(fout.name)
         return img
 
@@ -485,7 +496,16 @@ class SubgraphPattern():
             temp_G = make_pretty_subgraph(self.protein_subgraphs[id])
             if dest == "":
                 dest = self.id + "_" + id + ".png"
-        agraph = to_agraph(temp_G)
-        agraph.graph_attr.update()
-        agraph.edge_attr.update(len='1.0')
-        agraph.draw(dest, prog='dot')
+        try:
+            import pygraphviz
+            agraph = to_agraph(temp_G)
+            agraph.graph_attr.update()
+            agraph.edge_attr.update(len='1.0')
+            agraph.draw(dest, prog='dot')
+        except (ModuleNotFoundError, ImportError) as e:
+            warnings.warn("Unable to import pygraphviz. Falling back on matplotlib...")
+            import matplotlib.pyplot as plt
+            draw_mpl_graph(temp_G)
+            plt.savefig(dest)
+            plt.clf()
+

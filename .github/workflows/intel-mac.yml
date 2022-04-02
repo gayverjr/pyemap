@@ -1,10 +1,10 @@
-name: ubuntu
+name: intel-mac
 
 on: [push]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-20.04
+  build-intel-macos:
+    runs-on: macos-10.15
     defaults:
       run:
         shell: bash -l {0}
@@ -24,12 +24,11 @@ jobs:
           conda install -c conda-forge pygraphviz
           conda install -c conda-forge rdkit
           conda install -c bioconda muscle
-          conda install -c conda-forge msms
+          conda install -c salilab dssp
           pip install .
           
       - name: Generate coverage report
         run: |
-          sudo apt-get install dssp
           pip install pytest
           pip install pytest-cov
           pytest --cov=./ --cov-report=xml

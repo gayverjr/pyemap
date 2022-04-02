@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import pyemap
+import pytest
 import os
 import unittest
 
@@ -40,7 +41,8 @@ class PathwaysTest(unittest.TestCase):
         cls.my_emap3 = pyemap.fetch_and_parse("1u3d")
         pyemap.process(cls.my_emap3,sdef=None)
         os.remove("2oal.pdb") 
-
+    
+    @pytest.mark.deps
     def test_dijkstras_paths(self):
         pyemap.find_paths(self.my_emap,"W466(A)")
         assert len(self.my_emap.paths) == 5

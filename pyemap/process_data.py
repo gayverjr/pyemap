@@ -605,6 +605,7 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
         G.nodes[name_node]['fontcolor'] = "#000000"
         G.nodes[name_node]['color'] = '#708090'
         G.nodes[name_node]['penwidth'] = 2.0
+        G.nodes[name_node]['label'] = name_node
         if (name_node[1].isdigit()):
             if name_node not in eta_moieties:
                 if 'Y' == name_node[0]:

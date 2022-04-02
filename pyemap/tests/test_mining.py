@@ -31,6 +31,7 @@ import pyemap
 from pyemap.graph_mining import PDBGroup
 import os
 import numpy as np
+import pytest
 
 class PDBGroupProcess(unittest.TestCase):
     @classmethod
@@ -46,7 +47,8 @@ class PDBGroupProcess(unittest.TestCase):
     def tearDownClass(cls):
         for pdb in cls.pdb_ids:
             os.remove(pdb+".pdb")
-
+    
+    @pytest.mark.deps
     def test_clustering(self):
         self.pg.process_emaps(edge_prune='DEGREE')
         self.pg.generate_graph_database()

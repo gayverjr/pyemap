@@ -28,25 +28,39 @@
 
 import os
 import pyemap
+import pytest
 import tempfile
 from sys import platform
+import sys
 
-def test_save_functions():
+@pytest.mark.skipif('rdkit' not in sys.modules,
+                    reason="requires RDKIT")
+def test_residue_drawing():
     my_emap = pyemap.fetch_and_parse("4dja")
-    #cluster
     fout = tempfile.NamedTemporaryFile(suffix=".png")
-    #aromatic eta moiety
+    #cluster
     my_emap.residue_to_Image("SF4603(A)")
     my_emap.residue_to_file("SF4603(A)",dest=fout.name)
+    #aromatic eta moiety
     my_emap.residue_to_Image("FAD601(A)-1")
     my_emap.residue_to_file("FAD601(A)-1",dest=fout.name)
+    # standard residue
+    my_emap.residue_to_Image("Y443(A)")
+    my_emap.residue_to_file("Y443(A)",dest=fout.name)
+    my_emap = pyemap.fetch_and_parse("1A4A")
+    #ligand
+    my_emap.residue_to_Image("CU130(A)")
+    my_emap.residue_to_file("CU130(A)",dest=fout.name)
+    my_emap.residue_to_Image("CU130(A)")
+    my_emap.residue_to_file("CU130(A)",dest=fout.name)
+
+def test_graph_drawing():
+    my_emap = pyemap.fetch_and_parse("4dja")
+    fout = tempfile.NamedTemporaryFile(suffix=".png")
     if platform == "linux":
         pyemap.process(my_emap,sdef=1)
     elif platform == "darwin":
         pyemap.process(my_emap)
-    #standard residue
-    my_emap.residue_to_Image("Y443(A)")
-    my_emap.residue_to_file("Y443(A)",dest=fout.name)
     #init graph
     my_emap.init_graph_to_Image()
     my_emap.init_graph_to_file(dest=fout.name)
@@ -60,13 +74,6 @@ def test_save_functions():
 
 def test_ligands():
     my_emap = pyemap.fetch_and_parse("1A4A")
-    #cluster
-    fout = tempfile.NamedTemporaryFile(suffix=".png")
-    #aromatic eta moiety
-    my_emap.residue_to_Image("CU130(A)")
-    my_emap.residue_to_file("CU130(A)",dest=fout.name)
-    my_emap.residue_to_Image("CU130(A)")
-    my_emap.residue_to_file("CU130(A)",dest=fout.name)
     if platform == "linux":
         pyemap.process(my_emap,sdef=1)
     elif platform == "darwin":
