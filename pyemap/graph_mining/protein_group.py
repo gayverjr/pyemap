@@ -175,10 +175,11 @@ class PDBGroup():
             self.fasta = orig_fasta
             try:
                 import subprocess
-                try:
-                    subprocess.run(['muscle', '-align', inp, '-output', out])
-                except Exception as e:
-                    subprocess.run(['muscle', '-in', inp, '-output', out])
+                subprocess.run(['muscle', '-align', inp, '-output', out],capture_output=True)
+                if not os.path.exists(out):
+                    subprocess.run(['muscle', '-in', inp, '-out', out],capture_output=True)
+                if not os.path.exists(out):
+                    raise Exception("Couldn't align sequences.")
                 seqIO = SeqIO.parse(out, "fasta")
                 aligned_fasta = ""
                 for record in seqIO:
