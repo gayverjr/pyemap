@@ -4,8 +4,8 @@ PyeMap officially supports Python versions 3.7 and later, and has been tested fo
 
 **Pip**
 
-Pip installation will only install python dependencies, and requires a working Graphviz_ installation.
-This is sufficient to run PyeMap analysis, but some features will be missing::
+Pip installation will only install python dependencies. This is sufficient to run PyeMap analysis, 
+but some features will be missing::
 
     $ pip install pyemap
 
@@ -15,6 +15,8 @@ For full functionality, install the following packages:
     - MSMS_: residue depth criterion for surface exposed residues (not available on MacOS Catalina)
     - DSSP_: solvent accessibility criterion for surface exposed residues
     - MUSCLE_: Multiple sequence alignment
+    - Graphviz_: visualization of graphs
+    - PyGraphviz_ : visualization of graphs
 
 All of these packages can be downloaded free of charge from their respective owners, and build recipes are available on the
 Anaconda_ cloud for some platforms.
@@ -23,6 +25,7 @@ Anaconda_ cloud for some platforms.
 .. _MSMS: http://mgltools.scripps.edu/packages/MSMS
 .. _DSSP: https://github.com/cmbi/xssp/releases
 .. _Graphviz: https://graphviz.gitlab.io/
+.. _Pygraphviz: https://pygraphviz.github.io/
 .. _RDKit: https://www.rdkit.org/docs/Install.html
 .. _MUSCLE: http://www.drive5.com/muscle/
 .. _RCSB: https://www.rcsb.org/

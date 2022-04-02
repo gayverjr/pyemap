@@ -17,11 +17,11 @@ It serves as the backend for the web application [eMap](https://emap.bu.edu/), a
 # Installation
 
 ### Pip
-Pip installation will only install python dependencies, and requires [Graphviz](https://graphviz.gitlab.io/) in order to work. This is sufficient to run PyeMap analysis and view graph images, but some features will be missing.
+Pip installation will only install python dependencies, This is sufficient to run PyeMap analysis and view graph images, but some features will be missing.
 ```
 pip install pyemap
 ```
-For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [MUSCLE](https://www.drive5.com/muscle/), [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina and later), and [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), all of which can be downloaded free of charge from their owners, and are available on most platforms. 
+For full functionality, install [RDKit](https://www.rdkit.org/docs/Install.html), [Graphviz](https://graphviz.gitlab.io/),  [PyGraphviz](https://pygraphviz.github.io/), [MUSCLE](https://www.drive5.com/muscle/), [MSMS](http://mgltools.scripps.edu/packages/MSMS) (not available on Mac OS Catalina and later), and [DSSP](https://swift.cmbi.umcn.nl/gv/dssp/DSSP_3.html), all of which can be downloaded free of charge from their owners, and are available on most platforms. 
 
 # Getting started
 Please see our tutorials for [single](https://pyemap.readthedocs.io/en/latest/tutorial/single_protein.html) and [multiple](https://pyemap.readthedocs.io/en/latest/tutorial/mining.html) protein analysis to help get started using PyeMap. We also provide sample Jupyter notebooks in the examples directory.
