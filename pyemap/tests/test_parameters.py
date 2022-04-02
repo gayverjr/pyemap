@@ -129,16 +129,6 @@ class SingleChainParams(unittest.TestCase):
         for residue in self.my_emap.residues.values():
             resnames.append(residue.resname)
         assert all(elem in resnames for elem in ["CUST-1","CUST-2"])
-        try:
-            self.my_emap.residue_to_file('CUST-1')
-            assert False
-        except KeyError:
-            assert True
-        try:
-            self.my_emap.residue_to_Image('CUST-1')
-            assert False
-        except KeyError:
-            assert True
         #example for bad custom residues, shoud raise exception
         try:
             pyemap.process(self.my_emap, custom = "(28-41)")
