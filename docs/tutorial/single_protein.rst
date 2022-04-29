@@ -43,7 +43,7 @@ active moieties are included.
 There are various parameters one can specify to control which residues are included in the graph, and the overall connectivity of the graph.
 For example, to include phenylalanine residues, and to modify the pure distance filter for edges, do:
 
-   >>> pyemap.process(my_emap,phe=True,distance_cutoff=15)
+   >>> pyemap.process(my_emap,include_residues=['Y','W','F'],distance_cutoff=15)
    >>> my_emap.init_graph_to_Image().show()
 
 .. image:: images/phe.png
