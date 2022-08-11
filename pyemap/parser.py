@@ -144,11 +144,11 @@ def parse(filename, quiet=True):
             if residue.resname in res_name_to_char:
                 seq.append(res_name_to_char[residue.resname])
                 residue.sequence_index = seq_idx
+                seq_idx += 1
             else:
                 residue.get_full_id()
                 non_standard_residue_list.append(residue.copy())
                 residue.sequence_index = 'X'
-            seq_idx += 1
         seq_str = ">" + idcode + ":" + chain.id + "\n" + ''.join(seq)
         sequences[chain.id] = seq_str
     custom_residue_list = process_custom_residues(non_standard_residue_list)
