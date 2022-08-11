@@ -161,8 +161,9 @@ class PDBGroup():
         Successful alignment requires installing MUSCLE (https://www.ebi.ac.uk/Tools/msa/muscle/) and having the exectuable in the path.
 
         '''
-        inp = 'data.fasta'
-        out = 'aligned.fasta'
+        dir_path = os.path.dirname(next(iter(self.emaps.items()))[1].file_path)
+        inp = os.path.join(dir_path,'data_inp.fasta')
+        out = os.path.join(dir_path,'aligned_out.fasta')
         orig_fasta = ""
         try:
             f = open(inp,'w')
