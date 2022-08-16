@@ -200,7 +200,6 @@ site_energies={
     'W':7.63,
     'H':8.47,
     'P':8.84,
-    'ANP': 8.2
 }
 
 import os

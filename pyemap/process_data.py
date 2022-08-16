@@ -47,6 +47,9 @@ import warnings
 from .data import res_name_to_char, side_chain_atoms, char_to_res_name, site_energies
 from .pyemap_exceptions import *
 from .utils import validate_binary_params
+from .FF_emap import *
+from .ak_test import *
+from .aminoacids import params_dict 
 
 
 # Monkey patches detach self to save original ID upon re-assignment to custom residue
@@ -158,6 +161,7 @@ def calculate_rsa(filename, model, node_list, rsa_cutoff):
         dssp = DSSP(model, filename, acc_array="Wilke")
         for key in dssp.keys():
             goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
+            print('key1', key[1][1], 'dssp', dssp[key][3], 'goal_str', goal_str, 'rsa_cutoff', rsa_cutoff)
             if goal_str in node_list and dssp[key][3] >= rsa_cutoff:
                 surface_exposed_res.append(goal_str)
     except Exception:
@@ -578,7 +582,7 @@ def filter_by_degree(G, max_degree, weighting_method, distance_cutoff, coef_alph
 
 
 def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
-                 num_st_dev_edges, max_degree, eta_moieties,custom_site_energy):
+                 num_st_dev_edges, max_degree, eta_moieties,custom_site_energy,emap):
 
     #print(weighting_method)
     """Constructs the graph from the distance matrix and node labels.
@@ -647,10 +651,38 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
                 break
 
         #custom_site = {eta_moieties[i]: custom_site_energy[i] for i in range(len(eta_moieties))}
-        print(custom_site_energy)
-        print(custom_site)
+       # print(custom_site_energy)
+       # print(custom_site)
         #custom_reor = {eta_moieties[i]: custom_reorg[i] for i in range(len(eta_moieties))}
         #print(custom_reor)
+        protein_shift =1
+        SASA_shifts=1
+        sasa_percents={}
+        Fields={}
+        model=emap._structure[0]
+        if protein_shift == 1:
+            protonate('1u3d', 'A')    
+            Fields = create_forcefield("{}_protonated.txt".format('1u3d'))
+        if SASA_shifts ==1:
+           # print("{}_protonated.txt".format('1u3d'), model)
+            sasa_percents= build_SASA('1u3d.pdb', model)
+            print('SASA PERCENTS')
+            print(sasa_percents.items())
+            print(sasa_percents.values())
+            print(sasa_percents.keys())
+
+
+
+
+        
+
+
+
+          #  print('PRINTING BACK FIELDS', Fields['13'])
+            
+
+
+
 
         D = nx.DiGraph(G)
         #print(D)
@@ -658,10 +690,10 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
             name_node1, name_node2 = edge[0], edge[1]
             r=G.edges[edge]['distance']
             before = np.log(G.edges[(name_node1,name_node2)]['weight'])
-            G.edges[(name_node1,name_node2)]['weight']=build_edges(G,D, name_node1,name_node2,r,custom_site) *100
+            G.edges[(name_node1,name_node2)]['weight']=build_edges(G,D, name_node1,name_node2,r,custom_site,Fields) 
             after =np.log(G.edges[(name_node1,name_node2)]['weight'])
             string = [before, after, name_node1,name_node2]
-            print(string[0], string[1], string[2], string[3])
+           # print(string[0], string[1], string[2], string[3])
 
             
 
@@ -706,7 +738,7 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
     
 
 
-def build_edges(G,D, name_node1, name_node2,r,custom_site):
+def build_edges(G,D, name_node1, name_node2,r,custom_site,Fields):
     
     
             #AlyssaG.edges[(node, neighbor)]['distance']
@@ -732,7 +764,7 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site):
             num_2.append(a)
     num_2="".join(num_2)
     D.edges[(name_node1, name_node2)]['num2'] =num_2
-        #print(num_2)
+  #  print(num_2)
 
 
     num_1=[]
@@ -741,7 +773,7 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site):
             num_1.append(a)
     num_1="".join(num_1)
     D.edges[(name_node1, name_node2)]['num1'] =num_1
-       # print(num_1)
+   # print(num_1)
 
 
     D.edges[(name_node1, name_node2)]['chain1'] = name_node1[name_node1.find("(")+1:name_node1.find(")")]
@@ -749,16 +781,16 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site):
         #print(name_node1)
         #print(name_node2)
 
-    D.edges[(name_node1,name_node2)]['k'],D.edges[(name_node1,name_node2)]['t']=energy_pen(G,D,name_node1,name_node2, custom_site)
+    D.edges[(name_node1,name_node2)]['k'],D.edges[(name_node1,name_node2)]['t']=energy_pen(G,D,name_node1,name_node2, custom_site,Fields)
 
     return(D.edges[(name_node1, name_node2)]['t'])
-    print(G.edges[(name_node1,name_node2)]['t'])
+   # print(G.edges[(name_node1,name_node2)]['t'])
         
    
 
 
 
-def energy_pen(G,D, name_node1,name_node2,custom_site):
+def energy_pen(G,D, name_node1,name_node2,custom_site,Fields):
 
 
     hbar = 6.582119569* 10**-16 #ev s
@@ -769,7 +801,8 @@ def energy_pen(G,D, name_node1,name_node2,custom_site):
   
     reorganization_energies(G,D,name_node1, name_node2)
     C = James_coupling(G,D,name_node1,name_node1,D.edges[(name_node1, name_node2)]['rad'])
-    site_E(G,D,name_node1, name_node2, custom_site)
+    site_E(G,D,name_node1, name_node2, custom_site,Fields)
+
 
 
     k = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node1,name_node2)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node1,name_node2)]['dg']+D.edges[(name_node1,name_node2)]['la'])**2 /(4* D.edges[(name_node1,name_node2)]['la']*Kb*T))
@@ -778,32 +811,62 @@ def energy_pen(G,D, name_node1,name_node2,custom_site):
     return(k,t)
 
 
-def site_E(G,D,name_node1, name_node2, custom_site):
 
 
+
+def site_E(G,D,name_node1, name_node2, custom_site,Fields):
+
+   # print(Fields)
+
+
+    r1 =  Fields[int(D.edges[(name_node1,name_node2)]['num1'])]
+    r2 =  Fields[int(D.edges[(name_node1,name_node2)]['num2'])]
+   # print(r1, 'shift1')
+   # print(r2, 'shift2')
 
 
 
     if name_node1 in custom_site:
-        D.edges[(name_node1,name_node2)]['s1'] = custom_site[name_node1]
-        print(name_node1)
-        print(custom_site)
+        D.edges[(name_node1,name_node2)]['s1'] = float(custom_site[name_node1]) - float(r1)
+        print('energy shift components', name_node1, custom_site[name_node1], r1, D.edges[(name_node1,name_node2)]['s1'])
+        original1 = custom_site[name_node1]
+      
     elif  D.edges[(name_node1, name_node2)]['mol1'] in site_energies:
-        D.edges[(name_node1,name_node2)]['s1'] = site_energies[D.edges[(name_node1, name_node2)]['mol1']]
+      #  print('name node',D.edges[(name_node1,name_node2)]['num1'])
+        D.edges[(name_node1,name_node2)]['s1'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]) - float(r1)
+        print('energy shift components', name_node1, site_energies[D.edges[(name_node1, name_node2)]['mol1']], r1, D.edges[(name_node1,name_node2)]['s1'])
+        original1 = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']])
     else:
         D.edges[(name_node1,name_node2)]['s1'] = 0
+        print('energy shift components', name_node1, 'none')
+        original1=0
 
     if name_node2 in custom_site:
-        D.edges[(name_node1,name_node2)]['s2'] = custom_site[name_node2]
+        D.edges[(name_node1,name_node2)]['s2'] = custom_site[name_node2] -float(r2)
+        print('energy shift components', name_node2, custom_site[name_node2], r2, D.edges[(name_node1,name_node2)]['s2'])
+        original2 = custom_site[name_node2]
     elif D.edges[(name_node1, name_node2)]['mol2'] in site_energies:
-        D.edges[(name_node1,name_node2)]['s2'] = site_energies[D.edges[(name_node1, name_node2)]['mol2']]
+        D.edges[(name_node1,name_node2)]['s2'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']]) - float(r2)
+        print('energy shift components', name_node2, site_energies[D.edges[(name_node1, name_node2)]['mol2']], r2, D.edges[(name_node1,name_node2)]['s2'])
+        original2 = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']])
     else:
         D.edges[(name_node1,name_node2)]['s2'] = 0
+        print('energy shift components', name_node2, 'none')
+        original2 =0
     
-    D.edges[(name_node1,name_node2)]['dg'] = float( D.edges[(name_node1,name_node2)]['s2']) - float( D.edges[(name_node1,name_node2)]['s1'])
 
-    print(D.edges[(name_node1,name_node2)]['s1'])
-    print(D.edges[(name_node1,name_node2)]['s2'])
+    D.edges[(name_node1,name_node2)]['dg'] = float( D.edges[(name_node1,name_node2)]['s2']) - float( D.edges[(name_node1,name_node2)]['s1'])
+   # print(D.edges[(name_node1,name_node2)]['dg'], float(original2) - float(original1) )
+    #print(D.edges[(name_node1,name_node2)]['num1'], r1, 'shift1', D.edges[(name_node1,name_node2)]['s1'], 'original')
+
+
+
+   # if protein_shift == 1:
+    #    D.edges[(name_node1,name_node2)]['s1_corrected'] = D.edges[(name_node1,name_node2)]['s1'] - create_forcefield[name_node1]
+     #   D.edges[(name_node1,name_node2)]['s2_corrected'] = D.edges[(name_node1,name_node2)]['s2'] - create_forcefield[name_node2]
+
+   # print(D.edges[(name_node1,name_node2)]['s1'])
+    #print(D.edges[(name_node1,name_node2)]['s2'])
     return(G,D)
 
 
@@ -843,6 +906,10 @@ def reorganization_energies(G,D,name_node1,name_node2):
     return(G.edges, D.edges)
 
 
+
+
+
+
 def store_params(emap, params):
     params.pop('chains')
     params.pop('eta_moieties')
@@ -870,7 +937,9 @@ def process(emap,
             exp_beta=2.3,
             r_offset=0.0,
             custom_site_energy=None,
-            custom_reorg=None):
+            custom_reorg=None,
+            protein_shift = 1,
+            SASA_shifts=1):
 
 
     """Constructs emap graph theory model based on user specs, and saves it to the emap object.
@@ -930,10 +999,11 @@ def process(emap,
     if custom_reorg is None:
         custom_reorg = {}
 
-    custom_site = {eta_moieties[i]: custom_site_energy[i] for i in range(len(eta_moieties))}
-    print(custom_site)
-    custom_reor = {eta_moieties[i]: custom_reorg[i] for i in range(len(eta_moieties))}
-    print(custom_reor)
+    else:
+        custom_site = {eta_moieties[i]: custom_site_energy[i] for i in range(len(eta_moieties))}
+      #  print(custom_site)
+        custom_reor = {eta_moieties[i]: custom_reorg[i] for i in range(len(eta_moieties))}
+     #   print(custom_reor)
 
     if eta_moieties is None:
         eta_moieties = []
@@ -983,7 +1053,7 @@ def process(emap,
         raise PyeMapGraphException(
             "Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
     G = create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
-                     num_st_dev_edges, max_degree, emap.eta_moieties.keys(),custom_site_energy)
+                     num_st_dev_edges, max_degree, emap.eta_moieties.keys(),custom_site_energy,emap)
     G.graph['pdb_id'] = emap.pdb_id
     if len(G.edges()) == 0:
         raise PyeMapGraphException("Not enough edges to construct a graph.")
@@ -998,6 +1068,7 @@ def process(emap,
             elif sdef == 'RSA':
                 surface_exposed_res = calculate_rsa(pdb_file, model, node_labels.values(), rsa_thresh)
             else:
+            
                 surface_exposed_res = []
                 warnings.warn("Invalid choice of surface definition. sdef must be set to 'RD' or 'RSA'.")
         except Exception:
