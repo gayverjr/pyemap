@@ -28,13 +28,18 @@ If G'=(N',E') is isomorphic to G, then:
 
     there exists a one-to-one mapping between E and E'
 
-If G’=(N’,E’) is a monomorphism of G, then:
-    N’ is a subset of N, 
+For two graphs G(V,E) and H(V',E'), G and H are subgraph isomorphic if there exists a G'(:math:`V_0,E_0``) such that:
+    G' is a subgraph of G, 
     
-    E’ is a subset of the set of edges in E relating nodes in N’
+    G' is isomorphic to H
 
-In PyeMap, for each PDB which supports the given subgraph pattern, we search for all subgraph monomorphisms of the protein graph
-which are isomorphic to the subgraph pattern. This gives us a set of *protein subgraphs*, which we can then cluster into 
+Note that in some sources, the term *subgraph isomorphism* is reserved for when G' is a 
+node- or edge-induced subgraph, and the term *monomorphism* is preferred for 
+subgraphs which are not induced. The task of identifying all such G' is known 
+as the *subgraph matching* problem, and we refer to individual G' as *subgraph isomorphisms*.
+
+In PyeMap, for each PDB which supports the given subgraph pattern, we search for all 
+subgraph isomorphisms within the protein graph. This gives us a set of *protein subgraphs*, which we can then cluster into 
 groups based on similarity.
 
 Each protein subgraph for a given subgraph pattern is assigned a unique ID with the format:
