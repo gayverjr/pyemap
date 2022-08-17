@@ -21,10 +21,14 @@ cation_sasa={
 	'V' : -2.871718154,
 	'T' : -2.725994126,
 	'K' :0,
+	'Q':0,
+	'G':0,
 	'R' :0,
 	'D' :0,
 	'E' :0,
 	'N':0 }
+
+	#the 0s are not yet calculated.. they are in progress 8/17
 
 
 
