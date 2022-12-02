@@ -1,5 +1,3 @@
-
-
 HOH={
 
     'OW' : -0.834,
@@ -1583,4 +1581,3 @@ params_dict = {'ASP': ASP,
                'NCYS':NCYS,
                'CYM': CYM,
                'NALA': NALA}
-         

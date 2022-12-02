@@ -657,13 +657,20 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
         #custom_reor = {eta_moieties[i]: custom_reorg[i] for i in range(len(eta_moieties))}
         #print(custom_reor)
         protein_shift =1
-        SASA_shifts=1
+        SASA_shifts=1 
         sasa_percents={}
         Fields={}
         model=emap._structure[0]
         if protein_shift == 1:
-            protonate('1u3d', 'A')    
-            Fields = create_forcefield("{}_protonated.txt".format('1u3d'))
+
+
+            hislist=histlist('1u3d.pdb')
+            
+           # protonate('1ala', 'A', hislist)    #undo nthis later
+            print('has protonated structure')
+           # fix_his("{}_protonated.txt".format('1U3D'))
+            Fields = create_forcefield("{}_protonated.txt".format('1u3d'),emap)
+
       
         if SASA_shifts ==1:
            # print("{}_protonated.txt".format('1u3d'), model)
@@ -703,6 +710,7 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
             name_node1, name_node2 = edge[0], edge[1]
             r=G.edges[edge]['distance']
           #  before = np.log(G.edges[(name_node1,name_node2)]['weight'])
+            print('Custom Site',custom_site)
             G.edges[(name_node1,name_node2)]['weight']=build_edges(G,D, name_node1,name_node2,r,custom_site,Fields,sasa_percents) 
            # after =np.log(G.edges[(name_node1,name_node2)]['weight'])
            # string = [before, after, name_node1,name_node2]
@@ -794,6 +802,7 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site,Fields,sasa):
         #print(name_node1)
         #print(name_node2)
 
+    print('energy pen check', name_node1, name_node2, sasa, Fields, custom_site)
     D.edges[(name_node1,name_node2)]['k'],D.edges[(name_node1,name_node2)]['t']=energy_pen(G,D,name_node1,name_node2, custom_site,Fields,sasa)
 
     return(D.edges[(name_node1, name_node2)]['t'])
@@ -804,7 +813,7 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site,Fields,sasa):
 
 
 def energy_pen(G,D, name_node1,name_node2,custom_site,Fields,sasa):
-
+    print('In energy pen')
 
     hbar = 6.582119569* 10**-16 #ev s
  #ev s
@@ -813,15 +822,24 @@ def energy_pen(G,D, name_node1,name_node2,custom_site,Fields,sasa):
 
   
     reorganization_energies(G,D,name_node1, name_node2)
-    C = James_coupling(G,D,name_node1,name_node1,D.edges[(name_node1, name_node2)]['rad'])
+    C = coupling(G,D,name_node1,name_node1,D.edges[(name_node1, name_node2)]['rad'])
     site_E(G,D,name_node1, name_node2, custom_site,Fields,sasa)
 
 
 
-    k = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node1,name_node2)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node1,name_node2)]['dg']+D.edges[(name_node1,name_node2)]['la'])**2 /(4* D.edges[(name_node1,name_node2)]['la']*Kb*T))
-    t=1/k
+    k1 = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node1,name_node2)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node1,name_node2)]['dg']+D.edges[(name_node1,name_node2)]['la'])**2 /(4* D.edges[(name_node1,name_node2)]['la']*Kb*T))
+  
+    kr = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node1,name_node2)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node1,name_node2)]['bdg']+D.edges[(name_node1,name_node2)]['la'])**2 /(4* D.edges[(name_node1,name_node2)]['la']*Kb*T))
 
-    return(k,t)
+    #k2 = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node2,name_node1)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node2,name_node1)]['dg']+D.edges[(name_node2,name_node1)]['la'])**2 /(4* D.edges[(name_node2,name_node1)]['la']*Kb*T))
+    
+    #print('rate constants', name_node1,name_node2, k1,k2,k)
+    t=1/k1
+    print('node1 node2 kf kr', name_node1, name_node2, k1, kr)
+  #  print('energies',name_node1, name_node2, C, D.edges[(name_node1,name_node2)]['la'],D.edges[(name_node1,name_node2)]['dg'],D.edges[(name_node1, name_node2)]['rad'])
+    
+
+    return(k1,t)
 
 
 
@@ -829,65 +847,54 @@ def energy_pen(G,D, name_node1,name_node2,custom_site,Fields,sasa):
 
 def site_E(G,D,name_node1, name_node2, custom_site,Fields,sasa):
 
-   # print(Fields)
-
+    print(name_node1)
+    print(name_node2)
 
     r1 =  Fields[int(D.edges[(name_node1,name_node2)]['num1'])]
     r2 =  Fields[int(D.edges[(name_node1,name_node2)]['num2'])]
-   # print(r1, 'shift1')
-   # print(r2, 'shift2')
-
 
 
     if name_node1 in custom_site:
         D.edges[(name_node1,name_node2)]['s1'] = float(custom_site[name_node1]) - float(r1)
-       # print('energy shift components', name_node1, custom_site[name_node1], r1, D.edges[(name_node1,name_node2)]['s1'])
-        original1 = custom_site[name_node1]
-      
+      #  original1 = custom_site[name_node1] 
     elif  D.edges[(name_node1, name_node2)]['mol1'] in site_energies:
-      #  print('name node',D.edges[(name_node1,name_node2)]['num1'])
-      #  print('checking sasa', sasa['cation'][name_node1])
+       # print(float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]), 'site E')
+       # print(float(r1), 'E field')
+       # print(sasa['cation'][name_node1], 'SASA')
         D.edges[(name_node1,name_node2)]['s1'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]) - float(r1) + sasa['cation'][name_node1]
-      #  print('energy shift components', name_node1, site_energies[D.edges[(name_node1, name_node2)]['mol1']], r1, D.edges[(name_node1,name_node2)]['s1'])
-        original1 = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']])
-      #  print('checking sasa2', float(site_energies[D.edges[(name_node1, name_node2)]['mol1']])- float(r1), sasa['cation'][name_node1],D.edges[(name_node1,name_node2)]['s1']/weight )
+
+     #   original1 = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']])
+        #print('delta g and shifts2', float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]) ,float(r1) , sasa['cation'][name_node1] )
     else:
         D.edges[(name_node1,name_node2)]['s1'] = 0
-      #  print('energy shift components', name_node1, 'none')
-        original1=0
+    #    original1=0
 
     if name_node2 in custom_site:
         D.edges[(name_node1,name_node2)]['s2'] = custom_site[name_node2] -float(r2)
-     #   print('energy shift components', name_node2, custom_site[name_node2], r2, D.edges[(name_node1,name_node2)]['s2'])
-        original2 = custom_site[name_node2]
+     #   original2 = custom_site[name_node2]
     elif D.edges[(name_node1, name_node2)]['mol2'] in site_energies:
         D.edges[(name_node1,name_node2)]['s2'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']]) - float(r2) + sasa['cation'][name_node2]
-      #  print('energy shift components', name_node2, site_energies[D.edges[(name_node1, name_node2)]['mol2']], r2, D.edges[(name_node1,name_node2)]['s2'])
-        original2 = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']])
+       # original2 = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']])
+       # print('delta g and shifts1', float(site_energies[D.edges[(name_node1, name_node2)]['mol2']]) ,float(r2) , sasa['cation'][name_node2] )
+
     else:
         D.edges[(name_node1,name_node2)]['s2'] = 0
-       # print('energy shift components', name_node2, 'none')
-        original2 =0
+      #  original2 =0
     
 
     D.edges[(name_node1,name_node2)]['dg'] = float( D.edges[(name_node1,name_node2)]['s2']) - float( D.edges[(name_node1,name_node2)]['s1'])
-   # print(D.edges[(name_node1,name_node2)]['dg'], float(original2) - float(original1) )
-    #print(D.edges[(name_node1,name_node2)]['num1'], r1, 'shift1', D.edges[(name_node1,name_node2)]['s1'], 'original')
+    D.edges[(name_node1,name_node2)]['bdg'] = float( D.edges[(name_node1,name_node2)]['s1']) - float( D.edges[(name_node1,name_node2)]['s2'])
+
+    #xD.edges[(name_node2,name_node1)]['dg'] = float( D.edges[(name_node1,name_node2)]['s1']) - float( D.edges[(name_node1,name_node2)]['s2'])
 
 
-
-   # if protein_shift == 1:
-    #    D.edges[(name_node1,name_node2)]['s1_corrected'] = D.edges[(name_node1,name_node2)]['s1'] - create_forcefield[name_node1]
-     #   D.edges[(name_node1,name_node2)]['s2_corrected'] = D.edges[(name_node1,name_node2)]['s2'] - create_forcefield[name_node2]
-
-   # print(D.edges[(name_node1,name_node2)]['s1'])
-    #print(D.edges[(name_node1,name_node2)]['s2'])
     return(G,D)
 
 
-def James_coupling(G,D,name_node1,name_node2,r):
+def coupling(G,D,name_node1,name_node2,r):
    #print(r)
-    C= (10**-2) / float(r)
+    #C= (10**-2) / float(r)
+    C= 2.7/(np.sqrt(25)) * np.exp(-.72 *r)
 
    # print(C)
     return(C)
@@ -916,7 +923,7 @@ def reorganization_energies(G,D,name_node1,name_node2):
     else:
         D.edges[(name_node1, name_node2)]['l2']=.98
 
-    D.edges[(name_node1, name_node2)]['la'] = float(D.edges[(name_node1, name_node2)]['l2']) + float(D.edges[(name_node1, name_node2)]['l1'])
+    D.edges[(name_node1, name_node2)]['la'] = (float(D.edges[(name_node1, name_node2)]['l2']) + float(D.edges[(name_node1, name_node2)]['l1']))
 
     return(G.edges, D.edges)
 
@@ -1055,6 +1062,7 @@ def process(emap,
         serial_dict = dict(zip(serial_numbers, selection))
         user_residues = get_user_residues(custom, used_atoms, serial_dict)
     all_residues += user_residues
+    print(len(all_residues))
     if len(all_residues) < 2:
         raise PyeMapGraphException("Not enough residues to construct a graph.")
     node_labels = {}
@@ -1067,12 +1075,10 @@ def process(emap,
     else:
         raise PyeMapGraphException(
             "Invalid choice of dist_def. Must be set to 'COM' (center of mass) or 'CATM'(closest atom).")
-    G = create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
-                     num_st_dev_edges, max_degree, emap.eta_moieties.keys(),custom_site_energy,emap)
-    G.graph['pdb_id'] = emap.pdb_id
-    if len(G.edges()) == 0:
-        raise PyeMapGraphException("Not enough edges to construct a graph.")
-    # define surface exposed residues
+
+
+    #this section was AFTER the creation of G. is this necesary? I really need this done before the graph is created so I can choose not to include surface ones if that option is selected without doing it 2x
+
     if sdef is None:
         warnings.warn("Protein surface will not be computed. All residues will be classified as buried...")
         surface_exposed_res = []
@@ -1089,7 +1095,25 @@ def process(emap,
         except Exception:
             wweigharnings.warn("Computing protein surface failed. All residues will be classified as buried...")
             surface_exposed_res = []
+    
+    emap._store_surface_residues(surface_exposed_res)
+
+    G = create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
+                     num_st_dev_edges, max_degree, emap.eta_moieties.keys(),custom_site_energy,emap)
+    G.graph['pdb_id'] = emap.pdb_id
+    
+    if len(G.edges()) == 0:
+        raise PyeMapGraphException("Not enough edges to construct a graph.")
+    # define surface exposed residues
+    
+
+
+
+
+####where i pulled from
+
     finish_graph(G, surface_exposed_res)
+
     for res in all_residues:
         emap._add_residue(res)
     for res in user_residues:
@@ -1098,6 +1122,25 @@ def process(emap,
     emap._include_residues = res_chars
     store_params(emap, emap_params)
 
+
   
 
     return emap
+
+
+
+def histlist(inputpdb):
+    print('in hlist')
+    hlist=[]
+    with open(inputpdb, 'r') as pdb:
+        for line in pdb:
+            if (line.split()[0] == 'ATOM'):
+                print(line)
+                resname=line.split()[3]
+                resnum=line.split()[5]
+                if resname == 'HIS':
+                    hstring=('H'+':'+resnum)
+                    hlist.append(hstring)
+        print('hlist', hlist)
+    return hlist
+
