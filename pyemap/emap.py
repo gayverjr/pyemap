@@ -99,6 +99,7 @@ class emap():
         self.paths_graph = None
         self.init_graph = None
         self.branches = OrderedDict()
+        self.surface_residues=[]
         for residue in eta_moieties:
             self._add_eta_moiety(residue)
 
@@ -134,6 +135,11 @@ class emap():
         for pt in shortest_paths:
             self.paths[pt.path_id] = pt
             self._visualize_pathway(pt, yens)
+
+    def _store_surface_residues(self,surface):
+        '''Returns emap object to state it was in after the process step.
+        '''
+        self.surface_residues = surface
 
     def _store_paths_graph(self, graph):
         '''Stores graph representation of emap model with selected pathway(s) highlighted

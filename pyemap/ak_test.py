@@ -16,10 +16,24 @@ import propka.run
          #   propka.run.single("protein.pdb",
           
           #      optargs=["--mutation=N25R/N181D", "-v", "--pH=7.2"])
-def protonate(pdbid, chain):
-	mymolecule=propka.run.single("{}.pdb".format(pdbid),  optargs=["-c {}".format(chain), "--protonate-all"],stream=None, write_pka=False)
+def protonate(pdbid, chain, hislist):
+
+
+
+	running_string=""
+	for i in range(0,len(hislist)):
+		running_string+=hislist[i]
+		if i !=len(hislist)-1:
+			running_string+=','
+	print(running_string)
+#	titrate='-i'+' ' +running_string
+#	print(titrate)
+#	print('titrate',titrate)
+	mymolecule=propka.run.single("{}.pdb".format(pdbid),  optargs=["-c {}".format(chain),"--protonate-all"],stream=None, write_pka=True)
 	write_pdb_for_conformation(mymolecule.conformations['1A'], '{}_protonated.txt'.format(pdbid))
-	write_pdb_for_conformation(mymolecule.conformations['1B'], '{}_protonated.txt'.format(pdbid))
+	#write_pdb_for_conformation(mymolecule.conformations['1B'], '{}_protonated.txt'.format(pdbid))
+
+
 
 #print(mymolecule.conformation_names)
 #print(mymolecule.conformations)
