@@ -28,6 +28,21 @@ cation_sasa={
 	'E' :0,
 	'N':0 }
 
+
+anion_protein_sasa={
+		'H' : 0.00,
+    'W' :  -1.644094,  
+    'Y' :  -1.684531,
+		'F'	:	 -1.7242245
+}
+
+cation_protein_sasa={
+		'H' : -1.7539736,
+    'W' :  -1.493116,  
+    'Y' :  -1.5834935,
+		'F'	:	 -1.6270458
+}
+
 	#the 0s are not yet calculated.. they are in progress 8/17
 
 

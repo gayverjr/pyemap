@@ -583,7 +583,7 @@ def filter_by_degree(G, max_degree, weighting_method, distance_cutoff, coef_alph
 
 
 def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
-                 num_st_dev_edges, max_degree, eta_moieties,custom_site_energy,emap):
+                 num_st_dev_edges, max_degree, eta_moieties,custom_site_energy,emap,field_type):
 
     #print(weighting_method)
     """Constructs the graph from the distance matrix and node labels.
@@ -661,32 +661,33 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
         sasa_percents={}
         Fields={}
         model=emap._structure[0]
-        if protein_shift == 1:
+
+        if field_type == 'atomistic':
 
 
-            hislist=histlist('1u3d.pdb')
+            hislist=[]
             
-           # protonate('1ala', 'A', hislist)    #undo nthis later
+            protonate('1U3D', 'A', hislist)    #undo nthis later
             print('has protonated structure')
+            sasa_percents= build_SASA('1u3d.pdb', model)
            # fix_his("{}_protonated.txt".format('1U3D'))
             Fields = create_forcefield("{}_protonated.txt".format('1u3d'),emap)
 
-      
-        if SASA_shifts ==1:
-           # print("{}_protonated.txt".format('1u3d'), model)
+        if field_type == 'implicit':
+            print('in implicit domain')
             sasa_percents= build_SASA('1u3d.pdb', model)
-           # print('SASA PERCENTS')
-            #print(sasa_percents.items())
             mylist_values =list(sasa_percents['cation'].values())
             mylist_keys =list(sasa_percents['cation'].keys())
             mylist_values_anions=list(sasa_percents['anion'].values())
             mylist_keys_anions=list(sasa_percents['anion'].keys())
             print('graphing list')
-         #  print('len keys', len(mylist_keys))
+            print('testing SASA option')
             for i in range(0,len(mylist_values)):
                 print(mylist_keys[i], mylist_values[i])
             for i in range(0,len(mylist_values_anions)):
                 print(mylist_keys_anions[i], mylist_values_anions[i])
+
+            solvation=sasa_percents
 
 
 
@@ -711,8 +712,11 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
             r=G.edges[edge]['distance']
           #  before = np.log(G.edges[(name_node1,name_node2)]['weight'])
             print('Custom Site',custom_site)
-            G.edges[(name_node1,name_node2)]['weight']=build_edges(G,D, name_node1,name_node2,r,custom_site,Fields,sasa_percents) 
-           # after =np.log(G.edges[(name_node1,name_node2)]['weight'])
+            if field_type == 'atomistic':
+                G.edges[(name_node1,name_node2)]['weight']=build_edges(G,D, name_node1,name_node2,r,custom_site,Fields,sasa_percents) 
+            if field_type =='implicit':
+                G.edges[(name_node1, name_node2)]['weight'] = build_implicit_edges(G,D,name_node1,name_node2, r, custom_site,solvation)
+            # after =np.log(G.edges[(name_node1,name_node2)]['weight']) 
            # string = [before, after, name_node1,name_node2]
            # print(string[0], string[1], string[2], string[3])
 
@@ -756,6 +760,50 @@ def create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offse
 
 #Alyssa
 
+
+
+def build_implicit_edges(G,D,name_node1,name_node2, r, custom_site,solvation):
+ 
+    D.edges[(name_node1,name_node2)]['rad'] = r
+
+    if list(name_node1)[1].isnumeric()==True:
+            D.edges[(name_node1, name_node2)]['mol1'] = list(name_node1)[0]
+    if list(name_node1)[1].isalpha() ==True:
+            D.edges[(name_node1, name_node2)]['mol1'] = "".join(list(name_node1)[0:3])
+    if list(name_node2)[1].isnumeric() ==True:
+            D.edges[(name_node1, name_node2)]['mol2'] = list(name_node2)[0]
+    if list(name_node2)[1].isalpha() ==True:
+            D.edges[(name_node1, name_node2)]['mol2'] = "".join(list(name_node2)[0:3])
+
+
+
+    num_2=[]
+    for a in name_node2.split("(")[0]:
+        if a.isdigit() ==True:
+            num_2.append(a)
+    num_2="".join(num_2)
+    D.edges[(name_node1, name_node2)]['num2'] =num_2
+  #  print(num_2)
+
+
+    num_1=[]
+    for a in name_node1.split("(")[0]:
+        if a.isdigit() ==True:
+            num_1.append(a)
+    num_1="".join(num_1)
+    D.edges[(name_node1, name_node2)]['num1'] =num_1
+   # print(num_1)
+
+
+    D.edges[(name_node1, name_node2)]['chain1'] = name_node1[name_node1.find("(")+1:name_node1.find(")")]
+    D.edges[(name_node1, name_node2)]['chain2'] = name_node2[name_node2.find("(")+1:name_node2.find(")")]
+
+
+    print('solvation plan check',name_node1,name_node2, custom_site,solvation)
+
+    D.edges[(name_node1,name_node2)]['k'],D.edges[(name_node1,name_node2)]['t']=solv_pen(G,D,name_node1,name_node2, custom_site,solvation)
+
+    return(D.edges[(name_node1, name_node2)]['t'])
     
 
 
@@ -777,8 +825,6 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site,Fields,sasa):
             D.edges[(name_node1, name_node2)]['mol2'] = "".join(list(name_node2)[0:3])
 
 
-
-
     num_2=[]
     for a in name_node2.split("(")[0]:
         if a.isdigit() ==True:
@@ -786,7 +832,6 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site,Fields,sasa):
     num_2="".join(num_2)
     D.edges[(name_node1, name_node2)]['num2'] =num_2
   #  print(num_2)
-
 
     num_1=[]
     for a in name_node1.split("(")[0]:
@@ -811,9 +856,33 @@ def build_edges(G,D, name_node1, name_node2,r,custom_site,Fields,sasa):
    
 
 
+def solv_pen(G,D,name_node1,name_node2, custom_site,solvation):
+
+    solvfree1=split_solvation('1u3d.pdb', '1u3d.pdb', name_node1, name_node2)
+    D.edges[(name_node1, name_node2)]['solvfree1'] = solvfree1
+    print('In solv energy pen')
+
+    hbar = 6.582119569* 10**-16 #ev s
+    T= 300
+    Kb = 8.617333262*10**-5 #ev/K
+
+    reorganization_energies(G,D,name_node1, name_node2)
+    C = coupling(G,D,name_node1,name_node1,D.edges[(name_node1, name_node2)]['rad'])
+    site_E_implicit(G,D,name_node1, name_node2, custom_site)
+    k1 = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node1,name_node2)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node1,name_node2)]['dg'] + D.edges[(name_node1, name_node2)]['solvfree1']+D.edges[(name_node1,name_node2)]['la'])**2 /(4* D.edges[(name_node1,name_node2)]['la']*Kb*T))
+
+    #k2 = ((2*np.pi*C**2)/(hbar)) * (1/(np.sqrt(4*np.pi*D.edges[(name_node2,name_node1)]['la'] *Kb*T))) *np.exp(-(D.edges[(name_node2,name_node1)]['dg']+D.edges[(name_node2,name_node1)]['la'])**2 /(4* D.edges[(name_node2,name_node1)]['la']*Kb*T))
+    
+    #print('rate constants', name_node1,name_node2, k1,k2,k)
+    t=1/k1
+    print('node1 node2 kf kr', name_node1, name_node2, k1, kr)
+  #  print('energies',name_node1, name_node2, C, D.edges[(name_node1,name_node2)]['la'],D.edges[(name_node1,name_node2)]['dg'],D.edges[(name_node1, name_node2)]['rad'])
+    
+
+    return(k1,t)
 
 def energy_pen(G,D, name_node1,name_node2,custom_site,Fields,sasa):
-    print('In energy pen')
+    print('In solv energy pen')
 
     hbar = 6.582119569* 10**-16 #ev s
  #ev s
@@ -845,37 +914,27 @@ def energy_pen(G,D, name_node1,name_node2,custom_site,Fields,sasa):
 
 
 
-def site_E(G,D,name_node1, name_node2, custom_site,Fields,sasa):
+def site_E_implicit(G,D,name_node1, name_node2, custom_site):
 
     print(name_node1)
     print(name_node2)
 
-    r1 =  Fields[int(D.edges[(name_node1,name_node2)]['num1'])]
-    r2 =  Fields[int(D.edges[(name_node1,name_node2)]['num2'])]
-
 
     if name_node1 in custom_site:
-        D.edges[(name_node1,name_node2)]['s1'] = float(custom_site[name_node1]) - float(r1)
+        D.edges[(name_node1,name_node2)]['s1'] = float(custom_site[name_node1]) 
       #  original1 = custom_site[name_node1] 
     elif  D.edges[(name_node1, name_node2)]['mol1'] in site_energies:
-       # print(float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]), 'site E')
-       # print(float(r1), 'E field')
-       # print(sasa['cation'][name_node1], 'SASA')
-        D.edges[(name_node1,name_node2)]['s1'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]) - float(r1) + sasa['cation'][name_node1]
+        D.edges[(name_node1,name_node2)]['s1'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]) 
 
-     #   original1 = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']])
-        #print('delta g and shifts2', float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]) ,float(r1) , sasa['cation'][name_node1] )
     else:
         D.edges[(name_node1,name_node2)]['s1'] = 0
-    #    original1=0
+
 
     if name_node2 in custom_site:
-        D.edges[(name_node1,name_node2)]['s2'] = custom_site[name_node2] -float(r2)
-     #   original2 = custom_site[name_node2]
+        D.edges[(name_node1,name_node2)]['s2'] = custom_site[name_node2]
+    
     elif D.edges[(name_node1, name_node2)]['mol2'] in site_energies:
-        D.edges[(name_node1,name_node2)]['s2'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']]) - float(r2) + sasa['cation'][name_node2]
-       # original2 = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']])
-       # print('delta g and shifts1', float(site_energies[D.edges[(name_node1, name_node2)]['mol2']]) ,float(r2) , sasa['cation'][name_node2] )
+        D.edges[(name_node1,name_node2)]['s2'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']]) 
 
     else:
         D.edges[(name_node1,name_node2)]['s2'] = 0
@@ -885,8 +944,48 @@ def site_E(G,D,name_node1, name_node2, custom_site,Fields,sasa):
     D.edges[(name_node1,name_node2)]['dg'] = float( D.edges[(name_node1,name_node2)]['s2']) - float( D.edges[(name_node1,name_node2)]['s1'])
     D.edges[(name_node1,name_node2)]['bdg'] = float( D.edges[(name_node1,name_node2)]['s1']) - float( D.edges[(name_node1,name_node2)]['s2'])
 
-    #xD.edges[(name_node2,name_node1)]['dg'] = float( D.edges[(name_node1,name_node2)]['s1']) - float( D.edges[(name_node1,name_node2)]['s2'])
+    return(G,D)
 
+
+
+def site_E(G,D,name_node1, name_node2, custom_site,Fields,sasa):
+
+    print(name_node1)
+    print(name_node2)
+    if len(Fields) ==0:
+        shift1 =0
+        shift2= 0
+       # shift1 =solvation[1]
+        #shift2= solvation[1]
+
+    if len(Fields) != 0:
+        shift1 =  -Fields[int(D.edges[(name_node1,name_node2)]['num1'])] + sasa['cation'][name_node1]
+        shift2 =  -Fields[int(D.edges[(name_node1,name_node2)]['num2'])] + sasa['cation'][name_node2]
+
+
+    if name_node1 in custom_site:
+        D.edges[(name_node1,name_node2)]['s1'] = float(custom_site[name_node1]) + float(shift1)
+      #  original1 = custom_site[name_node1] 
+    elif  D.edges[(name_node1, name_node2)]['mol1'] in site_energies:
+        D.edges[(name_node1,name_node2)]['s1'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol1']]) + float(shift1)
+
+    else:
+        D.edges[(name_node1,name_node2)]['s1'] = 0
+
+
+    if name_node2 in custom_site:
+        D.edges[(name_node1,name_node2)]['s2'] = custom_site[name_node2] + float(shift2)
+    
+    elif D.edges[(name_node1, name_node2)]['mol2'] in site_energies:
+        D.edges[(name_node1,name_node2)]['s2'] = float(site_energies[D.edges[(name_node1, name_node2)]['mol2']]) + float(shift2)
+
+    else:
+        D.edges[(name_node1,name_node2)]['s2'] = 0
+      #  original2 =0
+    
+
+    D.edges[(name_node1,name_node2)]['dg'] = float( D.edges[(name_node1,name_node2)]['s2']) - float( D.edges[(name_node1,name_node2)]['s1'])
+    D.edges[(name_node1,name_node2)]['bdg'] = float( D.edges[(name_node1,name_node2)]['s1']) - float( D.edges[(name_node1,name_node2)]['s2'])
 
     return(G,D)
 
@@ -960,6 +1059,7 @@ def process(emap,
             r_offset=0.0,
             custom_site_energy=None,
             custom_reorg=None,
+            field_type = "atomistic", #vs implicit
             protein_shift = 1,
             SASA_shifts=1):
 
@@ -1099,7 +1199,7 @@ def process(emap,
     emap._store_surface_residues(surface_exposed_res)
 
     G = create_graph(dmatrix, node_labels, edge_prune, coef_alpha, exp_beta, r_offset, weighting_method, distance_cutoff, percent_edges,
-                     num_st_dev_edges, max_degree, emap.eta_moieties.keys(),custom_site_energy,emap)
+                     num_st_dev_edges, max_degree, emap.eta_moieties.keys(),custom_site_energy,emap,field_type)
     G.graph['pdb_id'] = emap.pdb_id
     
     if len(G.edges()) == 0:

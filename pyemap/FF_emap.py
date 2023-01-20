@@ -140,6 +140,7 @@ def build_SASA(filename,model):
             #this part has nothing to do with dssp and is a printing checkstep for me
       
             if dssp[key][1] in cation_sasa.keys():
+            		print('cationsasa',(1-float(dssp[key][3])) , (float(cation_sasa[dssp[key][1]])))
 
             		SASA_hole = (1-float(dssp[key][3])) * (float(cation_sasa[dssp[key][1]]))
             		solv_cont['cation'][goal_str] = SASA_hole
@@ -169,72 +170,93 @@ def build_SASA(filename,model):
 
 #
 
+def split_solvation(model, filename, name_node1, name_node2):
+	solv_cont ={'cation':{},'anion':{}, 'anion_prot':{}, 'cation_prot':{}}
+	try:
+		dssp = DSSP(model, filename, acc_array="Wilke")
+		for key in dssp.keys():
+
+			goal_str = dssp[key][1] + str(key[1][1]) + "(" + str(key[0]) + ")"
+			if dssp[key][1] in cation_sasa.keys():
+				print('two', (1-float(dssp[key][3])), float(cation_sasa[dssp[key][1]]))
+				SASA_hole = (1-float(dssp[key][3])) * (float(cation_sasa[dssp[key][1]]))
+				print(SASA_hole)
+				solv_cont['cation_prot'][goal_str] = SASA_hole
+			if dssp[key][1] in anion_sasa.keys():
+				print('two', (1-float(dssp[key][3])), float(anion_sasa[dssp[key][1]]))
+				SASA_electron = (1-float(dssp[key][3])) * (float(anion_sasa[dssp[key][1]]))
+				print(SASA_electron)
+				solv_cont['anion_prot'][goal_str] = SASA_electron
+
+
+				return solv_cont
+	except Exception:
+		warnings.warn("Unable to calculate solvent accessibility. Check that DSSP is installed.",RuntimeWarning,stacklevel=2)
+            	#	print('SASA hole',goal_str, SASA_hole)
+
 
 def build_E_field(residue_number,moleculelist,natoms,resname):
 
-
-
-
-		charge_total=0.00
+	charge_total=0.00
 		#c= 10**-10/(4* np.pi * 8.85418782 *10**-12 )
-		c=1
+	c=1
 		#print(c)
-		com_x, com_y, com_z, res_name=com_res(residue_number,moleculelist)
-		adjusted_xfield_sum=0
-		adjusted_yfield_sum=0
-		adjusted_zfield_sum=0
-		xfield_sum=0
-		yfield_sum=0
-		zfield_sum=0
-		shift=0.0
-		current_res_shift=[0]*500
+	com_x, com_y, com_z, res_name=com_res(residue_number,moleculelist)
+	adjusted_xfield_sum=0
+	adjusted_yfield_sum=0
+	adjusted_zfield_sum=0
+	xfield_sum=0
+	yfield_sum=0
+	zfield_sum=0
+	shift=0.0
+	current_res_shift=[0]*500
 
 
 
 
-		for atom in moleculelist:
-			charge_total= float(atom[5])+charge_total
+	for atom in moleculelist:
+		charge_total= float(atom[5])+charge_total
 			#print('running charge',float(atom[5]),charge_total)
 		#print('length',len(moleculelist))
 	#	print('charge total pre', charge_total)
 		#print('len mol list', len(moleculelist))
-		for atom in moleculelist:
-			xfield=0
-			yfield=0
-			zfield=0
-			total_charge=0.0
-			adjusted_zfield=0
-			adjusted_xfield =0
-			adjusted_yfield=0
+	for atom in moleculelist:
+		xfield=0
+		yfield=0
+		zfield=0
+		total_charge=0.0
+		adjusted_zfield=0
+		adjusted_xfield =0
+		adjusted_yfield=0
 
 
 	
 			
 
-			if atom[7] != residue_number:  
+		if atom[7] != residue_number:  
 			#	print('check', atom[7], residue_number)
 
 
-				rx = (com_x-float(atom[0]))*1.88973  #I think it is here. boo 
-				ry= (com_y-float(atom[1]))*1.88973
-				rz = (com_z-float(atom[2]))*1.88973
+			rx = (com_x-float(atom[0]))*1.88973  #I think it is here. boo 
+			ry= (com_y-float(atom[1]))*1.88973
+			rz = (com_z-float(atom[2]))*1.88973
 
 	
-				charge=(float(atom[5]))
+			charge=(float(atom[5]))
 		#		print('charge', float(atom[5]), 'charge total', charge_total/len(moleculelist))
-				adjusted_charge = float(atom[5])  - charge_total/(len(moleculelist))
-			#	print(charge, charge_total/len(moleculelist))
+			adjusted_charge = float(atom[5])  - charge_total/(len(moleculelist))
+		#	print(charge, charge_total/len(moleculelist))
 
-				total_charge += adjusted_charge
+			total_charge += adjusted_charge
 				#print('running adjusted charge', total_charge)
 
 
 				#print(int(residue_number))
-				current_res_shift[int(atom[7])] += adjusted_charge/np.linalg.norm([rx,ry,rz])
+			current_res_shift[int(atom[7])] += adjusted_charge/np.linalg.norm([rx,ry,rz])
 				
 
 
-				shift += adjusted_charge/np.linalg.norm([rx,ry,rz])
+			shift += adjusted_charge/np.linalg.norm([rx,ry,rz])
 			#	print('shift', shift)
 
 		#for i in range (1,int(atom[7])):
@@ -243,8 +265,8 @@ def build_E_field(residue_number,moleculelist,natoms,resname):
 
 	#	print('total charge', total_charge)
 		#print('Current res shift',current_res_shift)
-		print('Total shift', residue_number,resname, 27.211382543519*shift)
-		return( 27.211382543519*shift)
+#	print('Total shift', residue_number,resname, 27.211382543519*shift)
+	return( 27.211382543519*shift)
 
 
 
