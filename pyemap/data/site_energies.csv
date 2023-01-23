@@ -1,0 +1,51 @@
+D ,Aspartic Acid,2.24,NA,
+C ,Cysteine,9.69,1.90,
+FAD,Flavin,8.29,-1.45,
+E , Glutamic Acid,3.78,NA,
+NADH, NADH,7.29,-4.92
+NAD+, NAD+,7.29,-4.92
+PLQ,P-Benzoquinone,10.60,-1.33,
+X,Toluquinone,10.28,-1.56,
+X,Gonylptidine,9.88,-1.38,
+X,Aurantioglicladin,9.00,-1.45,
+X,Fumigatin,8.96,-1.49,
+X,Spinulosin,8.90,-1.64,
+X,Perezone,9.17,-1.56,
+X,Embellin,9.28,-1.60,
+X,Rapanone,9.80,-1.42,
+X,Mesaquinone,9.00,-1.53,
+X,Pedicinin,8.49,-2.06,
+X,Rhodoquinone,8.44,-1.43,
+IMW,Thymoquinone,10.12,-1.47,
+X,Polyporpic Acid,8.62,-1.49,
+X,Atromentin,7.45,-2.29,
+X,Metomycin,7.50,-1.20,
+17Z,Menadion,9.64,-1.42,https://pubchem.ncbi.nlm.nih.gov/compound/Menadione
+X,Phthiocol,9.05,-1.50,https://pubchem.ncbi.nlm.nih.gov/compound/2-Hydroxy-3-methyl-1_4-naphthoquinone
+JUG,Juglone,8.89,-1.72,https://pubchem.ncbi.nlm.nih.gov/compound/3806
+NQ,Lawsone,9.65,-1.38,https://pubchem.ncbi.nlm.nih.gov/compound/6755
+X,Ramentone,8.38,-1.87,https://pubchem.ncbi.nlm.nih.gov/compound/10141
+90R,Plumbagin,8.90,-1.64,https://pubchem.ncbi.nlm.nih.gov/compound/10205
+X,Echinochrome A,8.29,-1.78,https://pubchem.ncbi.nlm.nih.gov/compound/135457951
+X,Dunnone,8.78,-1.34,https://pubchem.ncbi.nlm.nih.gov/compound/262097
+X,Alkanin,8.29,-1.90,https://pubchem.ncbi.nlm.nih.gov/compound/72521#section=2D-Structure
+PQN,Vitamin K,9.52,-1.34,https://pubchem.ncbi.nlm.nih.gov/compound/5280483#section=2D-Structure
+
+X,Chrysophanic Acid,8.71,-1.33,https://pubchem.ncbi.nlm.nih.gov/compound/10208
+X,Aloe Emodin,8.62,-1.36,https://pubchem.ncbi.nlm.nih.gov/compound/10207
+RHN,Rhein,8.62,-1.68,https://pubchem.ncbi.nlm.nih.gov/compound/10168
+EMO,Emodin,#VALUE!,#VALUE!,https://pubchem.ncbi.nlm.nih.gov/compound/3220
+X,Physcion,8.31,-1.35,https://pubchem.ncbi.nlm.nih.gov/compound/10639
+AZN,Alizarin,8.29,-1.43,https://pubchem.ncbi.nlm.nih.gov/compound/6293
+X,Rubiadin,8.51,-1.43,https://pubchem.ncbi.nlm.nih.gov/compound/124062
+X,Lucidin,8.68,-1.59,https://pubchem.ncbi.nlm.nih.gov/compound/10163
+X,Pseudopurpurin,8.69,-1.79,https://pubchem.ncbi.nlm.nih.gov/compound/442765
+9TF,Purpurin,8.06,-1.40,https://pubchem.ncbi.nlm.nih.gov/compound/6683
+X,Kermesic Acid,8.30,-2.08,https://pubchem.ncbi.nlm.nih.gov/compound/11727234
+X,Carminic Acid,8.09,-1.85,https://pubchem.ncbi.nlm.nih.gov/compound/10255083
+DRA,Beta-Rhodomycin,7.85,-1.63,https://pubchem.ncbi.nlm.nih.gov/compound/3037123
+
+Y,Tyrosine,8.20,1.67,
+W,Tryptophan,7.63,1.52,
+H,Histidine,8.47,2.91,
+P,Phenylalanine,8.84,1.79,
