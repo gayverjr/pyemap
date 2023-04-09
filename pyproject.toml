@@ -1,5 +1,6 @@
 [build-system]
 requires=['setuptools','wheel']
 build-backend = "setuptools.build_meta"
-[tool.poetry.dependencies]
-pandas = "<2.0"
+[options]
+install_requires =
+    pandas<2.0
