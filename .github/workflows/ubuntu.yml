@@ -25,6 +25,7 @@ jobs:
           conda install -c conda-forge rdkit
           conda install -c bioconda muscle
           conda install -c conda-forge msms
+          pip install pandas==1.5.3
           pip install .
           
       - name: Generate coverage report
