@@ -6,7 +6,7 @@
 [![PyPI](https://badge.fury.io/py/pyemap.svg)](https://pypi.org/project/pyemap/)
 [![Build Status](https://github.com/gayverjr/pyemap/workflows/ubuntu/badge.svg)](https://github.com/gayverjr/pyemap/actions) [![codecov](https://codecov.io/gh/gayverjr/pyemap/branch/main/graph/badge.svg)](https://codecov.io/gh/gayverjr/pyemap/branch/main) [![Documentation Status](https://readthedocs.org/projects/pyemap/badge/?version=latest)](https://pyemap.readthedocs.io/en/latest/?badge=latest) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://github.com/gayverjr/pyemap/blob/main/LICENSE)
 
-[![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/gayverjr/pyemap.svg?logo=lgtm&logoWidth=18)](https://github.com/gayverjr/pyemap/actions/workflows/codeql.yml/badge.svg) [![PyPI version](https://badge.fury.io/py/pyemap.svg)](https://badge.fury.io/py/pyemap)
+[![Website emap.bu.edu](https://img.shields.io/website-up-down-green-red/https/emap.bu.edu.svg)](https://emap.bu.edu/) [![DOI:10.1021/acs.jpcb.9b04816](https://zenodo.org/badge/DOI/10.1021/acs.jpcb.9b04816.svg)](https://doi.org/10.1021/acs.jpcb.9b04816)[![CodeQl](https://github.com/gayverjr/pyemap/actions/workflows/codeql.yml/badge.svg)](https://github.com/gayverjr/pyemap/actions)[![PyPI version](https://badge.fury.io/py/pyemap.svg)](https://badge.fury.io/py/pyemap)
 
 
 
