@@ -46,7 +46,6 @@ def _gen_groups(cc, all_graphs):
             graph = all_graphs[graph_idx]
             graph_list.append(graph)
         for x in graph_list:
-            print(x, x.graph['id'])
         groups[group_idx + 1] = [x.graph['id'] for x in graph_list]
     return groups
 
@@ -328,20 +327,15 @@ class SubgraphPattern():
                 rmsd = np.min(rmsds)
                 seq_sum += seq_dist
                 rmsd_sum += rmsd
-                print(i,j,rmsd)
                 if seq_dist < num_nodes:
                     G_seq.add_edge(i, j)
                 if rmsd <= rmsd_thresh:
-                    print(rmsd_thresh)
                     G_struct.add_edge(i, j)
-                    print(i,j, rmsd, 'LE')
 
-        print(sorted(nx.connected_components(G_struct), key=len, reverse=True))
         self._structural_groups = _gen_groups(
             [c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)], all_graphs)
         self._sequence_groups = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],
                                             all_graphs)
-        print(self._structural_groups)
     def _subgraph_seq_dist(self, sg1, sg2, mapping):
         ''' Computes sequence distance between two protein subgraphs
 
