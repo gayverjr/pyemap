@@ -102,6 +102,7 @@ class PDBGroup():
         self._node_labels = {}
         self._residue_categories = {}
         self._edge_thresholds = []
+        self._rmsd_thresh = ""
         self._substitutions = []
         self._emap_parameters = {}
         self._gspan_parameters = {}
@@ -120,6 +121,7 @@ class PDBGroup():
         self._residue_categories = {}
         self._edge_thresholds = []
         self._substitutions = []
+        self._rmsd_thresh = ""
         self._graph_database = ""
         self._clean_subgraphs()
 
@@ -562,7 +564,7 @@ class PDBGroup():
                             for idx in pdb_list_by_index:
                                 support[pdb_list[idx]] = self.emaps[pdb_list[idx]]
                             subgraphs.append(
-                                SubgraphPattern(G, graph_number, support, self._node_labels, self._edge_thresholds))
+                                SubgraphPattern(G, graph_number, support, self._node_labels, self._edge_thresholds, self._rmsd_thresh))
                         line_idx += 1
                 line_idx += 1
             buff.close()
@@ -647,7 +649,7 @@ class PDBGroup():
                     if len(support) > 0:
                         frequent_subgraphs.append(
                             SubgraphPattern(G, len(frequent_subgraphs), support, self._node_labels,
-                                            self._edge_thresholds))
+                                            self._edge_thresholds, self._rmsd_thresh))
             frequent_subgraphs.sort(reverse=True)
             if len(frequent_subgraphs) == 0:
                 warnings.warn("Warning: No subgraphs were found using the specified string.")

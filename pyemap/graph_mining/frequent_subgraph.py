@@ -46,7 +46,7 @@ def _gen_groups(cc, all_graphs):
             graph = all_graphs[graph_idx]
             graph_list.append(graph)
         for x in graph_list:
-        groups[group_idx + 1] = [x.graph['id'] for x in graph_list]
+            groups[group_idx + 1] = [x.graph['id'] for x in graph_list]
     return groups
 
 
@@ -74,7 +74,7 @@ class SubgraphPattern():
     
     '''
 
-    def __init__(self, G, graph_number, support, res_to_num_label, edge_thresholds):
+    def __init__(self, G, graph_number, support, res_to_num_label, edge_thresholds, rmsd_thresh):
         '''Initializes SubgraphPattern object.
 
         Parameters
@@ -99,6 +99,7 @@ class SubgraphPattern():
         self.groups = {}
         self.res_to_num_label = res_to_num_label
         self.edge_thresholds = edge_thresholds
+        self.rmsd_thresh = rmsd_thresh
         self.support_number = len(support)
         self.id = str(graph_number + 1) + "_" + str(write_graph_smiles(self.G)) + "_" + str(self.support_number)
         if "#" in self.id:
@@ -244,7 +245,7 @@ class SubgraphPattern():
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
 
-    def find_protein_subgraphs(self, clustering_option="structural", rmsd_thresh=.5):
+    def find_protein_subgraphs(self, clustering_option="structural", rmsd_thresh=.5, *args, **kwargs):
         ''' Finds protein subgraphs which match this pattern.
 
         This function must be executed to analyze protein subgraphs.
@@ -262,7 +263,6 @@ class SubgraphPattern():
         at any time by calling :func:`~pyemap.graph_mining.SubgraphPattern.set_clustering` and specifying the 
         other clustering option.
         '''
-
         self.groups = {}
         self.protein_subgraphs = {}
         all_graphs = []
@@ -329,7 +329,7 @@ class SubgraphPattern():
                 rmsd_sum += rmsd
                 if seq_dist < num_nodes:
                     G_seq.add_edge(i, j)
-                if rmsd <= rmsd_thresh:
+                if rmsd <= float(rmsd_thresh):
                     G_struct.add_edge(i, j)
 
         self._structural_groups = _gen_groups(
