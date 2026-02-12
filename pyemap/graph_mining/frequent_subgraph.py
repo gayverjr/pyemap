@@ -1,4 +1,4 @@
-## Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
+# Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,6 +45,8 @@ def _gen_groups(cc, all_graphs):
         for graph_idx in group:
             graph = all_graphs[graph_idx]
             graph_list.append(graph)
+        for x in graph_list:
+            print(x, x.graph['id'])
         groups[group_idx + 1] = [x.graph['id'] for x in graph_list]
     return groups
 
@@ -243,7 +245,7 @@ class SubgraphPattern():
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
 
-    def find_protein_subgraphs(self, clustering_option="structural"):
+    def find_protein_subgraphs(self, clustering_option="structural", rmsd_thresh=.5):
         ''' Finds protein subgraphs which match this pattern.
 
         This function must be executed to analyze protein subgraphs.
@@ -261,6 +263,7 @@ class SubgraphPattern():
         at any time by calling :func:`~pyemap.graph_mining.SubgraphPattern.set_clustering` and specifying the 
         other clustering option.
         '''
+
         self.groups = {}
         self.protein_subgraphs = {}
         all_graphs = []
@@ -272,7 +275,7 @@ class SubgraphPattern():
             graph.graph['id'] = unique_id
             self.protein_subgraphs[unique_id] = graph
         if len(all_graphs) > 1:
-            self._do_clustering(all_graphs)
+            self._do_clustering(all_graphs, rmsd_thresh=rmsd_thresh)
             self.set_clustering(clustering_option)
         else:
             self.groups[1] = [x.graph['id'] for x in all_graphs]
@@ -302,7 +305,7 @@ class SubgraphPattern():
             raise Exception("Either structural or sequence.")
         self.clustering_option = clustering_option
 
-    def _do_clustering(self, all_graphs):
+    def _do_clustering(self, all_graphs, rmsd_thresh):
         '''Compute the supergraphs and find the connected components'''
         num_graphs = len(all_graphs)
         num_nodes = len(all_graphs[0].nodes)
@@ -325,15 +328,20 @@ class SubgraphPattern():
                 rmsd = np.min(rmsds)
                 seq_sum += seq_dist
                 rmsd_sum += rmsd
+                print(i,j,rmsd)
                 if seq_dist < num_nodes:
                     G_seq.add_edge(i, j)
-                if rmsd <= 0.5:
+                if rmsd <= rmsd_thresh:
+                    print(rmsd_thresh)
                     G_struct.add_edge(i, j)
+                    print(i,j, rmsd, 'LE')
+
+        print(sorted(nx.connected_components(G_struct), key=len, reverse=True))
         self._structural_groups = _gen_groups(
             [c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)], all_graphs)
         self._sequence_groups = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],
                                             all_graphs)
-
+        print(self._structural_groups)
     def _subgraph_seq_dist(self, sg1, sg2, mapping):
         ''' Computes sequence distance between two protein subgraphs
 
