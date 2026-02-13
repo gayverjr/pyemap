@@ -45,8 +45,7 @@ def _gen_groups(cc, all_graphs):
         for graph_idx in group:
             graph = all_graphs[graph_idx]
             graph_list.append(graph)
-        for x in graph_list:
-            groups[group_idx + 1] = [x.graph['id'] for x in graph_list]
+        groups[group_idx + 1] = [x.graph['id'] for x in graph_list]
     return groups
 
 
@@ -89,6 +88,8 @@ class SubgraphPattern():
             Mapping of residue types to numerical node labels
         edge_thresholds: list of float
             Edge thresholds which define edge labels
+        rmsd_thresh: float
+            threshold for determining structural similarity between identified subgraphs
 
         '''
         self.G = G.copy()
@@ -254,7 +255,9 @@ class SubgraphPattern():
         -----------
         clustering_option: str, optional
             Either 'structural' or 'sequence'
-
+        rmsd_thresh: float
+            threshold for determining structural similarity between identified subgraphs
+        
         Notes
         ------
         Graphs are clustered by both sequence and structrual similarity, and the results are stored in 

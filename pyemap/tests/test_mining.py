@@ -71,6 +71,19 @@ class PDBGroupProcess(unittest.TestCase):
         sg = self.pg.subgraph_patterns['1_WWW#_1']
         sg.find_protein_subgraphs()
         assert len(sg.groups)==1
+        self.pg.process_emaps(edge_prune='DEGREE')
+        self.pg.generate_graph_database()
+        self.pg.find_subgraph('WWW#')
+        sg = self.pg.subgraph_patterns['1_WWW#_14']
+        sg.find_protein_subgraphs(clustering_option="structural", rmsd_thresh=.1)
+        g1 = sg.groups[1]
+        assert len(g1) == 2
+        sg.find_protein_subgraphs(clustering_option="structural", rmsd_thresh=.5)
+        g1 = sg.groups[1]
+        assert len(g1) ==12
+        sg.find_protein_subgraphs(clustering_option="structural", rmsd_thresh=2)
+        g1 = sg.groups[1]
+        assert len(g1) ==21
 
     def test_no_subgraphs(self):
         self.pg.process_emaps(edge_prune='DEGREE')
