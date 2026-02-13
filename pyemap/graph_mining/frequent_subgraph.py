@@ -168,6 +168,8 @@ class SubgraphPattern():
             return full_str
         full_str += str(len(self.protein_subgraphs)) + " subgraphs matching this pattern were found.\n"
         full_str += "Graphs are classified based on " + self.clustering_option + " similarity.\n\n"
+        if self.clustering_option == 'structural':
+            full_str += "Structural clustering is based on an RMSD threshold of " + self.rmsd_thresh + ".\n\n"
         for key in self.groups:
             graphs = self.groups[key]
             full_str += "Group " + str(key) + ": " + str(len(graphs)) + " members\n---------------\n"
@@ -279,6 +281,7 @@ class SubgraphPattern():
         if len(all_graphs) > 1:
             self._do_clustering(all_graphs, rmsd_thresh=rmsd_thresh)
             self.set_clustering(clustering_option)
+            self.rmsd_thresh = rmsd_thresh
         else:
             self.groups[1] = [x.graph['id'] for x in all_graphs]
             self.clustering_option = clustering_option
