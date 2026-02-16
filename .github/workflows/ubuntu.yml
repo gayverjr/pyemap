@@ -21,12 +21,9 @@ jobs:
       
       - name: Install dependencies and pyemap
         run: |
-          pip install numpy==1.24.4
-          pip install pandas==1.5.3
-          pip install .
-          conda install -c conda-forge rdkit
           conda install -c bioconda muscle
           conda install -c conda-forge msms
+          pip install .
           
       - name: Generate coverage report
         run: |
