@@ -24,7 +24,6 @@ jobs:
           pip install numpy==1.24.4
           pip install pandas==1.5.3
           pip install .
-          conda install -c conda-forge pygraphviz
           conda install -c conda-forge rdkit
           conda install -c bioconda muscle
           conda install -c salilab dssp
