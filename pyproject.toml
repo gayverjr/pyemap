@@ -1,3 +1,37 @@
 [build-system]
-requires=['setuptools','wheel']
+requires = ["setuptools>=65", "wheel", "Cython"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyemap"
+version = "2.0.2"
+description = "PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins."
+readme = "pypi.md"
+readme-content-type = "text/markdown"
+license = {text = "BSD-3-Clause"}
+authors = [
+    {name = "James Gayvert", email = "jrg444@gmail.com"}
+]
+homepage = "https://github.com/gayverjr/pyemap/"
+urls = { "Bug Tracker" = "https://github.com/gayverjr/pyemap/issues" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
+]
+requires-python = ">=3.6"
+
+[project.dependencies]
+numpy = ">=1.24.4,<1.26"
+pandas = ">=1.5.3,<1.6"
+networkx = "*"
+biopython = "*"
+scipy = "*"
+pillow = "*"
+matplotlib = "*"
+gspan_mining = "*"
+requests = "*"
+pysmiles==1.0.1
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyemap*"]
