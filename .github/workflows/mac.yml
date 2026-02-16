@@ -23,7 +23,6 @@ jobs:
         run: |
           conda install -c bioconda muscle
           conda install conda-forge::dssp
-          pip install rdkit
           pip install .
           
       - name: Generate coverage report

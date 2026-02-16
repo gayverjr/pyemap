@@ -21,7 +21,6 @@ jobs:
       
       - name: Install dependencies and pyemap
         run: |
-          pip install pandas==1.5.3
           pip install .
           
       - name: Run tests
