@@ -1,4 +1,4 @@
-## Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
+# Copyright (c) 2017-2022, James Gayvert, Ruslan Tazhigulov, Ksenia Bravaya
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -73,7 +73,7 @@ class SubgraphPattern():
     
     '''
 
-    def __init__(self, G, graph_number, support, res_to_num_label, edge_thresholds):
+    def __init__(self, G, graph_number, support, res_to_num_label, edge_thresholds, rmsd_thresh):
         '''Initializes SubgraphPattern object.
 
         Parameters
@@ -88,6 +88,8 @@ class SubgraphPattern():
             Mapping of residue types to numerical node labels
         edge_thresholds: list of float
             Edge thresholds which define edge labels
+        rmsd_thresh: float
+            threshold for determining structural similarity between identified subgraphs
 
         '''
         self.G = G.copy()
@@ -98,6 +100,7 @@ class SubgraphPattern():
         self.groups = {}
         self.res_to_num_label = res_to_num_label
         self.edge_thresholds = edge_thresholds
+        self.rmsd_thresh = rmsd_thresh
         self.support_number = len(support)
         self.id = str(graph_number + 1) + "_" + str(write_graph_smiles(self.G)) + "_" + str(self.support_number)
         if "#" in self.id:
@@ -165,6 +168,8 @@ class SubgraphPattern():
             return full_str
         full_str += str(len(self.protein_subgraphs)) + " subgraphs matching this pattern were found.\n"
         full_str += "Graphs are classified based on " + self.clustering_option + " similarity.\n\n"
+        if self.clustering_option == 'structural':
+            full_str += "Structural clustering is based on an RMSD threshold of " + str(self.rmsd_thresh) + ".\n\n"
         for key in self.groups:
             graphs = self.groups[key]
             full_str += "Group " + str(key) + ": " + str(len(graphs)) + " members\n---------------\n"
@@ -243,7 +248,7 @@ class SubgraphPattern():
             selection_strs.append(emap.residues[res].ngl_string)
         return label_texts, labeled_atoms, color_list, selection_strs
 
-    def find_protein_subgraphs(self, clustering_option="structural"):
+    def find_protein_subgraphs(self, clustering_option="structural", rmsd_thresh=.5, *args, **kwargs):
         ''' Finds protein subgraphs which match this pattern.
 
         This function must be executed to analyze protein subgraphs.
@@ -252,7 +257,9 @@ class SubgraphPattern():
         -----------
         clustering_option: str, optional
             Either 'structural' or 'sequence'
-
+        rmsd_thresh: float
+            threshold for determining structural similarity between identified subgraphs
+        
         Notes
         ------
         Graphs are clustered by both sequence and structrual similarity, and the results are stored in 
@@ -272,8 +279,9 @@ class SubgraphPattern():
             graph.graph['id'] = unique_id
             self.protein_subgraphs[unique_id] = graph
         if len(all_graphs) > 1:
-            self._do_clustering(all_graphs)
+            self._do_clustering(all_graphs, rmsd_thresh=rmsd_thresh)
             self.set_clustering(clustering_option)
+            self.rmsd_thresh = rmsd_thresh
         else:
             self.groups[1] = [x.graph['id'] for x in all_graphs]
             self.clustering_option = clustering_option
@@ -302,7 +310,7 @@ class SubgraphPattern():
             raise Exception("Either structural or sequence.")
         self.clustering_option = clustering_option
 
-    def _do_clustering(self, all_graphs):
+    def _do_clustering(self, all_graphs, rmsd_thresh):
         '''Compute the supergraphs and find the connected components'''
         num_graphs = len(all_graphs)
         num_nodes = len(all_graphs[0].nodes)
@@ -327,13 +335,13 @@ class SubgraphPattern():
                 rmsd_sum += rmsd
                 if seq_dist < num_nodes:
                     G_seq.add_edge(i, j)
-                if rmsd <= 0.5:
+                if rmsd <= float(rmsd_thresh):
                     G_struct.add_edge(i, j)
+
         self._structural_groups = _gen_groups(
             [c for c in sorted(nx.connected_components(G_struct), key=len, reverse=True)], all_graphs)
         self._sequence_groups = _gen_groups([c for c in sorted(nx.connected_components(G_seq), key=len, reverse=True)],
                                             all_graphs)
-
     def _subgraph_seq_dist(self, sg1, sg2, mapping):
         ''' Computes sequence distance between two protein subgraphs
 
