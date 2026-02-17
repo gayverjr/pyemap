@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyemap"
-version = "2.0.2"
+version = "2.1.0"
 description = "PyeMap: A python package for automatic identification of electron and hole transfer pathways in proteins."
 readme = "pypi.md"
 license = {text = "BSD-3-Clause"}
