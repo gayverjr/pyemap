@@ -1,2 +1,2 @@
-# "." uses requirements defined inside setup.py
 .
+sphinx_rtd_theme
