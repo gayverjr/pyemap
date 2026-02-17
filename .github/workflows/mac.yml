@@ -1,31 +1,28 @@
-name: intel-mac
+name: mac-os
 
 on: [push]
 
 jobs:
-  build-intel-macos:
-    runs-on: macos-10.15
+  build-macos:
+    runs-on: macos-latest
     defaults:
       run:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.11]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         name: Check out repository
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
       
       - name: Install dependencies and pyemap
         run: |
-          conda install -c conda-forge pygraphviz
-          conda install -c conda-forge rdkit
           conda install -c bioconda muscle
-          conda install -c salilab dssp
-          pip install pandas==1.5.3
+          conda install conda-forge::dssp
           pip install .
           
       - name: Generate coverage report
@@ -34,4 +31,4 @@ jobs:
           pip install pytest-cov
           pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v4
