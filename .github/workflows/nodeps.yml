@@ -4,24 +4,23 @@ on: [push]
 
 jobs:
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.11]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         name: Check out repository
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
       
       - name: Install dependencies and pyemap
         run: |
-          pip install pandas==1.5.3
           pip install .
           
       - name: Run tests
